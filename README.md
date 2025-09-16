@@ -1,4 +1,4 @@
-# WebXRide - Advanced WebXR Development Platform
+# WebXRide AgriQuest - Advanced WebXR Development Platform
 
 A powerful, performance-optimized platform for creating and managing WebXR experiences, 3D content, and interactive web applications.
 

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear WebXRide Storage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #c82333;
+        }
+        .success {
+            background-color: #28a745;
+        }
+        .success:hover {
+            background-color: #218838;
+        }
+        .info {
+            background-color: #17a2b8;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .warning {
+            background-color: #ffc107;
+            color: #000;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 WebXRide Storage Cleaner</h1>
+        
+        <div class="info">
+            <h3>Current Storage Status:</h3>
+            <div id="storage-status">Checking...</div>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Warning:</strong> This will clear your selected user and current project. 
+            You'll need to select your user again when you return to WebXRide.
+        </div>
+
+        <div>
+            <h3>Clear Storage Options:</h3>
+            <button onclick="clearUserSelection()">Clear User Selection Only</button>
+            <button onclick="clearAllStorage()">Clear All WebXRide Data</button>
+            <button onclick="refreshStatus()" class="success">Refresh Status</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function refreshStatus() {
+            const selectedUser = localStorage.getItem('selected-user');
+            const currentProject = localStorage.getItem('current-project');
+            
+            let status = '<ul>';
+            status += `<li><strong>Selected User:</strong> ${selectedUser || 'None'}</li>`;
+            status += `<li><strong>Current Project:</strong> ${currentProject ? 'Saved' : 'None'}</li>`;
+            status += '</ul>';
+            
+            document.getElementById('storage-status').innerHTML = status;
+        }
+
+        function clearUserSelection() {
+            localStorage.removeItem('selected-user');
+            document.getElementById('result').innerHTML = 
+                '<div class="success" style="padding: 10px; margin: 10px 0; border-radius: 4px;">✅ User selection cleared! You can now select your user again.</div>';
+            refreshStatus();
+        }
+
+        function clearAllStorage() {
+            // Clear all WebXRide related localStorage items
+            const keysToRemove = [
+                'selected-user',
+                'current-project',
+                'split-position',
+                'show-preview',
+                'preview-key'
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            document.getElementById('result').innerHTML = 
+                '<div class="success" style="padding: 10px; margin: 10px 0; border-radius: 4px;">✅ All WebXRide data cleared! The app will reset to initial state.</div>';
+            refreshStatus();
+        }
+
+        // Initialize status on page load
+        refreshStatus();
+    </script>
+</body>
+</html>

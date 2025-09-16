@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Updated 5-29-2025 -->
+
+  <head>
+    <meta charset="UTF-8" />
+    <title>Agriquest Vegetable Museum</title>
+    <!-- Prevent default mobile zoom behavior -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.7.0/aframe-inspector.min.js"></script>
+    <script>
+      // Initialize inspector when A-Frame is ready
+      document.addEventListener('DOMContentLoaded', function() {
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+          scene.addEventListener('loaded', function() {
+            console.log('A-Frame scene loaded, checking for inspector...');
+            if (window.AFRAME && window.AFRAME.inspector) {
+              console.log('Inspector available after scene load');
+            } else {
+              console.log('Inspector not available after scene load');
+            }
+          });
+        }
+      });
+    </script>
+    <meta aframe-injected="" name="mobile-web-app-capable" content="yes" />
+    <script src="https://cdn.jsdelivr.net/npm/aframe-blink-controls/dist/aframe-blink-controls.min.js"></script>
+    <script src="https://unpkg.com/aframe-thumb-controls-component@1.1.0/dist/aframe-thumb-controls-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://recast-api.donmccurdy.com/aframe-inspector-plugin-recast.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
+    <script src="/embeds/immersivemuseum/script.js">   </script>
+    
+    <link rel="stylesheet" href="/embeds/immersivemuseum/style.css">
+
+    <style>
+      /* A-Frame Inspector Button */
+      #aframe-inspector-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: 2px solid white;
+        border-radius: 50%;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        display: none; /* Hidden by default, shown in fullscreen */
+      }
+      
+      #aframe-inspector-btn:hover {
+        background: rgba(59, 130, 246, 0.8);
+        transform: scale(1.1);
+      }
+      
+      /* Show inspector button in fullscreen */
+      @media (display-mode: fullscreen) {
+        #aframe-inspector-btn {
+          display: flex !important;
+        }
+      }
+    </style>
+    
+    <script>
+      // A-Frame Inspector functionality
+      function addAframeInspectorButton() {
+        // Check if we're in fullscreen or if this is an A-Frame page
+        const isFullscreen = document.fullscreenElement || 
+                           document.webkitFullscreenElement || 
+                           document.msFullscreenElement ||
+                           window.innerHeight === screen.height;
+        
+        const hasAframe = document.querySelector('a-scene') || 
+                         document.querySelector('script[src*="aframe"]');
+        
+        if (isFullscreen || hasAframe) {
+          // Create inspector button if it doesn't exist
+          if (!document.getElementById('aframe-inspector-btn')) {
+            const inspectorButton = document.createElement('button');
+            inspectorButton.id = 'aframe-inspector-btn';
+            inspectorButton.innerHTML = '⚙️';
+            inspectorButton.title = 'Open A-Frame Inspector';
+            
+            inspectorButton.addEventListener('click', () => {
+              console.log('A-Frame Inspector button clicked');
+              try {
+                console.log('Checking A-Frame availability...');
+                console.log('window.AFRAME:', window.AFRAME);
+                console.log('window.AFRAME.inspector:', window.AFRAME?.inspector);
+                
+                // Method 1: Try direct AFRAME.inspector access
+                if (window.AFRAME && window.AFRAME.inspector) {
+                  console.log('Opening inspector via AFRAME.inspector');
+                  window.AFRAME.inspector.open();
+                  return;
+                }
+                
+                // Method 1.5: Try to access inspector through global scope
+                if (window.AFRAME_INSPECTOR) {
+                  console.log('Opening inspector via AFRAME_INSPECTOR');
+                  window.AFRAME_INSPECTOR.open();
+                  return;
+                }
+                
+                // Method 2: Try to load inspector manually if not available
+                if (window.AFRAME && !window.AFRAME.inspector) {
+                  console.log('A-Frame found but no inspector, trying to load it...');
+                  
+                  // Try multiple inspector URLs
+                  const inspectorUrls = [
+                    'https://aframe.io/releases/1.7.0/aframe-inspector.min.js',
+                    'https://aframe.io/releases/1.4.2/aframe-inspector.min.js',
+                    'https://cdn.jsdelivr.net/gh/aframevr/aframe-inspector@master/dist/aframe-inspector.min.js'
+                  ];
+                  
+                  let loadedCount = 0;
+                  let inspectorLoaded = false;
+                  
+                  inspectorUrls.forEach((url, index) => {
+                    const script = document.createElement('script');
+                    script.src = url;
+                    script.onload = function() {
+                      console.log(`Inspector script ${index + 1} loaded from ${url}`);
+                      loadedCount++;
+                      
+                      // Try to open inspector after a short delay
+                      setTimeout(() => {
+                        if (window.AFRAME && window.AFRAME.inspector) {
+                          console.log('Inspector available after loading, opening...');
+                          window.AFRAME.inspector.open();
+                          inspectorLoaded = true;
+                        } else {
+                          console.log('Inspector still not available after loading');
+                          
+                          // Try to manually initialize the inspector
+                          if (window.AFRAME && window.AFRAME.inspectorPlugin) {
+                            console.log('Trying to manually initialize inspector...');
+                            try {
+                              const scene = document.querySelector('a-scene');
+                              if (scene) {
+                                window.AFRAME.inspectorPlugin.init(scene);
+                                console.log('Inspector manually initialized');
+                              }
+                            } catch (e) {
+                              console.log('Failed to manually initialize inspector:', e);
+                            }
+                          }
+                        }
+                      }, 1000);
+                    };
+                    script.onerror = function() {
+                      console.log(`Failed to load inspector script ${index + 1} from ${url}`);
+                      loadedCount++;
+                    };
+                    document.head.appendChild(script);
+                  });
+                  
+                  // If all scripts fail, try keyboard shortcut
+                  setTimeout(() => {
+                    if (loadedCount === inspectorUrls.length && !inspectorLoaded) {
+                      console.log('All inspector scripts failed, trying keyboard shortcut...');
+                      try {
+                        // Try a simpler keyboard event
+                        const keyEvent = new KeyboardEvent('keydown', {
+                          key: 'i',
+                          code: 'KeyI',
+                          ctrlKey: true,
+                          altKey: true,
+                          bubbles: true,
+                          cancelable: true,
+                          target: document.body
+                        });
+                        document.body.dispatchEvent(keyEvent);
+                      } catch (e) {
+                        console.log('Keyboard shortcut failed:', e);
+                        // Final fallback - try to open inspector in a new window
+                        const scene = document.querySelector('a-scene');
+                        if (scene) {
+                          console.log('Trying to open inspector in new window...');
+                          const inspectorUrl = 'https://aframe.io/aframe-inspector/';
+                          window.open(inspectorUrl, '_blank');
+                        }
+                      }
+                    }
+                  }, 3000);
+                  
+                  return;
+                }
+                
+                // Method 3: Check scene inspector
+                const scene = document.querySelector('a-scene');
+                console.log('Scene found:', scene);
+                if (scene && scene.inspector) {
+                  console.log('Opening inspector via scene.inspector');
+                  scene.inspector.open();
+                  return;
+                }
+                
+                // Method 4: Try keyboard shortcut simulation
+                console.log('Attempting keyboard shortcut simulation...');
+                try {
+                  // Try multiple keyboard event approaches
+                  const events = [
+                    new KeyboardEvent('keydown', {
+                      key: 'i',
+                      code: 'KeyI',
+                      ctrlKey: true,
+                      altKey: true,
+                      bubbles: true,
+                      cancelable: true
+                    }),
+                    new KeyboardEvent('keydown', {
+                      key: 'I',
+                      code: 'KeyI',
+                      ctrlKey: true,
+                      altKey: true,
+                      bubbles: true,
+                      cancelable: true
+                    })
+                  ];
+                  
+                  events.forEach((event, index) => {
+                    setTimeout(() => {
+                      console.log(`Trying keyboard event ${index + 1}`);
+                      document.dispatchEvent(event);
+                    }, index * 100);
+                  });
+                } catch (e) {
+                  console.log('Keyboard shortcut simulation failed:', e);
+                }
+                
+                // Method 5: Try to trigger the inspector via the scene's systems
+                if (scene && scene.systems && scene.systems.inspector) {
+                  console.log('Opening inspector via scene.systems.inspector');
+                  scene.systems.inspector.open();
+                  return;
+                }
+                
+                console.log('All inspector opening methods attempted');
+                alert('A-Frame Inspector could not be opened. Please try Ctrl+Alt+I (or Cmd+Option+I on Mac) directly in the experience.');
+              } catch (error) {
+                console.error('Failed to open A-Frame Inspector:', error);
+                alert('Error opening A-Frame Inspector: ' + error.message);
+              }
+            });
+            
+            document.body.appendChild(inspectorButton);
+          }
+          
+          // Show the button
+          const btn = document.getElementById('aframe-inspector-btn');
+          if (btn) {
+            btn.style.display = 'flex';
+          }
+        }
+      }
+      
+      // Add inspector button when page loads
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(addAframeInspectorButton, 1000); // Give A-Frame time to load
+      });
+      
+      // Also check when entering fullscreen
+      document.addEventListener('fullscreenchange', addAframeInspectorButton);
+      document.addEventListener('webkitfullscreenchange', addAframeInspectorButton);
+      document.addEventListener('msfullscreenchange', addAframeInspectorButton);
+    </script>
+    
+  </head>
+
+  <body>
+    <a-scene 
+      loading-manager
+      cursor="rayOrigin: mouse" 
+      sound-effects
+      day-night-cycle="cycleLength: 180">
+      
+      <!-- UI Overlays -->
+      <div class="museum-info">Welcome to the Vegetable Museum</div>
+      
+      <!-- Camera Rig with Enhanced Controls -->
+      <a-entity
+        id="cameraRig"
+        enhanced-mobile-controls="speed: 3"
+        movement-controls="fly: false; constrainToNavMesh: false;"
+        navigator="cameraRig: #cameraRig; cameraHead: #head; collisionEntities: .collision; ignoreEntities: .clickable"
+        position="0 0 0"
+        rotation="0 0 0"
+      >
+        <a-entity
+          id="head"
+          camera="active: true"
+          look-controls="pointerLockEnabled: true; reverseMouseDrag: false"
+          wasd-controls="fly: false"
+          position="0 1.6 0"
+        >
+          <a-cursor
+            fuse="true"
+            fuse-timeout="1500"
+            animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+            animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+            animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
+            raycaster="objects: .clickable"
+          ></a-cursor>
+        </a-entity>
+
+        <!-- Controllers with improved teleportation -->
+        <a-entity
+          id="left-controller"
+          laser-controls="hand: left"
+          raycaster="objects: .clickable, .ground"
+          blink-controls="cameraRig: #cameraRig; teleportOrigin: #cameraRig; collisionEntities: .ground; landingMaxAngle: 45; buttonTopoOffset: 0.1"
+          visible="true"
+        ></a-entity>
+        
+        <a-entity
+          id="right-controller"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable, .ground"
+          blink-controls="cameraRig: #cameraRig; teleportOrigin: #cameraRig; collisionEntities: .ground; landingMaxAngle: 45; buttonTopoOffset: 0.1"
+          visible="true"
+        ></a-entity>
+      </a-entity>
+
+      <!-- Assets with improved organization -->
+      <a-assets timeout="10000">
+        <!-- Images -->
+        
+        <img id="image1" src="https://ipeyhukhzevbldkqueba.supabase.co/storage/v1/object/public/files/admin/images/slide1-2-gw4yf3f66ye-1751025121547.png" />
+        
+        <img id="image2" src="https://ipeyhukhzevbldkqueba.supabase.co/storage/v1/object/public/files/admin/images/carrots-r4wx3xyukx-1751025120575.png" />
+
+        <img id="image3" src="https://ipeyhukhzevbldkqueba.supabase.co/storage/v1/object/public/files/admin/images/onions-2-ulzsfsmw27p-1751025119971.png" />
+        
+        <img id="arrowLeft" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/admin/images/left-arrow_1751303784776.png" />
+
+        <img id="arrowRight" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/admin/images/right-arrow_1751304087528.png" />
+
+        <img id="sky" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/admin/images/day_1751304249469.jpg" />
+
+        <img id="ground" src="https://ipeyhukhzevbldkqueba.supabase.co/storage/v1/object/public/files/admin/images/grass-2-7i33zdvvm7k-1751025116089.jpg" />
+
+        <img id="hotspot" src="https://ipeyhukhzevbldkqueba.supabase.co/storage/v1/object/public/files/admin/images/hotspot-1i1znw388ro-1751025115812.png" />
+        
+        <!-- 3D Models -->
+        
+        <a-asset-item id="onion" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/admin/3d/onion_1751304300278.glb"></a-asset-item>
+        
+        <a-asset-item id="mushrooms" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/admin/3d/mushroom-model_1751304299036.glb"></a-asset-item>
+        
+        <a-asset-item id="carrot" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/admin/3d/carrot_1751304305203.glb"></a-asset-item>
+        
+        
+        <!-- Audio -->
+        <audio id="audio1" src="https://cdn.glitch.global/a39b243d-0aab-4e21-bb36-77d8260788f9/mushroomsaudio.mp3?v=1746472515312" preload="auto"></audio>
+        <audio id="audiocarrots" src="https://cdn.glitch.global/a39b243d-0aab-4e21-bb36-77d8260788f9/audiocarrots.mp3?v=1746474555747" preload="auto"></audio>
+        <audio id="audioonion" src="https://cdn.glitch.global/a39b243d-0aab-4e21-bb36-77d8260788f9/audioonion.mp3?v=1746477862843" preload="auto"></audio>
+      </a-assets>
+
+      <!-- Environment -->
+      <a-entity light="type: ambient; color: #BBB; intensity: 1"></a-entity>
+      <a-entity light="type: directional; color: #FFF; intensity: 1; castShadow: true" position="-1 1 0"></a-entity>
+      
+      <a-plane
+        width="100"
+        height="100"
+        rotation="-90 0 0"
+        material="src: #ground; repeat:10 10; transparent: false; opacity: 1; normalTextureRepeat: 10 10; roughness: 0.8"
+        shadow="cast: false; receive: true"
+        class="ground clickable"
+      ></a-plane>
+
+      <a-sky src="#sky"></a-sky>
+      
+      <!-- Interactive Info Display -->
+      <a-entity id="info-display" position="0 0 -5">
+        <!-- Main Display Panel with billboard behavior -->
+        <a-entity 
+          id="image-panel-container"
+          face-camera
+          position="0 2.6 -4"
+        >
+          <a-plane
+            id="image-panel"
+            position="0 0 0"
+            width="4"
+            height="2.5"
+            material="src: #image1; side: double; shader: flat"
+            visible="true"
+            class="clickable"
+          ></a-plane>
+          
+          <!-- Navigation Arrows with Improved Styling -->
+          <a-entity 
+            id="nav-left" 
+            position="-2.3 0 0" 
+            class="clickable"
+          >
+            <a-image
+              src="#arrowLeft"
+              position="0 0 0.01"
+              scale="0.5 0.5 0.5"
+              class="clickable"
+              animation__hover="property: scale; to: 0.6 0.6 0.6; startEvents: mouseenter; endEvents: mouseleave; dir: alternate; dur: 300"
+            ></a-image>
+            <a-plane
+              width="0.6"
+              height="0.6"
+              color="#333333"
+              opacity="0.7"
+              material="shader: flat"
+            ></a-plane>
+          </a-entity>
+          
+          <a-entity 
+            id="nav-right" 
+            position="2.3 0 0" 
+            class="clickable"
+          >
+            <a-image
+              src="#arrowRight"
+              position="0 0 0.01"
+              scale="0.5 0.5 0.5"
+              class="clickable"
+              animation__hover="property: scale; to: 0.6 0.6 0.6; startEvents: mouseenter; endEvents: mouseleave; dir: alternate; dur: 300"
+            ></a-image>
+            <a-plane
+              width="0.6"
+              height="0.6"
+              color="#333333"
+              opacity="0.7"
+              material="shader: flat"
+            ></a-plane>
+          </a-entity>
+          
+          <!-- Information Display Text -->
+          <a-entity
+            id="info-text"
+            position="0 -1.6 0"
+            text="value: Welcome to the Agriquest Vegetable Museum! Explore the world of vegetables in this interactive 3D exhibit. Click on the hotspots to learn more about each vegetable.; width: 3; color: #FFFFFF; align: center"
+            geometry="primitive: plane; width: 4; height: 0.8"
+            material="color: #333333; opacity: 0.8; shader: flat"
+          ></a-entity>
+        </a-entity>
+      </a-entity>
+
+      <!-- Create invisible floor collider to prevent falling through -->
+      <a-box
+        class="collision"
+        position="0 -0.1 0"
+        width="100"
+        height="0.2"
+        depth="100"
+        visible="false"
+        static-body
+      ></a-box>
+      
+      <!-- Create invisible ceiling to prevent flying -->
+      <a-box
+        class="collision"
+        position="0 4 0"
+        width="100"
+        height="0.2"
+        depth="100"
+        visible="false"
+        static-body
+      ></a-box>
+
+      <!-- Mushroom Exhibit -->
+      <a-entity id="mushroom-exhibit" position="-15 0 -17">
+        <!-- Mushroom Model with simplified animations -->
+        <a-entity
+          id="mushroom-model"
+          gltf-model="#mushrooms"
+          position="0 1.5 0"
+          scale="2 2 2"
+          rotation="0 -116 0"
+          shadow="cast: true; receive: true"
+        ></a-entity>
+        
+        <!-- Exhibit Environment -->
+        <a-entity
+          geometry="primitive: cylinder; radius: 5; height: 0.1"
+          position="0 0 0"
+          material="color: #2D5F34; roughness: 0.9"
+        ></a-entity>
+        
+        <!-- Information Hotspot -->
+        <a-entity
+          id="mushroom-hotspot"
+          face-camera="preserveY: true"
+          class="clickable"
+          spot="label: Learn About Mushrooms; audio: #audio1; labelBackground: #333333; info: Mushrooms are fungi that grow in dark, moist environments. They are rich in vitamin D and various minerals. Some mushrooms are edible while others are poisonous.; vegetableModel: #mushroom-model; revealAnimation: true"
+          position="3 1.5 0"
+        ></a-entity>
+      </a-entity>
+
+      <!-- Carrot Exhibit -->
+      <a-entity id="carrot-exhibit" position="-5 0 15">
+        <!-- Carrot Model with simplified animations -->
+        <a-entity
+          id="carrot-model"
+          gltf-model="#carrot"
+          position="0 2 0"
+          scale="0.2 0.2 0.2"
+          rotation="63 96 110"
+          shadow="cast: true; receive: true"
+        ></a-entity>
+        
+        <!-- Exhibit Environment -->
+        <a-entity
+          geometry="primitive: cylinder; radius: 5; height: 0.1"
+          position="0 0 0"
+          material="color: #E6B570; roughness: 0.9"
+        ></a-entity>
+        
+        <!-- Information Hotspot -->
+        <a-entity
+          id="carrot-hotspot"
+          face-camera="preserveY: true"
+          class="clickable"
+          spot="label: Learn about Carrots; audio: #audiocarrots; info: Carrots are root vegetables rich in beta-carotene, which converts to vitamin A in the body. They help improve vision, boost immunity, and promote healthy skin.; vegetableModel: #carrot-model; revealAnimation: true"
+          position="3 1.5 0"
+        ></a-entity>
+      </a-entity>
+
+      <!-- Onion Exhibit -->
+      <a-entity id="onion-exhibit" position="13.6 0 2">
+        <!-- Onion Model with rotation removed -->
+        <a-entity
+          id="onion-model"
+          gltf-model="#onion"
+          position="44 3.6 25"
+          scale="3 3 3"
+          rotation="0 53 0"
+          shadow="cast: true; receive: true"
+        ></a-entity>
+        
+        <!-- Exhibit Environment -->
+        <a-entity
+          geometry="primitive: cylinder; radius: 5; height: 0.1"
+          position="0 0 0"
+          material="color: #B39DDB; roughness: 0.9"
+        ></a-entity>
+        
+        <!-- Information Hotspot -->
+        <a-entity
+          id="onion-hotspot"
+          face-camera="preserveY: true"
+          class="clickable"
+          spot="label: Learn about Onions; audio: #audioonion; info: Onions are bulbous vegetables with layers of flesh covered by a papery skin. They contain compounds that may reduce inflammation and lower cholesterol levels.; vegetableModel: #onion-model; revealAnimation: true"
+          position="3 1.5 0"
+        ></a-entity>
+      </a-entity>
+
+      <script>
+        // Document ready handler
+        document.addEventListener("DOMContentLoaded", () => {
+          // Image slideshow functionality
+          const images = ["#image1", "#image2", "#image3"];
+          let currentIndex = 0;
+          const imagePanel = document.querySelector("#image-panel");
+          
+          function updatePanelImage() {
+            imagePanel.setAttribute("material", "src", images[currentIndex]);
+            
+            // Update info text based on current image
+            const infoText = document.querySelector("#info-text");
+            switch(currentIndex) {
+              case 0:
+                infoText.setAttribute("text", "value", "Welcome to the Agriquest Vegetable Museum! Explore the world of vegetables in this interactive 3D exhibit. Click on the hotspots to learn more about each vegetable.");
+                break;
+              case 1:
+                infoText.setAttribute("text", "value", "Carrots are rich in beta-carotene which is good for eye health. They can be enjoyed raw or cooked in a variety of dishes.");
+                break;
+              case 2:
+                infoText.setAttribute("text", "value", "Onions add flavor to countless dishes worldwide. They contain compounds that may help reduce inflammation and promote heart health.");
+                break;
+            }
+          }
+          
+          document.querySelector("#nav-left").addEventListener("click", () => {
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            updatePanelImage();
+            // Play click sound if available
+            const soundEffects = document.querySelector('[sound-effects]');
+            if (soundEffects && soundEffects.components['sound-effects'].sounds.click) {
+              soundEffects.components['sound-effects'].sounds.click.play();
+            }
+          });
+          
+          document.querySelector("#nav-right").addEventListener("click", () => {
+            currentIndex = (currentIndex + 1) % images.length;
+            updatePanelImage();
+            // Play click sound if available
+            const soundEffects = document.querySelector('[sound-effects]');
+            if (soundEffects && soundEffects.components['sound-effects'].sounds.click) {
+              soundEffects.components['sound-effects'].sounds.click.play();
+            }
+          });
+          
+          // Update hotspots to use the preserveY option
+          document.querySelectorAll('[face-camera]').forEach(el => {
+            // Check if this is a hotspot element (not the image panel)
+            if (el.hasAttribute('spot')) {
+              el.setAttribute('face-camera', 'preserveY', true);
+            }
+          });
+          
+          // VR Mode toggle
+          const vrToggle = document.createElement('div');
+          vrToggle.className = 'vr-toggle';
+          vrToggle.textContent = 'Enter VR';
+          document.body.appendChild(vrToggle);
+          
+          vrToggle.addEventListener('click', () => {
+            const scene = document.querySelector('a-scene');
+            if (scene.is('vr-mode')) {
+              scene.exitVR();
+              vrToggle.textContent = 'Enter VR';
+            } else {
+              scene.enterVR();
+              vrToggle.textContent = 'Exit VR';
+            }
+          });
+          
+          // Detect device capabilities
+          setTimeout(() => {
+            if (AFRAME.utils.device.isMobile()) {
+              document.querySelector('.controls-guide').innerHTML = 'Touch screen to move:<br>• Top half - Move forward<br>• Bottom half - Move backward<br>• Left side - Turn left<br>• Right side - Turn right';
+            } else {
+              document.querySelector('.controls-guide').innerHTML = 'Desktop Controls:<br>• WASD/Arrow Keys - Move<br>• Mouse - Look around<br>• Click - Interact with hotspots';
+            }
+          }, 1000);
+        });
+      </script>
+    </a-scene>
+    <script src="/embeds/immersivemuseum/script.js"></script>
+  </body>
+</html>

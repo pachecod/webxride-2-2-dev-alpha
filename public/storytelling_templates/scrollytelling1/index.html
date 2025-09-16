@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immersive Storytelling Template</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">Story Template</div>
+            <div class="nav-links">
+                <a href="#chapter1">Chapter 1</a>
+                <a href="#chapter2">Chapter 2</a>
+                <a href="#chapter3">Chapter 3</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section with Parallax -->
+    <section class="hero parallax-section" id="hero">
+        <div class="parallax-bg" data-speed="0.5"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Immersive WebXR Story</h1>
+            <p class="hero-subtitle">A journey through interactive 3D experiences</p>
+            <div class="scroll-indicator">
+                <div class="scroll-arrow"></div>
+                <span>Scroll to begin</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chapter 1 -->
+    <section class="chapter" id="chapter1">
+        <div class="chapter-content">
+            <h2 class="chapter-title">Chapter 1: The 360° Sound Experience</h2>
+            <div class="story-text">
+                <p>Welcome to our immersive journey! In this first chapter, you'll experience a 360-degree sound tour that combines panoramic photography with spatial audio. This interactive experience allows you to explore different locations while listening to ambient sounds that bring each scene to life.</p>
+            </div>
+            
+            <!-- Info Card -->
+            <div class="info-card" data-scroll="fade-in">
+                <div class="card-icon">🎵</div>
+                <h3>Interactive Audio Tour</h3>
+                <p>Click on hotspots to navigate between different panoramic views. Each location features unique ambient sounds that enhance the immersive experience.</p>
+            </div>
+
+            <!-- WebXR Embed: 360soundslides -->
+            <div class="webxr-embed-section" data-scroll="fade-in">
+                <div class="embed-container">
+                    <iframe 
+                        src="/embeds/360soundslides/index.html" 
+                        width="100%" 
+                        height="600px" 
+                        frameborder="0"
+                        allow="vr; microphone; camera"
+                        title="360° Sound Experience">
+                    </iframe>
+                </div>
+                <div class="embed-overlay">
+                    <h3>360° Sound Experience</h3>
+                    <p>Explore this interactive panorama with spatial audio. Use your mouse to look around, or click hotspots to navigate between scenes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chapter 2 -->
+    <section class="chapter" id="chapter2">
+        <div class="chapter-content">
+            <h2 class="chapter-title">Chapter 2: The Virtual Museum</h2>
+            
+            <!-- WebXR Embed: Immersive Museum -->
+            <div class="webxr-embed-section" data-scroll="fade-in">
+                <div class="embed-container">
+                    <iframe 
+                        src="/embeds/immersivemuseum/index.html" 
+                        width="100%" 
+                        height="600px" 
+                        frameborder="0"
+                        allow="vr; microphone; camera"
+                        title="Immersive Vegetable Museum">
+                    </iframe>
+                </div>
+                <div class="embed-overlay">
+                    <h3>Interactive Vegetable Museum</h3>
+                    <p>Step into a virtual museum where you can explore 3D models of vegetables. Navigate through the space and interact with exhibits to learn more about each vegetable.</p>
+                </div>
+            </div>
+
+            <div class="story-text">
+                <p>In this chapter, we explore the fascinating world of vegetables through an interactive 3D museum experience. Navigate through the virtual space, examine detailed 3D models, and learn about the history and properties of different vegetables.</p>
+            </div>
+
+            <!-- Multiple Info Cards -->
+            <div class="info-cards-grid">
+                <div class="info-card" data-scroll="slide-up">
+                    <div class="card-icon">🥕</div>
+                    <h3>3D Models</h3>
+                    <p>Examine highly detailed 3D models of various vegetables, each with unique textures and animations.</p>
+                </div>
+                <div class="info-card" data-scroll="slide-up" data-delay="200">
+                    <div class="card-icon">🎧</div>
+                    <h3>Audio Narration</h3>
+                    <p>Listen to informative audio descriptions that provide context and educational content for each exhibit.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chapter 3 -->
+    <section class="chapter" id="chapter3">
+        <div class="chapter-content">
+            <h2 class="chapter-title">Chapter 3: The Future of Storytelling</h2>
+            
+            <!-- Full-width Parallax -->
+            <div class="full-parallax" data-speed="0.4">
+                <div class="parallax-bg-final"></div>
+                <div class="parallax-content">
+                    <h3>The Future is Here</h3>
+                    <p>WebXR technology is revolutionizing how we tell stories and share experiences.</p>
+                </div>
+            </div>
+
+            <div class="story-text">
+                <p>As we conclude our journey, we've experienced the power of WebXR storytelling. These immersive experiences demonstrate how technology can transport us to new worlds, create deeper connections with content, and make learning more engaging than ever before.</p>
+            </div>
+
+            <!-- Parallax Image Section -->
+            <div class="parallax-image-section">
+                <div class="parallax-image" data-speed="0.3">
+                    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop" alt="Future technology">
+                </div>
+                <div class="image-overlay">
+                    <h3>Immersive Technology</h3>
+                    <p>The future of storytelling lies in creating experiences that engage all our senses and transport us to new realities.</p>
+                </div>
+            </div>
+
+            <!-- Additional Parallax Image Section -->
+            <div class="parallax-image-section">
+                <div class="parallax-image" data-speed="0.4">
+                    <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop" alt="Virtual reality">
+                </div>
+                <div class="image-overlay">
+                    <h3>Virtual Reality</h3>
+                    <p>WebXR makes virtual reality accessible to everyone through standard web browsers.</p>
+                </div>
+            </div>
+
+            <!-- Final Info Card -->
+            <div class="info-card final-card" data-scroll="fade-in">
+                <div class="card-icon">🚀</div>
+                <h3>The Journey Continues</h3>
+                <p>This is just the beginning of immersive storytelling. As WebXR technology evolves, we'll see even more creative and engaging ways to tell stories and share experiences.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 WebXR Story Template. Created with ❤️ for immersive storytelling.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html> 

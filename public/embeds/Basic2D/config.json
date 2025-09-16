@@ -1,0 +1,23 @@
+{
+  "name": "A Test Template",
+  "created": "2025-07-31T12:02:18.080Z",
+  "hotspots": [
+    {
+      "id": 1,
+      "type": "text",
+      "position": "-7.43 2.32 0.75",
+      "label": "A Lamp post",
+      "text": "This is a lamp post.",
+      "audio": null
+    },
+    {
+      "id": 2,
+      "type": "text-audio",
+      "position": "-3.16 5.00 -5.89",
+      "label": "This is a tree",
+      "text": "It's a tree. It's a tree. It's a tree.",
+      "audio": {}
+    }
+  ],
+  "version": "1.0"
+}

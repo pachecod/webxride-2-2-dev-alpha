@@ -1,0 +1,39 @@
+/* Basic 2D Web Page Styles */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #ffffff;
+  color: #333333;
+  padding: 20px;
+}
+
+/* Basic styling for 2D web pages */
+h1 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+h2 {
+  color: #34495e;
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+p {
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+ul {
+  margin-bottom: 20px;
+}
+
+li {
+  margin-bottom: 5px;
+}
+
+img {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin: 15px 0;
+}

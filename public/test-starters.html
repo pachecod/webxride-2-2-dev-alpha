@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Starters Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .embed { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+        .found { background-color: #d4edda; }
+        .not-found { background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>Test Starters Data Loading</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testStartersData() {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                console.log('Testing starters data loading...');
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/starters-data.json?t=${timestamp}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Loaded data:', data);
+                
+                let html = '<h2>Loaded Data:</h2>';
+                html += `<p><strong>Generated:</strong> ${data.generatedAt}</p>`;
+                html += `<p><strong>Embeds count:</strong> ${data.embeds.length}</p>`;
+                html += `<p><strong>Storytelling count:</strong> ${data.storytelling.length}</p>`;
+                
+                html += '<h3>Embeds:</h3>';
+                data.embeds.forEach(embed => {
+                    const isTest360 = embed.id === 'test360';
+                    const className = isTest360 ? 'found' : 'embed';
+                    html += `
+                        <div class="${className}">
+                            <strong>ID:</strong> ${embed.id}<br>
+                            <strong>Title:</strong> ${embed.title}<br>
+                            <strong>Path:</strong> ${embed.path}<br>
+                            <strong>Type:</strong> ${embed.type}
+                        </div>
+                    `;
+                });
+                
+                const test360Found = data.embeds.some(embed => embed.id === 'test360');
+                html += `<h3>Test360 Status:</h3>`;
+                html += `<div class="${test360Found ? 'found' : 'not-found'}">`;
+                html += test360Found ? '✅ Test360 FOUND!' : '❌ Test360 NOT FOUND!';
+                html += '</div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `<div class="not-found">Error: ${error.message}</div>`;
+            }
+        }
+        
+        testStartersData();
+    </script>
+</body>
+</html> 

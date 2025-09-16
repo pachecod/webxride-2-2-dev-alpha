@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic 3D Scene Example</title>
+  
+  <!-- Load A-Frame -->
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+</head>
+<body>
+  <a-scene>
+    <!-- Simple 3D scene with basic shapes -->
+    
+    <!-- Ground plane -->
+    <a-plane 
+      position="0 0 -4" 
+      rotation="-90 0 0" 
+      width="10" 
+      height="10" 
+      color="#7BC8A4">
+    </a-plane>
+    
+    <!-- Red cube -->
+    <a-box 
+      position="-1 0.5 -3" 
+      rotation="0 45 0" 
+      width="1" 
+      height="1" 
+      depth="1" 
+      color="#FF0000">
+    </a-box>
+    
+    <!-- Blue sphere -->
+    <a-sphere 
+      position="1 0.5 -3" 
+      radius="0.5" 
+      color="#0066FF">
+    </a-sphere>
+    
+    <!-- Green cylinder -->
+    <a-cylinder 
+      position="0 1 -3" 
+      radius="0.5" 
+      height="2" 
+      color="#00FF66">
+    </a-cylinder>
+    
+    <!-- Lighting -->
+    <a-light type="ambient" color="#404040"></a-light>
+    <a-light type="directional" position="0 1 0" color="#ffffff"></a-light>
+    
+    <!-- Camera -->
+    <a-entity position="0 1.6 4">
+      <a-camera></a-camera>
+    </a-entity>
+    
+    <!-- Sky -->
+    <a-sky color="#ECECEC"></a-sky>
+  </a-scene>
+</body>
+</html> 

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>A Test Template - VR Hotspot Experience</title>
+    <meta name="description" content="Interactive VR Hotspot Experience" />
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
+    <!-- Note: script.js and style.css will be injected by WebXRide preview system -->
+  </head>
+  
+  <body>
+    <div id="project-info">
+      <h1>A Test Template</h1>
+      <p>Interactive VR Experience • Click on hotspots to explore</p>
+      <div id="debug-info" style="font-size: 10px; color: #888; margin-top: 10px;">
+        <div>Status: <span id="status">Loading...</span></div>
+        <div>Hotspots: <span id="hotspot-count">0</span></div>
+        <div>Files: <span id="file-info">Checking...</span></div>
+      </div>
+    </div>
+
+    <a-scene background="color: #ECECEC" id="main-scene">
+      <a-entity
+        laser-controls="hand: right"
+        raycaster="objects: .clickable, .audio-control"
+      ></a-entity>
+      <a-entity
+        laser-controls="hand: left"
+        raycaster="objects: .clickable, .audio-control"
+      ></a-entity>
+
+      <a-assets>
+        <img id="main-panorama" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/Dan%20Pacheco/images/1_1752094396083.jpg" />
+        <img id="hotspot" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/Dan%20Pacheco/images/hotspot-yellow_1752094482422.png" />
+        
+        <audio id="default-audio" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/Dan%20Pacheco/audio/1_1752094670020.mp3"></audio>
+        <img id="close" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/Dan%20Pacheco/images/close_1753982869988_preview.jpg" />
+        <img id="play" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/Dan%20Pacheco/images/play_1752094588224.png" />
+        <img id="pause" src="https://hkfsgnludtapbbtsacwd.supabase.co/storage/v1/object/public/files/Dan%20Pacheco/images/pause_1752094598136.png" />
+      </a-assets>
+
+      <a-entity id="hotspot-container"></a-entity>
+      <a-sky id="skybox" src="#main-panorama"></a-sky>
+
+      <a-entity id="cam" camera position="0 1.6 0" look-controls>
+        <a-entity
+          id="cursor"
+          cursor="rayOrigin: mouse; fuse: false"
+          raycaster="objects: .clickable, .audio-control"
+          position="0 0 -1.8"
+          material="shader: flat; color: #ff0000; opacity: 0.8"
+          geometry="primitive: ring; radiusInner: 0.005; radiusOuter: 0.01"
+        ></a-entity>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      // Debug script to monitor the scene
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('HTML loaded, monitoring scene...');
+        
+        const updateDebugInfo = () => {
+          const statusEl = document.getElementById('status');
+          const countEl = document.getElementById('hotspot-count');
+          const fileInfoEl = document.getElementById('file-info');
+          
+          if (statusEl && countEl && fileInfoEl) {
+            const scene = document.querySelector('a-scene');
+            const hotspots = document.querySelectorAll('#hotspot-container a-image');
+            const scripts = document.querySelectorAll('script');
+            const styles = document.querySelectorAll('link[rel="stylesheet"]');
+            
+            statusEl.textContent = scene ? 'Scene Ready' : 'Scene Loading...';
+            countEl.textContent = hotspots.length;
+            fileInfoEl.textContent = `${scripts.length} scripts, ${styles.length} styles`;
+          }
+        };
+        
+        // Update debug info every second
+        setInterval(updateDebugInfo, 1000);
+        updateDebugInfo();
+        
+        // Check if our custom script is loaded
+        setTimeout(() => {
+          console.log('Checking for custom script...');
+          const scripts = Array.from(document.querySelectorAll('script'));
+          const hasCustomScript = scripts.some(script => 
+            script.textContent && script.textContent.includes('HotspotProject')
+          );
+          console.log('Custom script found:', hasCustomScript);
+        }, 2000);
+      });
+    </script>
+  </body>
+</html>

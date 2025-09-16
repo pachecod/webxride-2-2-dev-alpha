@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Hotspot Save</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .info { background: #2196F3; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Hotspot Save Integration</h1>
+    
+    <div class="test-section">
+        <h3>Step 1: Launch Hotspot Editor</h3>
+        <button class="btn" onclick="launchEditor()">Launch Enhanced Editor</button>
+        <div id="launch-status" class="status info">Click to launch editor</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Step 2: Test Message Reception</h3>
+        <button class="btn" onclick="testMessage()">Send Test Message</button>
+        <div id="message-status" class="status info">Click to test message reception</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Message Log</h3>
+        <div id="message-log" style="background: #333; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+            No messages yet...
+        </div>
+    </div>
+
+    <script>
+        let bridge = null;
+        
+        // Load the bridge
+        const script = document.createElement('script');
+        script.src = './webxride-integrations/hotspot-template-bridge.js';
+        script.onload = () => {
+            if (window.HotspotTemplateBridge) {
+                bridge = new window.HotspotTemplateBridge();
+                bridge.initialize({
+                    currentUser: 'test-user',
+                    isAdmin: true
+                });
+                document.getElementById('launch-status').textContent = 'Bridge loaded successfully';
+                document.getElementById('launch-status').className = 'status success';
+            }
+        };
+        document.head.appendChild(script);
+        
+        function launchEditor() {
+            if (bridge) {
+                bridge.launchEditor('webxride-enhanced');
+                document.getElementById('launch-status').textContent = 'Editor launched';
+                document.getElementById('launch-status').className = 'status success';
+            } else {
+                document.getElementById('launch-status').textContent = 'Bridge not available';
+                document.getElementById('launch-status').className = 'status error';
+            }
+        }
+        
+        function testMessage() {
+            const testData = {
+                template: {
+                    name: 'Test 360° Tour',
+                    framework: 'aframe',
+                    files: [
+                        {
+                            name: 'index.html',
+                            content: '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Test 360° Tour</h1></body></html>',
+                            type: 'html'
+                        },
+                        {
+                            name: 'script.js',
+                            content: 'console.log("Test script");',
+                            type: 'javascript'
+                        },
+                        {
+                            name: 'style.css',
+                            content: 'body { background: #000; color: white; }',
+                            type: 'css'
+                        }
+                    ]
+                },
+                rawData: {
+                    name: 'Test 360° Tour',
+                    html: '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Test 360° Tour</h1></body></html>',
+                    js: 'console.log("Test script");',
+                    css: 'body { background: #000; color: white; }'
+                }
+            };
+            
+            window.postMessage({
+                type: 'HOTSPOT_TEMPLATE_SAVED',
+                data: testData
+            }, '*');
+            
+            document.getElementById('message-status').textContent = 'Test message sent';
+            document.getElementById('message-status').className = 'status success';
+        }
+        
+        // Listen for messages
+        window.addEventListener('message', (event) => {
+            const log = document.getElementById('message-log');
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `<div>[${timestamp}] ${event.data.type}: ${JSON.stringify(event.data.data, null, 2)}</div>`;
+            log.scrollTop = log.scrollHeight;
+        });
+    </script>
+</body>
+</html> 

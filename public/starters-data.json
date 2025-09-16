@@ -1,0 +1,55 @@
+{
+  "embeds": [
+    {
+      "id": "360agriquest",
+      "title": "360 Agriquest",
+      "path": "/embeds/360agriquest/index.html",
+      "type": "embeds"
+    },
+    {
+      "id": "360soundslides",
+      "title": "WebVR A-Frame Tour",
+      "path": "/embeds/360soundslides/index.html",
+      "type": "embeds"
+    },
+    {
+      "id": "Basic2D",
+      "title": "My Web Page",
+      "path": "/embeds/Basic2D/index.html",
+      "type": "embeds"
+    },
+    {
+      "id": "GettingStarted",
+      "title": "My Project",
+      "path": "/embeds/GettingStarted/index.html",
+      "type": "embeds"
+    },
+    {
+      "id": "farmscene",
+      "title": "Farm Scans",
+      "path": "/embeds/farmscene/index.html",
+      "type": "embeds"
+    },
+    {
+      "id": "immersivemuseum",
+      "title": "Agriquest Vegetable Museum",
+      "path": "/embeds/immersivemuseum/index.html",
+      "type": "embeds"
+    },
+    {
+      "id": "test360",
+      "title": "A Test Template - VR Hotspot Experience",
+      "path": "/embeds/test360/index.html",
+      "type": "embeds"
+    }
+  ],
+  "storytelling": [
+    {
+      "id": "scrollytelling1",
+      "title": "Immersive Storytelling Template",
+      "path": "/storytelling_templates/scrollytelling1/index.html",
+      "type": "storytelling_templates"
+    }
+  ],
+  "generatedAt": "2025-07-31T20:30:25.804Z"
+}

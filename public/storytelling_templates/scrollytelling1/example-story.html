@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Story Title Here - News Organization</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">News Organization</div>
+            <div class="nav-links">
+                <a href="#chapter1">Chapter 1</a>
+                <a href="#chapter2">Chapter 2</a>
+                <a href="#chapter3">Chapter 3</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section with Parallax -->
+    <section class="hero parallax-section" id="hero">
+        <div class="parallax-bg" data-speed="0.5"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Your Main Headline Here</h1>
+            <p class="hero-subtitle">Your subtitle or description goes here</p>
+            <div class="scroll-indicator">
+                <div class="scroll-arrow"></div>
+                <span>Scroll to read</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chapter 1 -->
+    <section class="chapter" id="chapter1">
+        <div class="chapter-content">
+            <h2 class="chapter-title">Chapter 1: Your Chapter Title</h2>
+            <div class="story-text">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+            </div>
+            
+            <!-- Info Card -->
+            <div class="info-card" data-scroll="fade-in">
+                <div class="card-icon">📊</div>
+                <h3>Key Information Card</h3>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+            </div>
+
+            <!-- Parallax Image Section -->
+            <div class="parallax-image-section">
+                <div class="parallax-image" data-speed="0.3">
+                    <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop" alt="Your image description">
+                </div>
+                <div class="image-overlay">
+                    <h3>Image Caption Title</h3>
+                    <p>Your image caption or description goes here.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chapter 2 -->
+    <section class="chapter" id="chapter2">
+        <div class="chapter-content">
+            <h2 class="chapter-title">Chapter 2: Your Second Chapter Title</h2>
+            
+            <!-- 360° VR Tour Section -->
+            <div class="vr-section" data-scroll="play-gif">
+                <div class="vr-container">
+                    <iframe src="embeds/360soundslides/index.html" 
+                            width="100%" 
+                            height="500px" 
+                            frameborder="0" 
+                            allowfullscreen
+                            title="360° VR Tour">
+                    </iframe>
+                </div>
+                <div class="vr-overlay">
+                    <h3>Interactive 360° Experience</h3>
+                    <p>Explore this immersive virtual tour with audio narration and interactive hotspots.</p>
+                    <button class="open-experience-btn" onclick="openExperienceFullscreen('embeds/360soundslides/index.html', '360° VR Tour')">
+                        Open Experience
+                    </button>
+                </div>
+            </div>
+
+            <div class="story-text">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+            </div>
+
+            <!-- Luma AI Gaussian Splat Section -->
+            <div class="luma-section" data-scroll="play-gif">
+                <div class="luma-container">
+                    <div class="luma-preview">
+                        <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=600&fit=crop" alt="3D Scene Preview" class="preview-image">
+                        <div class="preview-overlay">
+                            <div class="play-button">▶</div>
+                            <p>Click to explore the 3D Gaussian Splat</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="luma-overlay">
+                    <h3>The Hilton Lobby</h3>
+                    <p>Virtually visit the historic Chicago Hilton lobby.</p>
+                    <button class="open-experience-btn" onclick="openLumaExperience()">
+                        Open Experience
+                    </button>
+                </div>
+            </div>
+
+            <!-- Multiple Info Cards -->
+            <div class="info-cards-grid">
+                <div class="info-card" data-scroll="slide-up">
+                    <div class="card-icon">🌊</div>
+                    <h3>First Info Card Title</h3>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+                </div>
+                <div class="info-card" data-scroll="slide-up" data-delay="200">
+                    <div class="card-icon">🏠</div>
+                    <h3>Second Info Card Title</h3>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chapter 3 -->
+    <section class="chapter" id="chapter3">
+        <div class="chapter-content">
+            <h2 class="chapter-title">Chapter 3: Your Final Chapter Title</h2>
+            
+            <!-- Immersive 3D Experience Section -->
+            <div class="immersive-section" data-scroll="play-gif">
+                <div class="immersive-container">
+                    <iframe src="embeds/immersivestory/index.html" 
+                            width="100%" 
+                            height="600px" 
+                            frameborder="0" 
+                            allowfullscreen
+                            title="Immersive 3D Story Experience">
+                    </iframe>
+                </div>
+                <div class="immersive-overlay">
+                    <h3>Interactive 3D Experience</h3>
+                    <p>Explore this immersive 3D environment with interactive models, audio narration, and virtual navigation.</p>
+                    <button class="open-experience-btn" onclick="openExperienceFullscreen('embeds/immersivestory/index.html', 'Immersive 3D Experience')">
+                        Open Experience
+                    </button>
+                </div>
+            </div>
+
+            <div class="story-text">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+            </div>
+
+            <!-- Final Info Card -->
+            <div class="info-card final-card" data-scroll="fade-in">
+                <div class="card-icon">📰</div>
+                <h3>Final Call to Action</h3>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Your News Organization. This story was produced by your reporting team.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html> 

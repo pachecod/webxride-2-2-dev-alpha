@@ -1,0 +1,45 @@
+[build]
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--no-optional"
+
+# Production site (main branch) - hide development banner
+[context.production]
+  command = "npm ci && npm run build"
+  [context.production.environment]
+    VITE_NETLIFY_CONTEXT = "production"
+    VITE_IS_DEVELOP_BRANCH = "false"
+    VITE_BRANCH = "main"
+
+# Deploy previews (including develop branch) - show development banner
+[context.deploy-preview]
+  command = "npm ci && npm run build"
+  [context.deploy-preview.environment]
+    VITE_NETLIFY_CONTEXT = "deploy-preview"
+    VITE_IS_DEVELOP_BRANCH = "true"
+    VITE_BRANCH = "develop"
+
+# Branch deploys (including develop branch) - show development banner
+[context.branch-deploy]
+  command = "npm ci && npm run build"
+  [context.branch-deploy.environment]
+    VITE_NETLIFY_CONTEXT = "branch-deploy"
+    VITE_IS_DEVELOP_BRANCH = "true"
+    VITE_BRANCH = "develop"
+
+# Specific context for develop branch - show development banner
+[context."develop"]
+  command = "npm ci && npm run build"
+  [context."develop".environment]
+    VITE_NETLIFY_CONTEXT = "deploy-preview"
+    VITE_IS_DEVELOP_BRANCH = "true"
+    VITE_BRANCH = "develop"
+
+# Redirects for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200 

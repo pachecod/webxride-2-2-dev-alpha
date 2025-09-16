@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Bridge Test</title>
+</head>
+<body>
+    <h1>Simple Bridge Test</h1>
+    <div id="result">Loading...</div>
+    
+    <script>
+        console.log('Page starting...');
+        
+        // Load the bridge script
+        const script = document.createElement('script');
+        script.src = './webxride-integrations/hotspot-template-bridge.js';
+        
+        script.onload = function() {
+            console.log('Script loaded!');
+            document.getElementById('result').textContent = 'Script loaded successfully';
+            
+            setTimeout(() => {
+                console.log('Checking for bridge class...');
+                if (window.HotspotTemplateBridge) {
+                    console.log('Bridge class found!');
+                    document.getElementById('result').textContent = 'Bridge class found!';
+                } else {
+                    console.log('Bridge class not found');
+                    document.getElementById('result').textContent = 'Bridge class not found';
+                }
+            }, 100);
+        };
+        
+        script.onerror = function() {
+            console.log('Script failed to load');
+            document.getElementById('result').textContent = 'Script failed to load';
+        };
+        
+        document.head.appendChild(script);
+    </script>
+</body>
+</html> 

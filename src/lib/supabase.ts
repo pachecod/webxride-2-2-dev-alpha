@@ -198,7 +198,7 @@ export const getFiles = async (options?: { limit?: number; offset?: number; fold
     // Handle common-assets folder
     if (folderFilter === 'common-assets') {
       // List all category folders within common-assets
-      const categories = ['images', 'videos', 'audio', '3d', 'other'];
+      const categories = ['images', 'audio', '3d', 'other'];
       folders = categories.map(cat => `common-assets/${cat}`);
       console.log('Common assets mode - checking folders:', folders);
     } else if (userFilter && userFilter !== 'admin') {
@@ -300,7 +300,6 @@ export const getFiles = async (options?: { limit?: number; offset?: number; fold
 export const getFileType = (fileName: string): string => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'images';
-  if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return 'videos';
   if (['mp3', 'wav', 'ogg', 'flac'].includes(ext)) return 'audio';
   if (['glb', 'gltf', 'obj', 'fbx'].includes(ext)) return '3d';
   return 'other';
@@ -332,10 +331,6 @@ export const getContentType = (extension: string): string => {
     'gif': 'image/gif',
     'webp': 'image/webp',
     'svg': 'image/svg+xml',
-    'mp4': 'video/mp4',
-    'webm': 'video/webm',
-    'mov': 'video/quicktime',
-    'avi': 'video/x-msvideo',
     'mp3': 'audio/mpeg',
     'wav': 'audio/wav',
     'ogg': 'audio/ogg',
@@ -343,6 +338,30 @@ export const getContentType = (extension: string): string => {
   };
   
   return contentTypes[extension] || 'application/octet-stream';
+};
+
+// File size limits (in bytes)
+export const FILE_SIZE_LIMITS = {
+  images: 10 * 1024 * 1024,    // 10MB for images
+  audio: 50 * 1024 * 1024,     // 50MB for audio files
+  '3d': 100 * 1024 * 1024,     // 100MB for 3D models
+  other: 25 * 1024 * 1024      // 25MB for other files
+} as const;
+
+// Validate file size before upload
+export const validateFileSize = (file: File, fileType: string): { valid: boolean; error?: string } => {
+  const limit = FILE_SIZE_LIMITS[fileType as keyof typeof FILE_SIZE_LIMITS] || FILE_SIZE_LIMITS.other;
+  
+  if (file.size > limit) {
+    const maxSizeMB = Math.round(limit / (1024 * 1024));
+    const fileSizeMB = Math.round(file.size / (1024 * 1024));
+    return {
+      valid: false,
+      error: `File "${file.name}" is too large. Maximum size for ${fileType} files is ${maxSizeMB}MB, but this file is ${fileSizeMB}MB.`
+    };
+  }
+  
+  return { valid: true };
 };
 
 // Utility functions for bucket setup and validation
@@ -493,7 +512,7 @@ export const debugStorageAccess = async () => {
     }
     
     // Step 8: Test other folders
-    const folders = ['videos', 'audio', '3d', 'other'];
+    const folders = ['audio', '3d', 'other'];
     for (const folder of folders) {
       console.log(`Step 8: Testing ${folder} folder...`);
       const { data: folderFiles, error: folderError } = await supabase.storage
@@ -510,7 +529,7 @@ export const debugStorageAccess = async () => {
 };
 
 export const createRequiredFolders = async () => {
-  const folders = ['images', 'videos', 'audio', '3d', 'other'];
+  const folders = ['images', 'audio', '3d', 'other'];
   const results = [];
   
   for (const folder of folders) {

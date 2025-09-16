@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X } from 'lucide-react';
-import { supabase, getFileType, getContentType } from '../lib/supabase';
+import { supabase, getFileType, getContentType, validateFileSize } from '../lib/supabase';
 import { resizeImage } from '../lib/image-utils';
 
 interface CommonFileUploadProps {
@@ -37,8 +37,16 @@ export const CommonFileUpload: React.FC<CommonFileUploadProps> = ({ onUploadComp
         const uniqueId = Date.now();
         const fileName = `${sanitizedName}_${uniqueId}.${extension}`;
         const fileType = getFileType(extension);
+        
+        // Validate file size before upload
+        const sizeValidation = validateFileSize(file, fileType);
+        if (!sizeValidation.valid) {
+          console.error('File size validation failed:', sizeValidation.error);
+          alert(sizeValidation.error);
+          continue; // Skip this file and continue with the next one
+        }
+        
         const filePath = `common-assets/${fileType}/${fileName}`;
-
         const contentType = file.type || getContentType(extension);
 
         // If image, generate preview and thumbnail
@@ -178,6 +186,17 @@ export const CommonFileUpload: React.FC<CommonFileUploadProps> = ({ onUploadComp
               >
                 <X size={20} />
               </button>
+            </div>
+
+            <div className="text-sm text-gray-400 mb-4">
+              <p className="mb-2">Upload files to common assets. These files will be available to all users.</p>
+              <div className="text-xs bg-gray-700 p-3 rounded">
+                <p className="font-semibold mb-1">File size limits:</p>
+                <p>• Images: 10MB max</p>
+                <p>• Audio: 50MB max</p>
+                <p>• 3D Models: 100MB max</p>
+                <p>• Other files: 25MB max</p>
+              </div>
             </div>
 
             {isUploading ? (

@@ -137,7 +137,6 @@ Your Supabase storage will automatically create these folders as users upload fi
 ```
 files/
 ├── images/          # User image uploads
-├── videos/          # User video uploads  
 ├── audio/           # User audio uploads
 ├── 3d/             # User 3D model uploads
 ├── other/           # User other file uploads

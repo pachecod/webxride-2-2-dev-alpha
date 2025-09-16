@@ -1,6 +1,7 @@
 -- Quick Setup Script for WebXRide
 -- Run this single script in your Supabase SQL Editor for a complete setup
 -- This combines all essential database and storage setup steps
+-- Updated with corrected storage policies for proper file upload support
 
 -- ============================================================================
 -- 1. STORAGE BUCKET SETUP
@@ -28,67 +29,60 @@ DROP POLICY IF EXISTS "Anonymous users can delete from user folders" ON storage.
 DROP POLICY IF EXISTS "Anyone can upload to common assets" ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can update common assets" ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can delete from common assets" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can upload to user folders" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can update user folders" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can delete from user folders" ON storage.objects;
 
 -- Allow anyone to read files from any folder
 CREATE POLICY "Public Access" ON storage.objects 
 FOR SELECT USING (bucket_id = 'files');
 
 -- Allow anyone to upload to user-specific folders
-CREATE POLICY "Anonymous users can upload to user folders" ON storage.objects 
+CREATE POLICY "Anyone can upload to user folders" ON storage.objects 
 FOR INSERT WITH CHECK (
   bucket_id = 'files' AND (
-    name LIKE 'images/%' OR
-    name LIKE 'videos/%' OR
-    name LIKE 'audio/%' OR
-    name LIKE '3d/%' OR
-    name LIKE 'other/%' OR
-    name LIKE 'public_html/%'
+    -- Allow uploads to user folders (any username/folder structure)
+    name ~ '^[^/]+/(images|audio|3d|other)/' OR
+    -- Allow uploads to common-assets
+    name ~ '^common-assets/(images|audio|3d|other)/' OR
+    -- Allow uploads to user-html folders
+    name ~ '^user-html/' OR
+    -- Allow uploads to templates
+    name ~ '^templates/'
   )
 );
 
 -- Allow anyone to update files in user-specific folders
-CREATE POLICY "Anonymous users can update user folders" ON storage.objects 
+CREATE POLICY "Anyone can update user folders" ON storage.objects 
 FOR UPDATE USING (
   bucket_id = 'files' AND (
-    name LIKE 'images/%' OR
-    name LIKE 'videos/%' OR
-    name LIKE 'audio/%' OR
-    name LIKE '3d/%' OR
-    name LIKE 'other/%' OR
-    name LIKE 'public_html/%'
+    -- Allow updates to user folders
+    name ~ '^[^/]+/(images|audio|3d|other)/' OR
+    -- Allow updates to common-assets
+    name ~ '^common-assets/(images|audio|3d|other)/' OR
+    -- Allow updates to user-html folders
+    name ~ '^user-html/' OR
+    -- Allow updates to templates
+    name ~ '^templates/'
   )
 );
 
 -- Allow anyone to delete files from user-specific folders
-CREATE POLICY "Anonymous users can delete from user folders" ON storage.objects 
+CREATE POLICY "Anyone can delete from user folders" ON storage.objects 
 FOR DELETE USING (
   bucket_id = 'files' AND (
-    name LIKE 'images/%' OR
-    name LIKE 'videos/%' OR
-    name LIKE 'audio/%' OR
-    name LIKE '3d/%' OR
-    name LIKE 'other/%' OR
-    name LIKE 'public_html/%'
+    -- Allow deletes from user folders
+    name ~ '^[^/]+/(images|audio|3d|other)/' OR
+    -- Allow deletes from common-assets
+    name ~ '^common-assets/(images|audio|3d|other)/' OR
+    -- Allow deletes from user-html folders
+    name ~ '^user-html/' OR
+    -- Allow deletes from templates
+    name ~ '^templates/'
   )
 );
 
--- Allow anyone to upload to common-assets (admin check handled in app)
-CREATE POLICY "Anyone can upload to common assets" ON storage.objects 
-FOR INSERT WITH CHECK (
-  bucket_id = 'files' AND name LIKE 'common-assets/%'
-);
-
--- Allow anyone to update common assets (admin check handled in app)
-CREATE POLICY "Anyone can update common assets" ON storage.objects 
-FOR UPDATE USING (
-  bucket_id = 'files' AND name LIKE 'common-assets/%'
-);
-
--- Allow anyone to delete from common assets (admin check handled in app)
-CREATE POLICY "Anyone can delete from common assets" ON storage.objects 
-FOR DELETE USING (
-  bucket_id = 'files' AND name LIKE 'common-assets/%'
-);
+-- Note: Common assets policies are now included in the comprehensive policies above
 
 -- ============================================================================
 -- 3. DATABASE TABLES SETUP
@@ -367,13 +361,16 @@ SELECT '✅ Classes_with_students view created' as status WHERE EXISTS (
 
 -- Show expected folder structure
 SELECT '📁 Expected folder structure:' as info;
-SELECT 'files/images/' as folder UNION ALL
-SELECT 'files/videos/' UNION ALL
-SELECT 'files/audio/' UNION ALL
-SELECT 'files/3d/' UNION ALL
-SELECT 'files/other/' UNION ALL
-SELECT 'files/public_html/' UNION ALL
-SELECT 'files/common-assets/';
+SELECT 'files/{username}/images/' as folder UNION ALL
+SELECT 'files/{username}/audio/' UNION ALL
+SELECT 'files/{username}/3d/' UNION ALL
+SELECT 'files/{username}/other/' UNION ALL
+SELECT 'files/common-assets/images/' UNION ALL
+SELECT 'files/common-assets/audio/' UNION ALL
+SELECT 'files/common-assets/3d/' UNION ALL
+SELECT 'files/common-assets/other/' UNION ALL
+SELECT 'files/user-html/' UNION ALL
+SELECT 'files/templates/';
 
 -- Show all created policies
 SELECT 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Common Assets feature allows administrators to upload and manage files that are available to all users in the WebxRide platform. This provides a centralized location for shared resources like images, videos, audio files, 3D models, and other assets that can be used across multiple projects.
+The Common Assets feature allows administrators to upload and manage files that are available to all users in the WebxRide platform. This provides a centralized location for shared resources like images, audio files, 3D models, and other assets that can be used across multiple projects.
 
 ## Features
 
@@ -22,7 +22,6 @@ Common Assets are stored in the following structure in Supabase storage:
 ```
 files/common-assets/
 ├── images/          # Image files (JPG, PNG, GIF, etc.)
-├── videos/          # Video files (MP4, WebM, etc.)
 ├── audio/           # Audio files (MP3, WAV, etc.)
 ├── 3d/             # 3D model files (GLB, GLTF, OBJ, etc.)
 └── other/          # Other file types
@@ -124,7 +123,6 @@ The Common Assets feature is automatically available once the code is deployed. 
 ### Supported Categories
 
 - **Images**: JPG, PNG, GIF, SVG, WebP, etc.
-- **Videos**: MP4, WebM, AVI, MOV, etc.
 - **Audio**: MP3, WAV, OGG, AAC, etc.
 - **3D Models**: GLB, GLTF, OBJ, FBX, etc.
 - **Other**: Any other file types
@@ -140,7 +138,7 @@ The Common Assets feature is automatically available once the code is deployed. 
 ### For Administrators
 
 1. **Organize Content**: Use descriptive filenames
-2. **Optimize Files**: Compress images and videos when possible
+2. **Optimize Files**: Compress images when possible
 3. **Regular Maintenance**: Clean up unused files periodically
 4. **Documentation**: Consider adding README files for complex assets
 

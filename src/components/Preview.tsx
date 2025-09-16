@@ -253,7 +253,7 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
       }
 
       // Add crossorigin to all external resources
-      htmlContent = htmlContent.replace(/<(img|video|audio|script|a-asset-item)/g, '<$1 crossorigin="anonymous"');
+      htmlContent = htmlContent.replace(/<(img|audio|script|a-asset-item)/g, '<$1 crossorigin="anonymous"');
       
       // Add timeout to a-assets if present
       htmlContent = htmlContent.replace(/<a-assets/g, '<a-assets timeout="30000"');

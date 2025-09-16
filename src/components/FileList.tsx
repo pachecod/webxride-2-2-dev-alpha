@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Trash2, FileText, Image as ImageIcon, FileVideo, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft } from 'lucide-react';
+import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft } from 'lucide-react';
 import { supabase, getFiles, createRequiredFolders } from '../lib/supabase';
 import { FileUpload } from './FileUpload';
 import { CommonFileUpload } from './CommonFileUpload';
@@ -397,11 +397,11 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
   const [activeTab, setActiveTab] = useState<'my-files' | 'common-assets'>('my-files');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['images', 'videos', '3d', 'audio', 'other']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['images', '3d', 'audio', 'other']));
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [filesPerPage, setFilesPerPage] = useState<number | 'all'>(5);
-  const [page, setPage] = useState<{ [key: string]: number }>({ images: 0, videos: 0, '3d': 0, audio: 0, other: 0 });
+  const [page, setPage] = useState<{ [key: string]: number }>({ images: 0, '3d': 0, audio: 0, other: 0 });
   const [totalFilesByCategory, setTotalFilesByCategory] = useState<{ [key: string]: number }>({});
   const [showHtmlDraftModal, setShowHtmlDraftModal] = useState(false);
   const [pendingHtmlDraftUrl, setPendingHtmlDraftUrl] = useState<string | null>(null);
@@ -418,8 +418,6 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
 
   const getFileIcon = (type: string) => {
     switch (type) {
-      case 'videos':
-        return <FileVideo size={18} className="text-purple-400" />;
       case 'audio':
         return <FileAudio size={18} className="text-green-400" />;
       case '3d':
@@ -442,7 +440,6 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
         // Load user files for all categories
         const categorizedFiles: FilesByCategory = {
           images: [],
-          videos: [],
           '3d': [],
           audio: [],
           other: [],
@@ -489,7 +486,6 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
         // Group common assets by category
         const groupedCommonFiles: FilesByCategory = {
           images: [],
-          videos: [],
           '3d': [],
           audio: [],
           other: []
@@ -881,7 +877,7 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
               value={filesPerPage}
               onChange={e => {
                 setFilesPerPage(e.target.value === 'all' ? 'all' : parseInt(e.target.value));
-                setPage({ images: 0, videos: 0, '3d': 0, audio: 0, other: 0 });
+                setPage({ images: 0, '3d': 0, audio: 0, other: 0 });
               }}
               className="bg-gray-700 text-white text-xs rounded px-2 py-1"
             >

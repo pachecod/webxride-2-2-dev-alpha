@@ -136,7 +136,7 @@ export const SupabaseValidator: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {['images', 'videos', 'audio', '3d', 'other'].map((folder) => {
+          {['images', 'audio', '3d', 'other'].map((folder) => {
             const result = folderResults.find(r => r.folder === folder);
             const success = result?.success ?? false;
             

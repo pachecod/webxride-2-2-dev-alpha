@@ -18,10 +18,10 @@ function toAbsolutePath(assetPath: string, basePath: string): string {
 }
 
 function rewriteHtmlAssetPaths(html: string, basePath: string): string {
-  // Rewrite src/href in script, link, img, audio, video, source, iframe, etc.
+  // Rewrite src/href in script, link, img, audio, source, iframe, etc.
   return html
     // src="..."
-    .replace(/(<(?:script|img|audio|video|source|iframe)[^>]+src=["'])([^"']+)(["'])/gi, (m, p1, p2, p3) => p1 + toAbsolutePath(p2, basePath) + p3)
+    .replace(/(<(?:script|img|audio|source|iframe)[^>]+src=["'])([^"']+)(["'])/gi, (m, p1, p2, p3) => p1 + toAbsolutePath(p2, basePath) + p3)
     // href="..." (for link, a)
     .replace(/(<(?:link|a)[^>]+href=["'])([^"']+)(["'])/gi, (m, p1, p2, p3) => p1 + toAbsolutePath(p2, basePath) + p3)
     // srcset="..."

@@ -42,7 +42,6 @@ CREATE POLICY "Authenticated users can delete" ON storage.objects FOR DELETE USI
 
 In your `files` bucket, create these folders:
 - `images/`
-- `videos/`
 - `audio/`
 - `3d/`
 - `other/`

@@ -375,7 +375,7 @@ function AdminTools({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={setRefreshTemplatesRefProp}
+          refreshTemplates={setRefreshTemplatesRef}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -579,7 +579,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef: setRefreshTemplatesRefProp
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -636,7 +636,7 @@ function MainApp({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={setRefreshTemplatesRefProp}
+          refreshTemplates={setRefreshTemplatesRef}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {

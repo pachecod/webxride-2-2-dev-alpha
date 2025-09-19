@@ -1708,7 +1708,7 @@ function App() {
             />
           </StudentPasswordGate>
         } />
-        <Route path="/*" element={
+        <Route path="/" element={
           <StudentPasswordGate>
             <MainApp
               project={project}
@@ -1755,6 +1755,55 @@ function App() {
               handleExportLocalSite={handleExportLocalSite}
               refreshTemplates={refreshTemplates}
 
+            />
+          </StudentPasswordGate>
+        } />
+        <Route path="*" element={
+          <StudentPasswordGate>
+            <MainApp
+              project={project}
+              setProject={setProject}
+              activeFileId={activeFileId}
+              setActiveFileId={setActiveFileId}
+              previewKey={previewKey}
+              setPreviewKey={setPreviewKey}
+              splitPosition={splitPosition}
+              setSplitPosition={setSplitPosition}
+              isDragging={isDragging}
+              setIsDragging={setIsDragging}
+              showPreview={showPreview}
+              setShowPreview={setShowPreview}
+              isPreviewExternal={isPreviewExternal}
+              setIsPreviewExternal={setIsPreviewExternal}
+              user={user}
+              saveProject={saveProject}
+              loadProject={loadProject}
+              templates={templates}
+              setTemplates={setTemplates}
+              updateFile={updateFile}
+              handleChangeFile={handleChangeFile}
+              refreshPreview={refreshPreview}
+              loadTemplate={loadTemplate}
+              handleSaveProject={handleSaveProject}
+              handleLoadProject={handleLoadProject}
+              handleLoadHtmlDraft={handleLoadHtmlDraft}
+              activeFile={activeFile}
+              togglePreview={togglePreview}
+              handleMouseDown={handleMouseDown}
+              handleMouseUp={handleMouseUp}
+              handleMouseMove={handleMouseMove}
+              handleCopyCode={handleCopyCode}
+              showSaveTemplateButton={false}
+              handleSaveHtml={handleSaveHtml}
+              handleLoadSavedHtml={handleLoadSavedHtml}
+              handleDeleteSavedHtml={handleDeleteSavedHtml}
+              handleDeleteTemplate={handleDeleteTemplate}
+              selectedUser={selectedUser}
+              onUserSelect={onUserSelect}
+              isAdmin={selectedUser === 'admin'}
+              handleAddFile={handleAddFile}
+              handleExportLocalSite={handleExportLocalSite}
+              refreshTemplates={refreshTemplates}
             />
           </StudentPasswordGate>
         } />

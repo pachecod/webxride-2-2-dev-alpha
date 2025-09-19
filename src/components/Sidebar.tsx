@@ -138,13 +138,23 @@ const Sidebar: React.FC<SidebarProps> = ({
         // Check if the folder actually contains files
         const { data: folderContents } = await supabase.storage
           .from('templates')
-          .list(folder.name, { limit: 1 });
+          .list(folder.name, { limit: 10 });
+        
+        // Filter out directory entries and check for actual files
+        const actualFiles = folderContents?.filter(file => 
+          file.name && 
+          file.name !== '' && 
+          !file.name.endsWith('/') &&
+          file.metadata?.mimetype !== 'application/x-directory'
+        ) || [];
         
         // Skip empty folders (deleted templates)
-        if (!folderContents || folderContents.length === 0) {
-          console.log(`Skipping empty folder: ${folder.name}`);
+        if (actualFiles.length === 0) {
+          console.log(`Skipping empty folder: ${folder.name} (${folderContents?.length || 0} items, ${actualFiles.length} actual files)`);
           continue;
         }
+        
+        console.log(`Processing folder: ${folder.name} (${actualFiles.length} actual files)`);
         try {
           console.log(`Processing template: ${folder.name}`);
           

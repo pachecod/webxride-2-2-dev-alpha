@@ -580,7 +580,7 @@ export const deleteTemplate = async (id: string) => {
 // Storage-based Template functions
 export const deleteTemplateFromStorage = async (templateId: string) => {
   try {
-    console.log(`Deleting template ${templateId} from Storage...`);
+    console.log(`=== DELETING TEMPLATE ${templateId} FROM STORAGE ===`);
     
     // List all files in the template folder
     const { data: files, error: listError } = await supabase.storage
@@ -594,9 +594,15 @@ export const deleteTemplateFromStorage = async (templateId: string) => {
     
     console.log(`Files found in template ${templateId}:`, files);
     
+    if (!files || files.length === 0) {
+      console.log('No files found in template folder, template may already be deleted');
+      return { success: true };
+    }
+    
     // Delete each file in the template folder
     const deletePromises = files.map(async (file) => {
       try {
+        console.log(`Attempting to delete file: ${templateId}/${file.name}`);
         const { error: deleteError } = await supabase.storage
           .from('templates')
           .remove([`${templateId}/${file.name}`]);
@@ -606,6 +612,7 @@ export const deleteTemplateFromStorage = async (templateId: string) => {
           return { success: false, file: file.name, error: deleteError };
         }
         
+        console.log(`Successfully deleted file: ${templateId}/${file.name}`);
         return { success: true, file: file.name };
       } catch (e) {
         console.error(`Error deleting ${file.name}:`, e);

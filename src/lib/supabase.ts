@@ -643,6 +643,24 @@ export const deleteTemplateFromStorage = async (templateId: string) => {
       throw new Error(`Failed to delete some files: ${failedDeletes.map(f => f.file).join(', ')}`);
     }
     
+    // Try to remove the empty folder itself
+    try {
+      console.log(`Attempting to remove empty folder: ${templateId}`);
+      const { error: folderError } = await supabase.storage
+        .from('templates')
+        .remove([`${templateId}/`]);
+      
+      if (folderError) {
+        console.log(`Could not remove folder ${templateId}:`, folderError);
+        // This is not necessarily an error - folder might already be gone
+      } else {
+        console.log(`Successfully removed folder: ${templateId}`);
+      }
+    } catch (folderError) {
+      console.log(`Error removing folder ${templateId}:`, folderError);
+      // Continue anyway - the important part is that files are deleted
+    }
+    
     // Update template order by removing the deleted template
     try {
       const { data: currentOrder } = await loadTemplateOrder();

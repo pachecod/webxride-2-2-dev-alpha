@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const STUDENT_PASSWORD = import.meta.env.VITE_STUDENT_PASSWORD;
+const STUDENT_PASSWORD = import.meta.env.VITE_STUDENT_PASSWORD || 'student123';
 
 export const StudentPasswordGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [unlocked, setUnlocked] = useState(() => localStorage.getItem('studentUnlocked') === 'true');

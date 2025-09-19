@@ -960,6 +960,11 @@ export const saveTemplateToStorage = async (template: {
   files: Array<{ name: string; content: string; type: string }>;
 }) => {
   try {
+    console.log('=== SAVE TEMPLATE TO STORAGE START ===');
+    console.log('Template data:', template);
+    console.log('Supabase client:', !!supabase);
+    console.log('Supabase URL:', supabase.supabaseUrl);
+    
     // Check if a template with this name already exists
     const existingTemplate = await findTemplateByName(template.name);
     let templateId: string;
@@ -988,12 +993,17 @@ export const saveTemplateToStorage = async (template: {
     };
 
     // Upload metadata.json with upsert to overwrite existing
-    const { error: metadataError } = await supabase.storage
+    console.log('Uploading metadata.json to:', `${templateId}/metadata.json`);
+    console.log('Metadata content:', JSON.stringify(metadata, null, 2));
+    
+    const { data: metadataData, error: metadataError } = await supabase.storage
       .from('templates')
       .upload(`${templateId}/metadata.json`, JSON.stringify(metadata, null, 2), {
         contentType: 'application/json',
         upsert: true
       });
+
+    console.log('Metadata upload result:', { data: metadataData, error: metadataError });
 
     if (metadataError) {
       console.error('Error uploading metadata:', metadataError);
@@ -1001,18 +1011,26 @@ export const saveTemplateToStorage = async (template: {
     }
 
     // Upload each file in the template with upsert to overwrite existing
+    console.log('Uploading template files:', template.files.map(f => f.name));
+    
     for (const file of template.files) {
       const contentType = file.name.endsWith('.html') ? 'text/html' :
                          file.name.endsWith('.css') ? 'text/css' :
                          file.name.endsWith('.js') ? 'application/javascript' :
                          'text/plain';
 
-      const { error: fileError } = await supabase.storage
+      console.log(`Uploading file ${file.name} to:`, `${templateId}/${file.name}`);
+      console.log(`Content type: ${contentType}`);
+      console.log(`Content length: ${file.content.length} characters`);
+
+      const { data: fileData, error: fileError } = await supabase.storage
         .from('templates')
         .upload(`${templateId}/${file.name}`, file.content, {
           contentType,
           upsert: true
         });
+
+      console.log(`File upload result for ${file.name}:`, { data: fileData, error: fileError });
 
       if (fileError) {
         console.error(`Error uploading ${file.name}:`, fileError);
@@ -1034,10 +1052,17 @@ export const saveTemplateToStorage = async (template: {
       }
     }
     
+    console.log('=== SAVE TEMPLATE TO STORAGE SUCCESS ===');
     return { data: { id: templateId, ...template }, error: null };
 
   } catch (error) {
+    console.error('=== SAVE TEMPLATE TO STORAGE ERROR ===');
     console.error('Error saving template to Storage:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
     return { data: null, error };
   }
 };

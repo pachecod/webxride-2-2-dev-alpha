@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
 
 export const AdminPasswordGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [unlocked, setUnlocked] = useState(() => localStorage.getItem('adminUnlocked') === 'true');

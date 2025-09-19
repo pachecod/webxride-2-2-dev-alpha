@@ -375,7 +375,7 @@ function AdminTools({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={(callback) => setRefreshTemplatesRef(() => callback)}
+          refreshTemplates={setRefreshTemplatesRef}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -579,7 +579,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -636,7 +636,7 @@ function MainApp({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={(callback) => setRefreshTemplatesRef(() => callback)}
+          refreshTemplates={setRefreshTemplatesRef}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -779,12 +779,8 @@ function App() {
 
   // Function to refresh templates (will be set by Sidebar)
   const refreshTemplates = () => {
-    console.log('refreshTemplates called, refreshTemplatesRef available:', !!refreshTemplatesRef);
     if (refreshTemplatesRef) {
-      console.log('Calling refreshTemplatesRef...');
       refreshTemplatesRef();
-    } else {
-      console.warn('refreshTemplatesRef is not set!');
     }
   };
 
@@ -1113,17 +1109,17 @@ function App() {
       try {
         const templateId = data?.id || templateName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
         await setDefaultTemplate(templateId, templateName, selectedUser);
-        alert(`Template ${actionText} successfully and set as default! Refreshing page...`);
-        window.location.reload();
+        alert(`Template ${actionText} successfully and set as default! It will appear in the Templates tab after a moment.`);
       } catch (defaultError) {
         console.error('Error setting default template:', defaultError);
-        alert(`Template ${actionText} successfully, but failed to set as default. Refreshing page...`);
-        window.location.reload();
+        alert(`Template ${actionText} successfully, but failed to set as default. It will appear in the Templates tab after a moment.`);
       }
     } else {
-      alert(`Template ${actionText} successfully! Refreshing page...`);
-      window.location.reload();
+      alert(`Template ${actionText} successfully! It will appear in the Templates tab after a moment.`);
     }
+
+    // Refresh the entire interface
+    window.location.reload();
   };
 
   const handleSaveHtml = async () => {
@@ -1402,9 +1398,9 @@ function App() {
       console.log('Delete result:', result);
       
       if (result.success) {
-        console.log('Template deleted successfully, refreshing page...');
+        console.log('Template deleted successfully, triggering refresh...');
         alert('Template deleted successfully!');
-        // Refresh the page to update the template list
+        // Refresh the entire interface
         window.location.reload();
       } else {
         console.error('Delete failed:', result.error);
@@ -1708,7 +1704,7 @@ function App() {
             />
           </StudentPasswordGate>
         } />
-        <Route path="/" element={
+        <Route path="/*" element={
           <StudentPasswordGate>
             <MainApp
               project={project}
@@ -1754,56 +1750,8 @@ function App() {
               handleAddFile={handleAddFile}
               handleExportLocalSite={handleExportLocalSite}
               refreshTemplates={refreshTemplates}
+              setRefreshTemplatesRef={setRefreshTemplatesRef}
 
-            />
-          </StudentPasswordGate>
-        } />
-        <Route path="*" element={
-          <StudentPasswordGate>
-            <MainApp
-              project={project}
-              setProject={setProject}
-              activeFileId={activeFileId}
-              setActiveFileId={setActiveFileId}
-              previewKey={previewKey}
-              setPreviewKey={setPreviewKey}
-              splitPosition={splitPosition}
-              setSplitPosition={setSplitPosition}
-              isDragging={isDragging}
-              setIsDragging={setIsDragging}
-              showPreview={showPreview}
-              setShowPreview={setShowPreview}
-              isPreviewExternal={isPreviewExternal}
-              setIsPreviewExternal={setIsPreviewExternal}
-              user={user}
-              saveProject={saveProject}
-              loadProject={loadProject}
-              templates={templates}
-              setTemplates={setTemplates}
-              updateFile={updateFile}
-              handleChangeFile={handleChangeFile}
-              refreshPreview={refreshPreview}
-              loadTemplate={loadTemplate}
-              handleSaveProject={handleSaveProject}
-              handleLoadProject={handleLoadProject}
-              handleLoadHtmlDraft={handleLoadHtmlDraft}
-              activeFile={activeFile}
-              togglePreview={togglePreview}
-              handleMouseDown={handleMouseDown}
-              handleMouseUp={handleMouseUp}
-              handleMouseMove={handleMouseMove}
-              handleCopyCode={handleCopyCode}
-              showSaveTemplateButton={false}
-              handleSaveHtml={handleSaveHtml}
-              handleLoadSavedHtml={handleLoadSavedHtml}
-              handleDeleteSavedHtml={handleDeleteSavedHtml}
-              handleDeleteTemplate={handleDeleteTemplate}
-              selectedUser={selectedUser}
-              onUserSelect={onUserSelect}
-              isAdmin={selectedUser === 'admin'}
-              handleAddFile={handleAddFile}
-              handleExportLocalSite={handleExportLocalSite}
-              refreshTemplates={refreshTemplates}
             />
           </StudentPasswordGate>
         } />

@@ -579,7 +579,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -1752,7 +1752,6 @@ function App() {
               handleAddFile={handleAddFile}
               handleExportLocalSite={handleExportLocalSite}
               refreshTemplates={refreshTemplates}
-              setRefreshTemplatesRef={setRefreshTemplatesRef}
 
             />
           </StudentPasswordGate>

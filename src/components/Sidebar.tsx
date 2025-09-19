@@ -226,6 +226,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     loadTemplateFolders();
   }, []);
 
+  // Set up refresh mechanism
+  React.useEffect(() => {
+    if (refreshTemplates) {
+      refreshTemplates(() => {
+        console.log('Refreshing template folders...');
+        loadTemplateFolders();
+      });
+    }
+  }, [refreshTemplates]);
+
   // Initialize Hotspot Template Bridge
   React.useEffect(() => {
     const initHotspotBridge = async () => {

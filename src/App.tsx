@@ -375,7 +375,7 @@ function AdminTools({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={setRefreshFunction}
+          refreshTemplates={setRefreshTemplatesRef}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -579,22 +579,9 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef
 }: any) {
-  const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
-
-  // Function to refresh templates (will be set by Sidebar)
-  const refreshTemplates = () => {
-    if (refreshTemplatesRef) {
-      refreshTemplatesRef();
-    }
-  };
-
-  // Callback to set the refresh function from Sidebar
-  const setRefreshFunction = (fn: () => void) => {
-    setRefreshTemplatesRef(() => fn);
-  };
 
   const handleNewTemplate = () => {
     const newProject: Project = {
@@ -649,7 +636,7 @@ function MainApp({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={setRefreshFunction}
+          refreshTemplates={setRefreshTemplatesRef}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -788,6 +775,14 @@ function App() {
   });
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
+
+  // Function to refresh templates (will be set by Sidebar)
+  const refreshTemplates = () => {
+    if (refreshTemplatesRef) {
+      refreshTemplatesRef();
+    }
+  };
 
 
   // Save selectedUser to localStorage whenever it changes
@@ -1396,8 +1391,10 @@ function App() {
       const result = await deleteTemplateFromStorage(template.id);
       if (result.success) {
         alert('Template deleted successfully!');
-        // Refresh template list
-        window.location.reload();
+        // Trigger a refresh of the template list by updating the refresh key
+        if (refreshTemplates) {
+          refreshTemplates();
+        }
       } else {
         alert('Failed to delete template: ' + (result.error?.message || 'Unknown error'));
       }
@@ -1744,6 +1741,8 @@ function App() {
               isAdmin={selectedUser === 'admin'}
               handleAddFile={handleAddFile}
               handleExportLocalSite={handleExportLocalSite}
+              refreshTemplates={refreshTemplates}
+              setRefreshTemplatesRef={setRefreshTemplatesRef}
 
             />
           </StudentPasswordGate>

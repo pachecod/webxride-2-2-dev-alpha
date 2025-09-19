@@ -117,24 +117,34 @@ const Sidebar: React.FC<SidebarProps> = ({
         return;
       }
       
-      // Filter to only include directories (templates) and metadata files
+      // Filter to only include directories (templates) and exclude system files
       const templateFolders = folders.filter(folder => {
-        const isDirectory = folder.metadata?.eTag === undefined;
         const hasSlash = folder.name.includes('/');
         const isNotMetadataFile = !folder.name.endsWith('metadata.json');
         const isNotTemplateOrder = folder.name !== 'template-order.json';
+        const isNotSystemFile = !folder.name.startsWith('.');
         
-        console.log(`Filtering ${folder.name}:`, { isDirectory, hasSlash, isNotMetadataFile, isNotTemplateOrder });
+        console.log(`Filtering ${folder.name}:`, { hasSlash, isNotMetadataFile, isNotTemplateOrder, isNotSystemFile });
         
-        // Include directories (templates) but exclude template-order.json and metadata files
-        return (isDirectory && !hasSlash && isNotTemplateOrder) || (isNotMetadataFile && isNotTemplateOrder);
+        // Include folders that don't have slashes (top-level folders) and exclude system files
+        return !hasSlash && isNotMetadataFile && isNotTemplateOrder && isNotSystemFile;
       });
 
       console.log('Filtered template folders:', templateFolders);
 
-      // Process each template folder
+      // Process each template folder and verify it has content
       const processedTemplates = [];
       for (const folder of templateFolders) {
+        // Check if the folder actually contains files
+        const { data: folderContents } = await supabase.storage
+          .from('templates')
+          .list(folder.name, { limit: 1 });
+        
+        // Skip empty folders (deleted templates)
+        if (!folderContents || folderContents.length === 0) {
+          console.log(`Skipping empty folder: ${folder.name}`);
+          continue;
+        }
         try {
           console.log(`Processing template: ${folder.name}`);
           

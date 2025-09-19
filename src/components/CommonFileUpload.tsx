@@ -190,6 +190,29 @@ export const CommonFileUpload: React.FC<CommonFileUploadProps> = ({ onUploadComp
 
             <div className="text-sm text-gray-400 mb-4">
               <p className="mb-2">Upload files to common assets. These files will be available to all users.</p>
+              
+              <div className="text-xs bg-gray-700 p-3 rounded mb-3">
+                <p className="font-semibold mb-2">Supported file types:</p>
+                <div className="grid grid-cols-2 gap-1">
+                  <div>
+                    <p className="text-blue-300 font-medium">Images:</p>
+                    <p className="text-gray-300">JPG, PNG, GIF, SVG, WebP</p>
+                  </div>
+                  <div>
+                    <p className="text-green-300 font-medium">Audio:</p>
+                    <p className="text-gray-300">MP3, WAV, OGG, FLAC</p>
+                  </div>
+                  <div>
+                    <p className="text-orange-300 font-medium">3D Models:</p>
+                    <p className="text-gray-300">GLB, GLTF, OBJ, FBX</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-300 font-medium">Other:</p>
+                    <p className="text-gray-300">PDF, TXT, ZIP, etc.</p>
+                  </div>
+                </div>
+              </div>
+              
               <div className="text-xs bg-gray-700 p-3 rounded">
                 <p className="font-semibold mb-1">File size limits:</p>
                 <p>• Images: 10MB max</p>

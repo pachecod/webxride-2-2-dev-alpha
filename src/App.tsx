@@ -13,6 +13,8 @@ import { SaveTemplateDialog } from './components/SaveTemplateDialog';
 import { AboutPageComponent } from './components/AboutPage';
 import { AboutPageEditor } from './components/AboutPageEditor';
 import { AboutPageManagement } from './components/AboutPageManagement';
+import { StudentFilesView } from './components/StudentFilesView';
+import { AdminFilesView } from './components/AdminFilesView';
 import { FileType, Project, File, Framework } from './types';
 import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage } from './lib/supabase';
 import { AdminPasswordGate } from './components/AdminPasswordGate';
@@ -1671,6 +1673,24 @@ function App() {
               handleExportLocalSite={handleExportLocalSite}
             />
           </AdminPasswordGate>
+        } />
+        <Route path="/admin-tools/myfiles" element={
+          <AdminPasswordGate>
+            <AdminFilesView
+              selectedUser={selectedUser}
+              onBack={() => window.location.href = '/admin-tools'}
+              onUserSelect={onUserSelect}
+            />
+          </AdminPasswordGate>
+        } />
+        <Route path="/myfiles" element={
+          <StudentPasswordGate>
+            <StudentFilesView
+              selectedUser={selectedUser}
+              onBack={() => window.location.href = '/'}
+              onUserSelect={onUserSelect}
+            />
+          </StudentPasswordGate>
         } />
         <Route path="/*" element={
           <StudentPasswordGate>

@@ -588,9 +588,18 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div> */}
 
             <div className="px-3 py-2">
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                Uploaded Files
-              </h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
+                  Uploaded Files
+                </h2>
+                <button
+                  onClick={() => window.location.href = '/myfiles'}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  title="View files in larger interface"
+                >
+                  View Larger
+                </button>
+              </div>
               <FileList 
                 key={fileListKey} 
                 onLoadHtmlDraft={onLoadHtmlDraft} 

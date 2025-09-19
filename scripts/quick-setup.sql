@@ -7,9 +7,13 @@
 -- 1. STORAGE BUCKET SETUP
 -- ============================================================================
 
--- Create storage bucket (if it doesn't exist)
+-- Create storage buckets (if they don't exist)
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('files', 'files', true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('templates', 'templates', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -85,6 +89,32 @@ FOR DELETE USING (
 -- Note: Common assets policies are now included in the comprehensive policies above
 
 -- ============================================================================
+-- 2.1. TEMPLATES STORAGE POLICIES SETUP
+-- ============================================================================
+
+-- Drop existing templates storage policies first to avoid conflicts
+DROP POLICY IF EXISTS "Public Access Templates" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can upload templates" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can update templates" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can delete templates" ON storage.objects;
+
+-- Allow anyone to read templates
+CREATE POLICY "Public Access Templates" ON storage.objects 
+FOR SELECT USING (bucket_id = 'templates');
+
+-- Allow anyone to upload templates
+CREATE POLICY "Anyone can upload templates" ON storage.objects 
+FOR INSERT WITH CHECK (bucket_id = 'templates');
+
+-- Allow anyone to update templates
+CREATE POLICY "Anyone can update templates" ON storage.objects 
+FOR UPDATE USING (bucket_id = 'templates');
+
+-- Allow anyone to delete templates
+CREATE POLICY "Anyone can delete templates" ON storage.objects 
+FOR DELETE USING (bucket_id = 'templates');
+
+-- ============================================================================
 -- 3. DATABASE TABLES SETUP
 -- ============================================================================
 
@@ -148,6 +178,12 @@ CREATE TABLE IF NOT EXISTS about_page (
 -- Enable RLS on students table
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Anyone can read students" ON students;
+DROP POLICY IF EXISTS "Anyone can insert students" ON students;
+DROP POLICY IF EXISTS "Anyone can update students" ON students;
+DROP POLICY IF EXISTS "Anyone can delete students" ON students;
+
 -- Allow anyone to read students (for user selection)
 CREATE POLICY "Anyone can read students" ON students 
 FOR SELECT USING (true);
@@ -167,6 +203,12 @@ FOR DELETE USING (true);
 -- Enable RLS on templates table
 ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Anyone can read templates" ON templates;
+DROP POLICY IF EXISTS "Anyone can insert templates" ON templates;
+DROP POLICY IF EXISTS "Anyone can update templates" ON templates;
+DROP POLICY IF EXISTS "Anyone can delete templates" ON templates;
+
 -- Allow anyone to read templates
 CREATE POLICY "Anyone can read templates" ON templates FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert templates" ON templates FOR INSERT WITH CHECK (true);
@@ -175,6 +217,13 @@ CREATE POLICY "Anyone can delete templates" ON templates FOR DELETE USING (true)
 
 -- Enable RLS on classes table
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Anyone can read classes" ON classes;
+DROP POLICY IF EXISTS "Anyone can insert classes" ON classes;
+DROP POLICY IF EXISTS "Anyone can update classes" ON classes;
+DROP POLICY IF EXISTS "Anyone can delete classes" ON classes;
+
 CREATE POLICY "Anyone can read classes" ON classes FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert classes" ON classes FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can update classes" ON classes FOR UPDATE USING (true);
@@ -184,6 +233,13 @@ CREATE POLICY "Anyone can delete classes" ON classes FOR DELETE USING (true);
 
 -- Enable RLS on snippets
 ALTER TABLE snippets ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Anyone can read snippets" ON snippets;
+DROP POLICY IF EXISTS "Anyone can insert snippets" ON snippets;
+DROP POLICY IF EXISTS "Anyone can update snippets" ON snippets;
+DROP POLICY IF EXISTS "Anyone can delete snippets" ON snippets;
+
 CREATE POLICY "Anyone can read snippets" ON snippets FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert snippets" ON snippets FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can update snippets" ON snippets FOR UPDATE USING (true);
@@ -191,6 +247,13 @@ CREATE POLICY "Anyone can delete snippets" ON snippets FOR DELETE USING (true);
 
 -- Enable RLS on about_page
 ALTER TABLE about_page ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Anyone can read about_page" ON about_page;
+DROP POLICY IF EXISTS "Anyone can insert about_page" ON about_page;
+DROP POLICY IF EXISTS "Anyone can update about_page" ON about_page;
+DROP POLICY IF EXISTS "Anyone can delete about_page" ON about_page;
+
 CREATE POLICY "Anyone can read about_page" ON about_page FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert about_page" ON about_page FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can update about_page" ON about_page FOR UPDATE USING (true);
@@ -224,12 +287,14 @@ CREATE TRIGGER update_templates_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Create trigger for classes table
+DROP TRIGGER IF EXISTS update_classes_updated_at ON classes;
 CREATE TRIGGER update_classes_updated_at 
     BEFORE UPDATE ON classes 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Create trigger for snippets table
+DROP TRIGGER IF EXISTS update_snippets_updated_at ON snippets;
 CREATE TRIGGER update_snippets_updated_at 
     BEFORE UPDATE ON snippets 
     FOR EACH ROW 
@@ -308,9 +373,13 @@ GRANT SELECT ON classes_with_students TO authenticated;
 -- 8. VERIFICATION
 -- ============================================================================
 
--- Verify storage bucket
-SELECT '✅ Storage bucket created' as status WHERE EXISTS (
+-- Verify storage buckets
+SELECT '✅ Files storage bucket created' as status WHERE EXISTS (
   SELECT 1 FROM storage.buckets WHERE id = 'files'
+);
+
+SELECT '✅ Templates storage bucket created' as status WHERE EXISTS (
+  SELECT 1 FROM storage.buckets WHERE id = 'templates'
 );
 
 -- Verify storage policies

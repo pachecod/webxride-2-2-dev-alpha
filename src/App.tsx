@@ -375,7 +375,7 @@ function AdminTools({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={setRefreshTemplatesRef}
+          refreshTemplates={(callback) => setRefreshTemplatesRef(() => callback)}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -636,7 +636,7 @@ function MainApp({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={setRefreshTemplatesRef}
+          refreshTemplates={(callback) => setRefreshTemplatesRef(() => callback)}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -779,8 +779,12 @@ function App() {
 
   // Function to refresh templates (will be set by Sidebar)
   const refreshTemplates = () => {
+    console.log('refreshTemplates called, refreshTemplatesRef available:', !!refreshTemplatesRef);
     if (refreshTemplatesRef) {
+      console.log('Calling refreshTemplatesRef...');
       refreshTemplatesRef();
+    } else {
+      console.warn('refreshTemplatesRef is not set!');
     }
   };
 
@@ -1109,13 +1113,16 @@ function App() {
       try {
         const templateId = data?.id || templateName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
         await setDefaultTemplate(templateId, templateName, selectedUser);
-        alert(`Template ${actionText} successfully and set as default! It will appear in the Templates tab after a moment.`);
+        alert(`Template ${actionText} successfully and set as default! Refreshing page...`);
+        window.location.reload();
       } catch (defaultError) {
         console.error('Error setting default template:', defaultError);
-        alert(`Template ${actionText} successfully, but failed to set as default. It will appear in the Templates tab after a moment.`);
+        alert(`Template ${actionText} successfully, but failed to set as default. Refreshing page...`);
+        window.location.reload();
       }
     } else {
-      alert(`Template ${actionText} successfully! It will appear in the Templates tab after a moment.`);
+      alert(`Template ${actionText} successfully! Refreshing page...`);
+      window.location.reload();
     }
   };
 
@@ -1395,15 +1402,10 @@ function App() {
       console.log('Delete result:', result);
       
       if (result.success) {
-        console.log('Template deleted successfully, triggering refresh...');
+        console.log('Template deleted successfully, refreshing page...');
         alert('Template deleted successfully!');
-        // Trigger a refresh of the template list by updating the refresh key
-        if (refreshTemplates) {
-          console.log('Calling refreshTemplates...');
-          refreshTemplates();
-        } else {
-          console.warn('refreshTemplates function not available!');
-        }
+        // Refresh the page to update the template list
+        window.location.reload();
       } else {
         console.error('Delete failed:', result.error);
         alert('Failed to delete template: ' + (result.error?.message || 'Unknown error'));

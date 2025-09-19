@@ -614,38 +614,22 @@ export const deleteTemplateFromStorage = async (templateId: string) => {
       return { success: true };
     }
     
-    // Delete each actual file in the template folder
-    const deletePromises = actualFiles.map(async (file) => {
-      try {
-        console.log(`Attempting to delete file: ${templateId}/${file.name}`);
-        const { error: deleteError } = await supabase.storage
-          .from('templates')
-          .remove([`${templateId}/${file.name}`]);
-        
-        if (deleteError) {
-          console.error(`Error deleting ${file.name}:`, deleteError);
-          return { success: false, file: file.name, error: deleteError };
-        }
-        
-        console.log(`Successfully deleted file: ${templateId}/${file.name}`);
-        return { success: true, file: file.name };
-      } catch (e) {
-        console.error(`Error deleting ${file.name}:`, e);
-        return { success: false, file: file.name, error: e };
-      }
-    });
-    
-    const results = await Promise.all(deletePromises);
-    const failedDeletes = results.filter(r => !r.success);
-    
-    if (failedDeletes.length > 0) {
-      console.error('Some files failed to delete:', failedDeletes);
-      throw new Error(`Failed to delete some files: ${failedDeletes.map(f => f.file).join(', ')}`);
-    }
-    
-    // Note: We don't try to remove the folder itself as Supabase storage
-    // doesn't support removing empty folders. The folder will remain but
-    // will be filtered out by the template listing logic.
+          // Delete all files in the template folder at once
+          // This will effectively remove the entire folder from Supabase storage
+          const filePaths = actualFiles.map(file => `${templateId}/${file.name}`);
+          console.log(`Deleting ${filePaths.length} files from template folder:`, filePaths);
+          
+          const { error: deleteError } = await supabase.storage
+            .from('templates')
+            .remove(filePaths);
+          
+          if (deleteError) {
+            console.error('Error deleting template files:', deleteError);
+            throw new Error(`Failed to delete template files: ${deleteError.message}`);
+          }
+          
+          console.log(`Successfully deleted all files from template folder: ${templateId}`);
+          // Note: By deleting all files in the folder, the folder itself will be removed from Supabase storage
     
     // Update template order by removing the deleted template
     try {

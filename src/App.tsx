@@ -1391,11 +1391,18 @@ function App() {
     const confirmDelete = window.confirm(`Are you sure you want to delete the template "${template.name}"? This action cannot be undone.`);
     if (!confirmDelete) return;
     try {
-      await deleteTemplateFromStorage(template.folder || template.id);
-      alert('Template deleted successfully!');
-      // Refresh template list
-      window.location.reload();
+      console.log('Deleting template:', template);
+      console.log('Template ID:', template.id);
+      const result = await deleteTemplateFromStorage(template.id);
+      if (result.success) {
+        alert('Template deleted successfully!');
+        // Refresh template list
+        window.location.reload();
+      } else {
+        alert('Failed to delete template: ' + (result.error?.message || 'Unknown error'));
+      }
     } catch (err) {
+      console.error('Error deleting template:', err);
       alert('Failed to delete template: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };

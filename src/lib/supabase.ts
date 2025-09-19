@@ -599,8 +599,23 @@ export const deleteTemplateFromStorage = async (templateId: string) => {
       return { success: true };
     }
     
-    // Delete each file in the template folder
-    const deletePromises = files.map(async (file) => {
+    // Filter out directory entries and only delete actual files
+    const actualFiles = files.filter(file => 
+      file.name && 
+      file.name !== '' && 
+      !file.name.endsWith('/') &&
+      file.metadata?.mimetype !== 'application/x-directory'
+    );
+    
+    console.log(`Found ${actualFiles.length} actual files to delete out of ${files.length} total items`);
+    
+    if (actualFiles.length === 0) {
+      console.log('No actual files found to delete');
+      return { success: true };
+    }
+    
+    // Delete each actual file in the template folder
+    const deletePromises = actualFiles.map(async (file) => {
       try {
         console.log(`Attempting to delete file: ${templateId}/${file.name}`);
         const { error: deleteError } = await supabase.storage

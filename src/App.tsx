@@ -375,7 +375,7 @@ function AdminTools({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={setRefreshTemplatesRef}
+          refreshTemplates={setRefreshTemplatesRefProp}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -579,7 +579,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef: setRefreshTemplatesRefProp
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -636,7 +636,7 @@ function MainApp({
           projects={[]}
           onLoadProject={handleLoadProject}
           onLoadHtmlDraft={handleLoadHtmlDraft}
-          refreshTemplates={setRefreshTemplatesRef}
+          refreshTemplates={setRefreshTemplatesRefProp}
           onLoadSavedHtml={handleLoadSavedHtml}
           onDeleteSavedHtml={handleDeleteSavedHtml}
           onFileSelect={(file) => {
@@ -1386,16 +1386,26 @@ function App() {
     const confirmDelete = window.confirm(`Are you sure you want to delete the template "${template.name}"? This action cannot be undone.`);
     if (!confirmDelete) return;
     try {
-      console.log('Deleting template:', template);
+      console.log('=== DELETING TEMPLATE ===');
+      console.log('Template:', template);
       console.log('Template ID:', template.id);
+      console.log('RefreshTemplates function available:', !!refreshTemplates);
+      
       const result = await deleteTemplateFromStorage(template.id);
+      console.log('Delete result:', result);
+      
       if (result.success) {
+        console.log('Template deleted successfully, triggering refresh...');
         alert('Template deleted successfully!');
         // Trigger a refresh of the template list by updating the refresh key
         if (refreshTemplates) {
+          console.log('Calling refreshTemplates...');
           refreshTemplates();
+        } else {
+          console.warn('refreshTemplates function not available!');
         }
       } else {
+        console.error('Delete failed:', result.error);
         alert('Failed to delete template: ' + (result.error?.message || 'Unknown error'));
       }
     } catch (err) {

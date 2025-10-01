@@ -32,6 +32,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [intention, setIntention] = useState<'fix' | 'optimize' | 'brainstorm' | 'explain'>('fix');
+  const [previewMode, setPreviewMode] = useState(false);
+  const [modifiedCode, setModifiedCode] = useState('');
 
   // Map intentions to temperature and prompt styles
   const intentionConfig = {
@@ -116,22 +118,27 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
     handleSubmit(prompt);
   };
 
+  const handlePreviewChanges = () => {
+    if (response) {
+      setModifiedCode(response.suggestion);
+      setPreviewMode(true);
+    }
+  };
+
   const handleApplySuggestion = () => {
-    if (response?.suggestion && onApplySuggestion) {
-      // If the suggestion looks like a complete file replacement (contains <!DOCTYPE or <html>),
-      // warn the user and ask for confirmation
-      if (response.suggestion.includes('<!DOCTYPE') || response.suggestion.includes('<html')) {
-        const confirmReplace = window.confirm(
-          'This suggestion appears to be a complete file replacement. This will replace your entire code. Are you sure you want to continue?'
-        );
-        if (!confirmReplace) {
-          return;
-        }
-      }
-      
-      onApplySuggestion(response.suggestion);
+    if (modifiedCode && onApplySuggestion) {
+      onApplySuggestion(modifiedCode);
+      setResponse(null);
+      setQuery('');
+      setPreviewMode(false);
+      setModifiedCode('');
       onClose();
     }
+  };
+
+  const handleCancelPreview = () => {
+    setPreviewMode(false);
+    setModifiedCode('');
   };
 
   if (!open) return null;
@@ -282,15 +289,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
                 </div>
               )}
 
-              {response && (
+              {response && !previewMode && (
                 <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                    <h4 className="text-sm font-medium text-blue-800 mb-2">AI Suggestion</h4>
-                    <pre className="text-sm text-blue-700 whitespace-pre-wrap font-mono">
-                      {response.suggestion}
-                    </pre>
-                  </div>
-
                   <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
                     <h4 className="text-sm font-medium text-gray-800 mb-2">Explanation</h4>
                     <p className="text-sm text-gray-700">{response.explanation}</p>
@@ -301,10 +301,59 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
                       Confidence: {Math.round(response.confidence * 100)}%
                     </div>
                     <button
-                      onClick={handleApplySuggestion}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                      onClick={handlePreviewChanges}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-2"
                     >
-                      Apply Suggestion
+                      <Code className="w-4 h-4" />
+                      <span>Preview Changes</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {previewMode && (
+                <div className="space-y-4">
+                  {/* Side-by-side code comparison */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Original Code */}
+                    <div className="border border-gray-300 rounded-md overflow-hidden">
+                      <div className="bg-gray-100 px-3 py-2 border-b border-gray-300">
+                        <h4 className="text-xs font-semibold text-gray-700">Current Code</h4>
+                      </div>
+                      <div className="max-h-96 overflow-auto bg-gray-50 p-3">
+                        <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
+                          {code}
+                        </pre>
+                      </div>
+                    </div>
+
+                    {/* Modified Code */}
+                    <div className="border border-green-300 rounded-md overflow-hidden">
+                      <div className="bg-green-100 px-3 py-2 border-b border-green-300">
+                        <h4 className="text-xs font-semibold text-green-700">Ridey's Suggestion</h4>
+                      </div>
+                      <div className="max-h-96 overflow-auto bg-green-50 p-3">
+                        <pre className="text-xs text-green-800 whitespace-pre-wrap font-mono">
+                          {modifiedCode}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center justify-end space-x-3 pt-2">
+                    <button
+                      onClick={handleCancelPreview}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleApplySuggestion}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center space-x-2"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>Apply Changes</span>
                     </button>
                   </div>
                 </div>

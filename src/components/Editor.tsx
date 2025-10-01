@@ -159,39 +159,9 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, on
   };
 
   const handleApplyAISuggestion = (suggestion: string) => {
-    // If the suggestion looks like a complete file replacement, warn the user
-    if (suggestion.includes('<!DOCTYPE') || suggestion.includes('<html') || suggestion.includes('<!doctype')) {
-      const confirmReplace = window.confirm(
-        'This appears to be a complete file replacement. This will replace your entire code. Are you sure you want to continue?'
-      );
-      if (!confirmReplace) {
-        return;
-      }
-      onChange(suggestion);
-      return;
-    }
-
-    // For targeted suggestions, insert at cursor position like Snippets
-    if (!editorViewRef.current) return;
-    
-    const view = editorViewRef.current;
-    const selection = view.state.selection;
-    
-    // Get the cursor position (or selection range)
-    const from = selection.main.from;
-    const to = selection.main.to;
-    
-    // Create a transaction to insert the code at the cursor position
-    const transaction = view.state.update({
-      changes: {
-        from: from,
-        to: to,
-        insert: suggestion
-      },
-      selection: { anchor: from + suggestion.length }
-    });
-    
-    view.dispatch(transaction);
+    // With the new preview mode, user has already reviewed the changes
+    // Just apply the complete code replacement
+    onChange(suggestion);
   };
 
 

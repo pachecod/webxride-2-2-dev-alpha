@@ -18,10 +18,6 @@ export async function analyzeCodeWithAI(request: AIRequest): Promise<AIResponse>
 
   // Check if OpenAI API key is configured
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  console.log('OpenAI API Key check:', apiKey ? 'Key found' : 'No key found');
-  console.log('API Key length:', apiKey ? apiKey.length : 'N/A');
-  console.log('API Key starts with:', apiKey ? apiKey.substring(0, 20) + '...' : 'N/A');
-  console.log('API Key ends with:', apiKey ? '...' + apiKey.substring(apiKey.length - 10) : 'N/A');
   
   // Configurable model and generation settings with safe defaults for coding tasks
   const model = (import.meta.env.VITE_OPENAI_MODEL as string) || 'gpt-4o-mini';

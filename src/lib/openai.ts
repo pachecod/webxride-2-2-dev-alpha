@@ -115,7 +115,7 @@ Please provide suggestions for improvement, bug fixes, or answers to the user's 
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        // Required for newer project-scoped keys (ysk-/sk-proj-)
+        // Required for newer project-scoped API keys
         'OpenAI-Beta': 'new-keys=true',
       },
       body: JSON.stringify({

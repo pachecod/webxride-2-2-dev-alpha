@@ -31,17 +31,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
   const [response, setResponse] = useState<AIResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [intention, setIntention] = useState<'fix' | 'optimize' | 'brainstorm' | 'explain'>('fix');
+  const [temperature, setTemperature] = useState<number>(0.2);
   const [previewMode, setPreviewMode] = useState(false);
   const [modifiedCode, setModifiedCode] = useState('');
-
-  // Map intentions to temperature and prompt styles
-  const intentionConfig = {
-    fix: { temperature: 0.1, label: '🐛 Fix Bugs', description: 'Precise fixes, low creativity' },
-    optimize: { temperature: 0.2, label: '⚡ Optimize', description: 'Performance improvements' },
-    explain: { temperature: 0.3, label: '📚 Explain', description: 'Clear explanations' },
-    brainstorm: { temperature: 0.7, label: '💡 Brainstorm', description: 'Creative ideas, high creativity' }
-  };
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -60,27 +52,23 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
   const quickPrompts = [
     {
       icon: <Bug className="w-4 h-4 text-gray-700" />,
-      text: "Fix bugs and errors",
-      prompt: "Please review this code and identify any bugs, errors, or potential issues. Provide fixes and explanations.",
-      intention: 'fix' as const
+      text: "Find bugs",
+      prompt: "Please review this code and identify bugs, errors, or potential issues. Provide fixes and explanations."
     },
     {
       icon: <Zap className="w-4 h-4 text-gray-700" />,
-      text: "Optimize performance",
-      prompt: "Please analyze this code for performance improvements and optimization opportunities. Suggest specific changes.",
-      intention: 'optimize' as const
+      text: "Optimize",
+      prompt: "Please analyze this code for performance improvements and optimization opportunities. Suggest specific, safe changes."
     },
     {
       icon: <Lightbulb className="w-4 h-4 text-gray-700" />,
-      text: "Add new features",
-      prompt: "Please suggest how to add new features or functionality to this code. Provide code examples and implementation details.",
-      intention: 'brainstorm' as const
+      text: "Add features",
+      prompt: "Suggest how to add useful features or functionality to this code. Provide complete, working examples." 
     },
     {
       icon: <Code className="w-4 h-4 text-gray-700" />,
-      text: "Improve code quality",
-      prompt: "Please review this code and suggest improvements for readability, maintainability, and best practices.",
-      intention: 'explain' as const
+      text: "Improve quality",
+      prompt: "Suggest improvements for readability, maintainability, and best practices."
     }
   ];
 
@@ -99,7 +87,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
         fileName,
         prompt,
         context: 'WebXR development with A-Frame, Three.js, and modern web technologies',
-        temperature: intentionConfig[intention].temperature
+        temperature
       });
       setResponse(data);
     } catch (err) {
@@ -141,6 +129,39 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
     setModifiedCode('');
   };
 
+  // Simple line-based diff (LCS) to highlight additions/deletions in one view
+  type DiffPart = { type: 'equal' | 'add' | 'del'; text: string };
+  const computeLineDiff = (a: string, b: string): DiffPart[] => {
+    const aLines = a.split('\n');
+    const bLines = b.split('\n');
+
+    const n = aLines.length;
+    const m = bLines.length;
+    const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--) {
+      for (let j = m - 1; j >= 0; j--) {
+        if (aLines[i] === bLines[j]) dp[i][j] = dp[i + 1][j + 1] + 1; else dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    const parts: DiffPart[] = [];
+    let i = 0, j = 0;
+    while (i < n && j < m) {
+      if (aLines[i] === bLines[j]) {
+        parts.push({ type: 'equal', text: aLines[i] });
+        i++; j++;
+      } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+        parts.push({ type: 'del', text: aLines[i] });
+        i++;
+      } else {
+        parts.push({ type: 'add', text: bLines[j] });
+        j++;
+      }
+    }
+    while (i < n) { parts.push({ type: 'del', text: aLines[i++] }); }
+    while (j < m) { parts.push({ type: 'add', text: bLines[j++] }); }
+    return parts;
+  };
+
   if (!open) return null;
 
   return (
@@ -178,27 +199,23 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
           </button>
         </div>
 
-        {/* Intention Selector */}
+        {/* Temperature Control */}
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">What would you like Ridey to do?</h3>
-          <div className="flex space-x-2">
-            {Object.entries(intentionConfig).map(([key, config]) => (
-              <button
-                key={key}
-                onClick={() => setIntention(key as keyof typeof intentionConfig)}
-                className={`px-3 py-2 text-sm rounded-md border transition-colors ${
-                  intention === key
-                    ? 'bg-purple-100 border-purple-300 text-purple-800'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-                title={config.description}
-              >
-                {config.label}
-              </button>
-            ))}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-700">Temperature</h3>
+            <div className="text-xs text-gray-600 tabular-nums">{temperature.toFixed(2)}</div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            {intentionConfig[intention].description} (Temperature: {intentionConfig[intention].temperature})
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={temperature}
+            onChange={(e) => setTemperature(parseFloat(e.target.value))}
+            className="w-full mt-2"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Lower temperature makes Ridey more precise and deterministic. Higher temperature makes Ridey more creative and exploratory.
           </p>
         </div>
 
@@ -217,23 +234,6 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
 
           {/* Right Panel - AI Interaction */}
           <div className="w-1/2 flex flex-col">
-            {/* Quick Prompts */}
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {quickPrompts.map((prompt, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickPrompt(prompt.prompt, prompt.intention)}
-                    className="flex items-center space-x-2 p-2 text-left text-sm text-gray-900 bg-gray-50 hover:bg-gray-100 rounded border"
-                    disabled={loading}
-                  >
-                    {prompt.icon}
-                    <span>{prompt.text}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* Query Input */}
             <div className="p-4 border-b border-gray-200">
@@ -268,7 +268,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
                       size={60}
                       className="mx-auto mb-3"
                     />
-                    <p className="text-sm text-gray-600">Analyzing your code...</p>
+                    <p className="text-sm text-gray-600">Working under the hood...</p>
                     <p className="text-xs text-gray-400 mt-1">This might take a moment</p>
                   </div>
                 </div>
@@ -312,49 +312,72 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
               )}
 
               {previewMode && (
-                <div className="space-y-4">
-                  {/* Side-by-side code comparison */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Original Code */}
-                    <div className="border border-gray-300 rounded-md overflow-hidden">
-                      <div className="bg-gray-100 px-3 py-2 border-b border-gray-300">
-                        <h4 className="text-xs font-semibold text-gray-700">Current Code</h4>
+                // Overlay modal inside the assistant (80% of width/height)
+                <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) handleCancelPreview();
+                  }}
+                >
+                  <div className="bg-white w-[80%] h-[80%] rounded-lg shadow-xl border border-gray-200 flex flex-col">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+                      <h4 className="text-sm font-semibold text-gray-800">Preview Changes</h4>
+                      <div className="text-xs text-gray-600">
+                        <span className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-900">Red = removed</span>
+                        <span className="inline-block ml-2 px-2 py-0.5 rounded bg-green-100 text-green-900">Green = added</span>
                       </div>
-                      <div className="max-h-96 overflow-auto bg-gray-50 p-3">
-                        <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
-                          {code}
-                        </pre>
+                      <button onClick={handleCancelPreview} className="p-2 hover:bg-gray-100 rounded text-gray-600">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex-1 p-0 bg-white overflow-hidden">
+                      <div className="grid grid-cols-2 h-full">
+                        {/* Left: Code diff */}
+                        <div className="overflow-auto p-4 bg-gray-50 border-r border-gray-200">
+                          <pre className="text-xs whitespace-pre font-mono leading-5">
+                            {computeLineDiff(code, modifiedCode).map((part, idx) => (
+                              <div key={idx}
+                                className={
+                                  part.type === 'add' ? 'bg-green-100 text-green-900' :
+                                  part.type === 'del' ? 'bg-red-100 text-red-900 line-through' : 'text-gray-800'
+                                }
+                              >
+                                {part.text}
+                              </div>
+                            ))}
+                          </pre>
+                        </div>
+                        {/* Right: Visual preview (HTML only) */}
+                        <div className="overflow-hidden bg-white">
+                          {language === 'html' ? (
+                            <iframe
+                              title="Ridey Preview"
+                              className="w-full h-full"
+                              sandbox="allow-scripts allow-same-origin"
+                              srcDoc={modifiedCode}
+                            />
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                              Visual preview is available for HTML files only.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-
-                    {/* Modified Code */}
-                    <div className="border border-green-300 rounded-md overflow-hidden">
-                      <div className="bg-green-100 px-3 py-2 border-b border-green-300">
-                        <h4 className="text-xs font-semibold text-green-700">Ridey's Suggestion</h4>
-                      </div>
-                      <div className="max-h-96 overflow-auto bg-green-50 p-3">
-                        <pre className="text-xs text-green-800 whitespace-pre-wrap font-mono">
-                          {modifiedCode}
-                        </pre>
-                      </div>
+                    <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-gray-200 bg-white">
+                      <button
+                        onClick={handleCancelPreview}
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleApplySuggestion}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center space-x-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Apply Changes</span>
+                      </button>
                     </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex items-center justify-end space-x-3 pt-2">
-                    <button
-                      onClick={handleCancelPreview}
-                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleApplySuggestion}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center space-x-2"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>Apply Changes</span>
-                    </button>
                   </div>
                 </div>
               )}

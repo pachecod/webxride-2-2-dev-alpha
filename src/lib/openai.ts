@@ -118,7 +118,23 @@ Please provide suggestions for improvement, bug fixes, or answers to the user's 
         max_tokens: maxTokens,
         temperature,
         top_p: topP,
-        response_format: { type: "json_object" }
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "ai_response",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                suggestion: { type: "string" },
+                explanation: { type: "string" },
+                confidence: { type: "number", minimum: 0, maximum: 1 }
+              },
+              required: ["suggestion", "explanation", "confidence"]
+            }
+          }
+        }
       }),
     });
 
@@ -144,8 +160,34 @@ Please provide suggestions for improvement, bug fixes, or answers to the user's 
       throw new Error('No response from OpenAI API');
     }
 
-    // Parse the JSON response
-    const aiResponse = JSON.parse(content);
+    // Parse the JSON response (be robust to code fences or extra text)
+    let jsonText = content.trim();
+    // Remove markdown code fences if present
+    if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```[a-zA-Z]*\n?/, '').replace(/```\s*$/, '').trim();
+    }
+    // If still not valid, try to extract the first JSON object
+    let aiResponse: any;
+    try {
+      aiResponse = JSON.parse(jsonText);
+    } catch (parseErr) {
+      // Second attempt: extract the first JSON object and parse
+      try {
+        const match = jsonText.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('no-json-object');
+        aiResponse = JSON.parse(match[0]);
+      } catch {
+        // Final fallback: treat content as free-form; extract code block as suggestion
+        console.warn('Falling back to non-JSON parsing for AI response:', parseErr);
+        const fenced = content.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
+        const fallbackSuggestion = fenced ? fenced[1] : content;
+        return {
+          suggestion: fallbackSuggestion,
+          explanation: 'AI returned a non-JSON response. Showing best-effort suggestion. You can still preview and apply.',
+          confidence: 0.5
+        };
+      }
+    }
     
     // Validate the response structure
     if (!aiResponse.suggestion || !aiResponse.explanation) {
@@ -160,7 +202,8 @@ Please provide suggestions for improvement, bug fixes, or answers to the user's 
 
   } catch (error) {
     console.error('OpenAI API error:', error);
-    throw error;
+    // Return a safe fallback instead of throwing, so the UI can still show a preview
+    return createFallbackResponse(prompt, code, language);
   }
 }
 

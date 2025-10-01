@@ -20,7 +20,7 @@ WebXRide includes an optional AI-powered code assistant called "Ridey" that can 
 2. Sign up or log in to your account
 3. Navigate to API Keys section
 4. Create a new API key
-5. Copy the key (it starts with `sk-`)
+5. Copy the key (starts with letters like your-key-here)
 
 ### 2. Configure Environment Variables
 
@@ -28,7 +28,7 @@ Add your OpenAI API key to your `.env.development` file:
 
 ```bash
 # OpenAI API Configuration
-VITE_OPENAI_API_KEY=sk-your-actual-api-key-here
+VITE_OPENAI_API_KEY=your-actual-openai-api-key-here
 ```
 
 Optional tuning (defaults shown):

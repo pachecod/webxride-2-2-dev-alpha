@@ -5,7 +5,7 @@
 
   <head>
     <meta charset="UTF-8" />
-    <title>Agriquest Vegetable Museum</title>
+    <title>WebXRide Vegetable Museum</title>
     <!-- Prevent default mobile zoom behavior -->
     <meta
       name="viewport"
@@ -291,7 +291,7 @@
       day-night-cycle="cycleLength: 180">
       
       <!-- UI Overlays -->
-      <div class="museum-info">Welcome to the Vegetable Museum</div>
+      <div class="museum-info">Welcome to the WebXRide Vegetable Museum</div>
       
       <!-- Camera Rig with Enhanced Controls -->
       <a-entity
@@ -452,7 +452,7 @@
           <a-entity
             id="info-text"
             position="0 -1.6 0"
-            text="value: Welcome to the Agriquest Vegetable Museum! Explore the world of vegetables in this interactive 3D exhibit. Click on the hotspots to learn more about each vegetable.; width: 3; color: #FFFFFF; align: center"
+            text="value: Welcome to the WebXRide Vegetable Museum! Explore the world of vegetables in this interactive 3D exhibit. Click on the hotspots to learn more about each vegetable.; width: 3; color: #FFFFFF; align: center"
             geometry="primitive: plane; width: 4; height: 0.8"
             material="color: #333333; opacity: 0.8; shader: flat"
           ></a-entity>
@@ -583,7 +583,7 @@
             const infoText = document.querySelector("#info-text");
             switch(currentIndex) {
               case 0:
-                infoText.setAttribute("text", "value", "Welcome to the Agriquest Vegetable Museum! Explore the world of vegetables in this interactive 3D exhibit. Click on the hotspots to learn more about each vegetable.");
+                infoText.setAttribute("text", "value", "Welcome to the WebXRide Vegetable Museum! Explore the world of vegetables in this interactive 3D exhibit. Click on the hotspots to learn more about each vegetable.");
                 break;
               case 1:
                 infoText.setAttribute("text", "value", "Carrots are rich in beta-carotene which is good for eye health. They can be enjoyed raw or cooked in a variety of dishes.");

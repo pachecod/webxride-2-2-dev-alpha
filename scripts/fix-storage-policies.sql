@@ -1,4 +1,4 @@
--- Fix Storage Policies for WebxRide AgriQuest
+-- Fix Storage Policies for WebxRide
 -- This script fixes the RLS policies to match the actual folder structure used by the application
 
 -- 1. Drop existing policies (if any)

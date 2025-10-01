@@ -2,7 +2,7 @@
   "embeds": [
     {
       "id": "360agriquest",
-      "title": "360 Agriquest",
+      "title": "360 WebXRide",
       "path": "/embeds/360agriquest/index.html",
       "type": "embeds"
     },
@@ -32,7 +32,7 @@
     },
     {
       "id": "immersivemuseum",
-      "title": "Agriquest Vegetable Museum",
+      "title": "WebXRide Vegetable Museum",
       "path": "/embeds/immersivemuseum/index.html",
       "type": "embeds"
     },

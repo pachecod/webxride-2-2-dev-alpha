@@ -264,8 +264,6 @@ function AdminTools({
   setPreviewKey, 
   splitPosition, 
   setSplitPosition, 
-  isDragging, 
-  setIsDragging, 
   showPreview, 
   setShowPreview, 
   isPreviewExternal, 
@@ -284,9 +282,6 @@ function AdminTools({
   handleLoadHtmlDraft, 
   activeFile, 
   togglePreview, 
-  handleMouseDown, 
-  handleMouseUp, 
-  handleMouseMove, 
   handleCopyCode, 
   handleSaveTemplate, 
   handleSaveHtml, 
@@ -299,7 +294,12 @@ function AdminTools({
   handleAddFile, 
   showAdminPanel, 
   setShowAdminPanel,
-  showSaveTemplateButton
+  showSaveTemplateButton,
+  rideyEnabled,
+  handleRideyToggle,
+  setSplitToEditor,
+  setSplitToEven,
+  setSplitToPreview
 }: any) {
   const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
   const [showClassManagement, setShowClassManagement] = useState(false);
@@ -395,15 +395,12 @@ function AdminTools({
             onAddFile={handleAddFile}
             onNewTemplate={() => setShowNewTemplateDialog(true)}
           />
-          <div 
-            className="flex flex-1 overflow-hidden relative"
-            onMouseMove={handleMouseMove}
-          >
+          <div className="flex flex-1 overflow-hidden relative">
             <div 
               className="h-full overflow-hidden transition-[width] duration-300 ease-in-out relative"
               style={{ width: showPreview ? `${splitPosition}%` : '100%' }}
             >
-              <div className="absolute top-2 right-2 z-10 flex gap-2">
+              <div className="absolute top-2 right-2 z-10">
                 {!showPreview && (
                   <button 
                     onClick={togglePreview}
@@ -422,41 +419,75 @@ function AdminTools({
                 onChange={(value) => updateFile(activeFileId, value)}
                 showInspectorButton={isAframeContent()}
                 onOpenInspector={handleOpenInspector}
+                rideyEnabled={rideyEnabled}
               />
             </div>
             <div 
-              className="w-2 bg-gray-800 hover:bg-blue-500 transition-colors cursor-col-resize"
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-            />
-            <div 
-              className="h-full overflow-hidden transition-[width] duration-300 ease-in-out"
+              className="flex flex-col transition-[width] duration-300 ease-in-out"
               style={{ width: showPreview ? `${100 - splitPosition}%` : '0%' }}
             >
-              <Preview 
-                key={previewKey}
-                files={project.files}
-                framework={project.framework}
-                project={project}
-                onPreviewModeChange={(isExternal) => {
-                  setIsPreviewExternal(isExternal);
-                  setShowPreview(!isExternal);
-                }}
-                onHidePreview={togglePreview}
-                onInspectorSave={(updatedHtml) => {
-                  console.log('Received updated HTML from A-Frame inspector, length:', updatedHtml.length);
-                  // Update the HTML file content
-                  const htmlFile = project.files.find((f: any) => f.id === 'index.html');
-                  if (htmlFile) {
-                    console.log('Updating HTML file with new content');
-                    updateFile('index.html', updatedHtml);
-                    // Show success message
-                    alert('Changes from A-Frame Inspector have been saved to the editor!');
-                  } else {
-                    console.log('No HTML file found in project');
-                  }
-                }}
-              />
+              <div className="flex-1 overflow-hidden">
+                <Preview 
+                  key={previewKey}
+                  files={project.files}
+                  framework={project.framework}
+                  project={project}
+                  onPreviewModeChange={(isExternal) => {
+                    setIsPreviewExternal(isExternal);
+                    setShowPreview(!isExternal);
+                  }}
+                  onHidePreview={togglePreview}
+                  onInspectorSave={(updatedHtml) => {
+                    console.log('Received updated HTML from A-Frame inspector, length:', updatedHtml.length);
+                    // Update the HTML file content
+                    const htmlFile = project.files.find((f: any) => f.id === 'index.html');
+                    if (htmlFile) {
+                      console.log('Updating HTML file with new content');
+                      updateFile('index.html', updatedHtml);
+                      // Show success message
+                      alert('Changes from A-Frame Inspector have been saved to the editor!');
+                    } else {
+                      console.log('No HTML file found in project');
+                    }
+                  }}
+                />
+              </div>
+              {showPreview && (
+                <div className="bg-gray-800 border-t border-gray-700 px-3 py-2 flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-xs font-medium">Resize:</span>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={setSplitToEditor}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          splitPosition === 80 ? 'bg-blue-600 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                        }`}
+                        title="Small Preview (Focus on Editor)"
+                      >
+                        Small
+                      </button>
+                      <button 
+                        onClick={setSplitToEven}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          splitPosition === 50 ? 'bg-blue-600 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                        }`}
+                        title="Medium Preview (Equal Split)"
+                      >
+                        Medium
+                      </button>
+                      <button 
+                        onClick={setSplitToPreview}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          splitPosition === 20 ? 'bg-blue-600 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                        }`}
+                        title="Large Preview (Focus on Preview)"
+                      >
+                        Large
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -522,7 +553,34 @@ function AdminTools({
               
               <div className="space-y-6">
                 {/* Student Management */}
-                {!showClassManagement && !showSnippets && !showAboutPage && <StudentManagement />}
+                {!showClassManagement && !showSnippets && !showAboutPage && (
+                  <div className="space-y-6">
+                    {/* AI Assistant Settings */}
+                    <div className="bg-gray-700 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-white mb-3">AI Assistant Settings</h3>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="text-gray-300 text-sm font-medium">Enable Ridey AI Assistant</label>
+                          <p className="text-gray-400 text-xs mt-1">
+                            Allow students to use the AI assistant for code suggestions
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={rideyEnabled}
+                            onChange={handleRideyToggle}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {/* Student Management */}
+                    <StudentManagement />
+                  </div>
+                )}
                 
                 {/* Class Management */}
                 {showClassManagement && (
@@ -579,7 +637,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, isDragging, setIsDragging, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleMouseDown, handleMouseUp, handleMouseMove, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, setSplitToEditor, setSplitToEven, setSplitToPreview
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -656,10 +714,7 @@ function MainApp({
             onAddFile={handleAddFile}
             onNewTemplate={() => setShowNewTemplateDialog(true)}
           />
-          <div 
-            className="flex flex-1 overflow-hidden relative"
-            onMouseMove={handleMouseMove}
-          >
+          <div className="flex flex-1 overflow-hidden relative">
             <div 
               className="h-full overflow-hidden transition-[width] duration-300 ease-in-out relative"
               style={{ width: showPreview ? `${splitPosition}%` : '100%' }}
@@ -683,38 +738,72 @@ function MainApp({
                 onChange={(value) => updateFile(activeFileId, value)}
                 showInspectorButton={isAframeContent()}
                 onOpenInspector={handleOpenInspectorMain}
+                rideyEnabled={rideyEnabled}
               />
             </div>
             <div 
-              className="w-2 bg-gray-800 hover:bg-blue-500 transition-colors cursor-col-resize"
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-            />
-            <div 
-              className="h-full overflow-hidden transition-[width] duration-300 ease-in-out"
+              className="flex flex-col transition-[width] duration-300 ease-in-out"
               style={{ width: showPreview ? `${100 - splitPosition}%` : '0%' }}
             >
-              <Preview 
-                key={previewKey}
-                files={project.files}
-                framework={project.framework}
-                project={project}
-                onPreviewModeChange={(isExternal) => {
-                  setIsPreviewExternal(isExternal);
-                  setShowPreview(!isExternal);
-                }}
-                onHidePreview={togglePreview}
-                onInspectorSave={(updatedHtml) => {
-                  console.log('Received updated HTML from A-Frame inspector');
-                  // Update the HTML file content
-                  const htmlFile = project.files.find((f: File) => f.id === 'index.html');
-                  if (htmlFile) {
-                    updateFile('index.html', updatedHtml);
-                    // Show success message
-                    alert('Changes from A-Frame Inspector have been saved to the editor!');
-                  }
-                }}
-              />
+              <div className="flex-1 overflow-hidden">
+                <Preview 
+                  key={previewKey}
+                  files={project.files}
+                  framework={project.framework}
+                  project={project}
+                  onPreviewModeChange={(isExternal) => {
+                    setIsPreviewExternal(isExternal);
+                    setShowPreview(!isExternal);
+                  }}
+                  onHidePreview={togglePreview}
+                  onInspectorSave={(updatedHtml) => {
+                    console.log('Received updated HTML from A-Frame inspector');
+                    // Update the HTML file content
+                    const htmlFile = project.files.find((f: File) => f.id === 'index.html');
+                    if (htmlFile) {
+                      updateFile('index.html', updatedHtml);
+                      // Show success message
+                      alert('Changes from A-Frame Inspector have been saved to the editor!');
+                    }
+                  }}
+                />
+              </div>
+              {showPreview && (
+                <div className="bg-gray-800 border-t border-gray-700 px-3 py-2 flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-xs font-medium">Resize:</span>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={setSplitToEditor}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          splitPosition === 80 ? 'bg-blue-600 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                        }`}
+                        title="Small Preview (Focus on Editor)"
+                      >
+                        Small
+                      </button>
+                      <button 
+                        onClick={setSplitToEven}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          splitPosition === 50 ? 'bg-blue-600 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                        }`}
+                        title="Medium Preview (Equal Split)"
+                      >
+                        Medium
+                      </button>
+                      <button 
+                        onClick={setSplitToPreview}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          splitPosition === 20 ? 'bg-blue-600 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                        }`}
+                        title="Large Preview (Focus on Preview)"
+                      >
+                        Large
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -764,7 +853,6 @@ function App() {
   const [activeFileId, setActiveFileId] = useState<string>('index.html');
   const [previewKey, setPreviewKey] = useState<number>(0);
   const [splitPosition, setSplitPosition] = useState<number>(50);
-  const [isDragging, setIsDragging] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [isPreviewExternal, setIsPreviewExternal] = useState(false);
   const [templates, setTemplates] = useState<Project[]>([]);
@@ -776,6 +864,11 @@ function App() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
   const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
+  const [rideyEnabled, setRideyEnabled] = useState(() => {
+    // Load Ridey setting from localStorage, default to false (disabled)
+    const saved = localStorage.getItem('ridey-enabled');
+    return saved === 'true';
+  });
 
   // Function to refresh templates (will be set by Sidebar)
   const refreshTemplates = () => {
@@ -793,6 +886,16 @@ function App() {
       localStorage.removeItem('selected-user');
     }
   }, [selectedUser]);
+
+  // Save Ridey setting to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ridey-enabled', rideyEnabled.toString());
+  }, [rideyEnabled]);
+
+  // Function to handle Ridey toggle
+  const handleRideyToggle = () => {
+    setRideyEnabled(!rideyEnabled);
+  };
 
   // Load default template when app starts if user is already selected and project is minimalTemplate
   useEffect(() => {
@@ -989,24 +1092,10 @@ function App() {
     }
   };
 
-  const handleMouseDown = () => {
-    setIsDragging(true);
-    document.body.style.cursor = 'col-resize';
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    document.body.style.cursor = 'default';
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    
-    const container = e.currentTarget as HTMLDivElement;
-    const containerRect = container.getBoundingClientRect();
-    const newPosition = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-    setSplitPosition(Math.max(20, Math.min(80, newPosition)));
-  };
+  // Simple preset split functions
+  const setSplitToEditor = () => setSplitPosition(80);
+  const setSplitToEven = () => setSplitPosition(50);
+  const setSplitToPreview = () => setSplitPosition(20);
 
   const handleCopyCode = async () => {
     try {
@@ -1459,17 +1548,6 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        document.body.style.cursor = 'default';
-      }
-    };
-
-    document.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [isDragging]);
 
   // Listen for hotspot template data from the bridge
   useEffect(() => {
@@ -1646,8 +1724,6 @@ function App() {
               setPreviewKey={setPreviewKey}
               splitPosition={splitPosition}
               setSplitPosition={setSplitPosition}
-              isDragging={isDragging}
-              setIsDragging={setIsDragging}
               showPreview={showPreview}
               setShowPreview={setShowPreview}
               isPreviewExternal={isPreviewExternal}
@@ -1666,9 +1742,6 @@ function App() {
               handleLoadHtmlDraft={handleLoadHtmlDraft}
               activeFile={activeFile}
               togglePreview={togglePreview}
-              handleMouseDown={handleMouseDown}
-              handleMouseUp={handleMouseUp}
-              handleMouseMove={handleMouseMove}
               handleCopyCode={handleCopyCode}
               handleSaveTemplate={handleSaveTemplate}
               handleSaveHtml={handleSaveHtml}
@@ -1683,6 +1756,11 @@ function App() {
               setShowAdminPanel={setShowAdminPanel}
               showSaveTemplateButton={true}
               handleExportLocalSite={handleExportLocalSite}
+              rideyEnabled={rideyEnabled}
+              handleRideyToggle={handleRideyToggle}
+              setSplitToEditor={setSplitToEditor}
+              setSplitToEven={setSplitToEven}
+              setSplitToPreview={setSplitToPreview}
             />
           </AdminPasswordGate>
         } />
@@ -1715,8 +1793,6 @@ function App() {
               setPreviewKey={setPreviewKey}
               splitPosition={splitPosition}
               setSplitPosition={setSplitPosition}
-              isDragging={isDragging}
-              setIsDragging={setIsDragging}
               showPreview={showPreview}
               setShowPreview={setShowPreview}
               isPreviewExternal={isPreviewExternal}
@@ -1735,9 +1811,6 @@ function App() {
               handleLoadHtmlDraft={handleLoadHtmlDraft}
               activeFile={activeFile}
               togglePreview={togglePreview}
-              handleMouseDown={handleMouseDown}
-              handleMouseUp={handleMouseUp}
-              handleMouseMove={handleMouseMove}
               handleCopyCode={handleCopyCode}
               showSaveTemplateButton={false}
               handleSaveHtml={handleSaveHtml}
@@ -1751,7 +1824,10 @@ function App() {
               handleExportLocalSite={handleExportLocalSite}
               refreshTemplates={refreshTemplates}
               setRefreshTemplatesRef={setRefreshTemplatesRef}
-
+              rideyEnabled={rideyEnabled}
+              setSplitToEditor={setSplitToEditor}
+              setSplitToEven={setSplitToEven}
+              setSplitToPreview={setSplitToPreview}
             />
           </StudentPasswordGate>
         } />

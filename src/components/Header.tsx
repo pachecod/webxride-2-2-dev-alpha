@@ -1,5 +1,5 @@
 import React from 'react';
-import { Code, Save, Copy, Settings, AlertTriangle, Sparkles, Download } from 'lucide-react';
+import { Settings, AlertTriangle, Sparkles, Download } from 'lucide-react';
 import { ClassUserSelector } from './ClassUserSelector';
 import webxrideLogo from '../assets/webxride-logo.png';
 // import { FileUpload } from './FileUpload';
@@ -18,7 +18,6 @@ interface HeaderProps {
   onExportLocalSite?: () => void;
 }
 
-const TEACHER_CODE = import.meta.env.VITE_TEACHER_CODE;
 
 // Function to determine if this is a development deployment
 const isDevelopmentDeployment = (): boolean => {

@@ -82,3 +82,16 @@ jspm_packages/
 
 # DynamoDB Local files
 .dynamodb/
+
+# Additional environment files
+.env.backup
+.env.development
+.env.test
+*.env
+
+# Test files with sensitive data
+test-api-key.html
+test-openai-direct.html
+
+# Local configuration
+.vscode/settings.json

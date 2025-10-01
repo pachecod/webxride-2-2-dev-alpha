@@ -7,8 +7,9 @@ import { css } from '@codemirror/lang-css';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { FileType } from '../types';
-import { Copy, Settings } from 'lucide-react';
+import { Copy, Settings, Sparkles } from 'lucide-react';
 import { SnippetsModal } from './SnippetsModal';
+import AIAssistant from './AIAssistant';
 
 interface EditorProps {
   value: string;
@@ -17,13 +18,15 @@ interface EditorProps {
   fileName?: string; // Add fileName prop for custom file type detection
   onOpenInspector?: () => void;
   showInspectorButton?: boolean;
+  rideyEnabled?: boolean; // Whether the AI assistant is enabled
 }
 
-const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, onOpenInspector, showInspectorButton }) => {
+const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, onOpenInspector, showInspectorButton, rideyEnabled = false }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView>();
   const [copied, setCopied] = useState(false);
   const [showSnippetsModal, setShowSnippetsModal] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Debug logging
   console.log('Editor props:', { value: value?.substring(0, 100), language, valueLength: value?.length });
@@ -155,6 +158,43 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, on
     setShowSnippetsModal(false);
   };
 
+  const handleApplyAISuggestion = (suggestion: string) => {
+    // If the suggestion looks like a complete file replacement, warn the user
+    if (suggestion.includes('<!DOCTYPE') || suggestion.includes('<html') || suggestion.includes('<!doctype')) {
+      const confirmReplace = window.confirm(
+        'This appears to be a complete file replacement. This will replace your entire code. Are you sure you want to continue?'
+      );
+      if (!confirmReplace) {
+        return;
+      }
+      onChange(suggestion);
+      return;
+    }
+
+    // For targeted suggestions, insert at cursor position like Snippets
+    if (!editorViewRef.current) return;
+    
+    const view = editorViewRef.current;
+    const selection = view.state.selection;
+    
+    // Get the cursor position (or selection range)
+    const from = selection.main.from;
+    const to = selection.main.to;
+    
+    // Create a transaction to insert the code at the cursor position
+    const transaction = view.state.update({
+      changes: {
+        from: from,
+        to: to,
+        insert: suggestion
+      },
+      selection: { anchor: from + suggestion.length }
+    });
+    
+    view.dispatch(transaction);
+  };
+
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
@@ -174,6 +214,16 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, on
           >
             Snippets
           </button>
+          {rideyEnabled && (
+            <button
+              className="flex items-center space-x-1 px-2 py-1 text-xs bg-purple-700 rounded hover:bg-purple-600 text-white"
+              onClick={() => setShowAIAssistant(true)}
+              title="Ridey · AI Code Assistant"
+            >
+              <Sparkles size={12} />
+              <span>Ask Ridey</span>
+            </button>
+          )}
           {showInspectorButton && onOpenInspector && (
             <button
               onClick={onOpenInspector}
@@ -197,6 +247,16 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, on
         onClose={() => setShowSnippetsModal(false)} 
         onInsert={handleInsertSnippet}
       />
+      {rideyEnabled && (
+        <AIAssistant
+          open={showAIAssistant}
+          onClose={() => setShowAIAssistant(false)}
+          code={value}
+          language={language}
+          fileName={fileName}
+          onApplySuggestion={handleApplyAISuggestion}
+        />
+      )}
     </div>
   );
 };

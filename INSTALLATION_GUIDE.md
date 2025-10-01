@@ -1,10 +1,10 @@
-# 🚀 WebXRide Complete Installation Guide
+# WebXRide Complete Installation Guide
 
 This guide will walk you through installing and running a **fresh instance** of WebXRide from scratch, including all the latest performance optimizations and features.
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Node.js** 18+ and npm
 - **Git** for cloning the repository
@@ -13,7 +13,7 @@ This guide will walk you through installing and running a **fresh instance** of 
 
 ---
 
-## 🏗️ Step 1: Clone and Setup
+## Step 1: Clone and Setup
 
 ```bash
 # Clone the repository
@@ -26,7 +26,7 @@ npm install
 
 ---
 
-## 🔐 Step 2: Environment Configuration
+## Step 2: Environment Configuration
 
 Create a `.env` file in the project root:
 
@@ -41,6 +41,14 @@ VITE_STUDENT_PASSWORD=your_student_password_here
 
 # Optional: Teacher Code
 VITE_TEACHER_CODE=your_teacher_code_here
+
+# Optional: AI Assistant (Ridey) - Only add if you want AI features
+# VITE_OPENAI_API_KEY=your_openai_api_key_here
+# VITE_OPENAI_MODEL=gpt-4o-mini
+# VITE_OPENAI_TEMPERATURE=0.2
+# VITE_OPENAI_MAX_TOKENS=1500
+# VITE_OPENAI_TOP_P=1
+# VITE_RIDEY_PERSONA="Style: concise, upbeat, coach-like. Focus on WebXR. Provide step-by-step fixes. Ask one clarifying question if uncertain."
 ```
 
 **Get Supabase credentials:**
@@ -51,7 +59,7 @@ VITE_TEACHER_CODE=your_teacher_code_here
 
 ---
 
-## 🗄️ Step 3: Supabase Database Setup
+## Step 3: Supabase Database Setup
 
 ### 3.1 Create Storage Bucket
 
@@ -98,7 +106,7 @@ After running the scripts, you should see:
 
 ---
 
-## 🚀 Step 4: Start Development Server
+## Step 4: Start Development Server
 
 ```bash
 npm run dev
@@ -108,7 +116,37 @@ The app will be available at **http://localhost:5173**
 
 ---
 
-## 🧪 Step 5: Test Your Installation
+## Step 4.5: Configure Optional Features (Optional)
+
+### AI Assistant (Ridey) Setup
+
+If you want to enable the AI-powered code assistant:
+
+1. **Get OpenAI API Key**: Visit [OpenAI Platform](https://platform.openai.com/)
+2. **Add to .env**: Uncomment and configure the AI settings:
+   ```bash
+   VITE_OPENAI_API_KEY=your_actual_api_key_here
+   VITE_OPENAI_MODEL=gpt-4o-mini
+   VITE_OPENAI_TEMPERATURE=0.2
+   VITE_OPENAI_MAX_TOKENS=1500
+   ```
+3. **Enable in Admin**: Log in as admin and toggle "Enable Ridey AI Assistant"
+4. **Restart Server**: `npm run dev`
+
+**Note**: The AI Assistant is completely optional. WebXRide works perfectly without it.
+
+### Enhanced Preview Controls
+
+The new preview system includes:
+- **Small Preview**: Focus on coding (80% editor, 20% preview)
+- **Medium Preview**: Balanced view (50% editor, 50% preview)  
+- **Large Preview**: Focus on testing (20% editor, 80% preview)
+
+Controls are located at the bottom of the preview pane with intuitive labels.
+
+---
+
+## Step 5: Test Your Installation
 
 ### 5.1 Basic Functionality
 1. **Open** http://localhost:5173
@@ -146,26 +184,26 @@ files/
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-#### ❌ "Cannot access storage"
+#### "Cannot access storage"
 - Verify bucket name is exactly `files`
 - Check environment variables are correct
 - Ensure storage policies are applied
 
-#### ❌ "Upload failed"
+#### "Upload failed"
 - Check file size limits (default 50MB)
 - Verify storage policies allow uploads
 - Check browser console for specific errors
 
-#### ❌ "Files not showing"
+#### "Files not showing"
 - Run the storage policies script
 - Check RLS policies are active
 - Verify folders exist in storage
 
-#### ❌ "Slow loading"
+#### "Slow loading"
 - Ensure you're using the latest code
 - Check network tab for failed requests
 - Verify parallel loading is working
@@ -186,7 +224,7 @@ npm run generate-all-indexes
 
 ---
 
-## 🌐 Deployment
+## Deployment
 
 ### Netlify (Recommended)
 1. **Connect** your GitHub repository
@@ -202,16 +240,18 @@ npm run generate-all-indexes
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - **Development Setup**: `DEVELOPMENT_SETUP.md`
 - **Supabase Details**: `SUPABASE_SETUP.md`
 - **Storage Migration**: `STORAGE_MIGRATION.md`
 - **Performance Features**: `ENHANCED_3D_PREVIEW.md`
+- **AI Assistant Setup**: `AI_ASSISTANT_SETUP.md`
+- **Preview Controls**: `ENHANCED_PREVIEW_CONTROLS.md`
 
 ---
 
-## 🆘 Need Help?
+## Need Help?
 
 1. **Check the troubleshooting section** above
 2. **Review Supabase logs** in your project dashboard
@@ -220,16 +260,19 @@ npm run generate-all-indexes
 
 ---
 
-## ✨ What You Get
+## What You Get
 
 After successful installation, you'll have:
 
-- 🚀 **Lightning-fast file loading** (6x faster than before)
-- 🖼️ **Smart image optimization** (thumbnails → previews → full-size)
-- 🎮 **Enhanced 3D preview** with camera controls
-- 👥 **User management system** with admin controls
-- 📁 **Organized file structure** by type and user
-- 🔒 **Secure access control** with password protection
-- 📱 **Responsive design** that works on all devices
+- **Lightning-fast file loading** (6x faster than before)
+- **Smart image optimization** (thumbnails → previews → full-size)
+- **Enhanced 3D preview** with camera controls
+- **User management system** with admin controls
+- **Organized file structure** by type and user
+- **Secure access control** with password protection
+- **Responsive design** that works on all devices
+- **AI-Powered Code Assistant** (optional) - "Ridey" for intelligent code suggestions
+- **Enhanced Preview Controls** - Intuitive Small/Medium/Large preview sizing
+- **Improved Resizing System** - Reliable preset-based layout controls
 
-**Happy coding! 🎉** 
+**Happy coding!** 

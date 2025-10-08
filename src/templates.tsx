@@ -156,7 +156,7 @@ const aframeTemplate: Project = {
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <a-scene>
+  <a-scene webxr scene-optimizer force-3d-render>
     <!-- Environment -->
     <a-sky color="#ECECEC"></a-sky>
     <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
@@ -166,9 +166,9 @@ const aframeTemplate: Project = {
     <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
     <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
 
-    <!-- Camera -->
-    <a-entity position="0 1.6 0">
-      <a-camera></a-camera>
+    <!-- Camera with VR controls -->
+    <a-entity position="0 1.6 0" enhanced-camera-controls>
+      <a-camera look-controls wasd-controls></a-camera>
     </a-entity>
   </a-scene>
 
@@ -183,12 +183,29 @@ const aframeTemplate: Project = {
       content: `body {
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 .a-enter-vr {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  background: #4CAF50 !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  z-index: 1000 !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.a-enter-vr:hover {
+  background: #45a049 !important;
+  transform: scale(1.05) !important;
 }`
     },
     {

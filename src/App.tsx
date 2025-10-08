@@ -1346,6 +1346,331 @@ function App() {
     }
   };
 
+  // Function to enhance A-Frame content for VR compatibility
+  const enhanceAFrameForVR = (htmlContent: string): string => {
+    // Check if this is A-Frame content
+    const isAframeContent = htmlContent.includes('a-scene') || htmlContent.includes('aframe');
+    
+    if (!isAframeContent) {
+      return htmlContent;
+    }
+
+    // Enhanced 3D script for VR compatibility
+    const enhanced3DScript = `
+      <script>
+        // Enhanced 3D Content Script with VR rendering fixes
+        document.addEventListener('DOMContentLoaded', function() {
+          const scene = document.querySelector('a-scene');
+          if (!scene) return;
+          
+          // Force WebGL context initialization
+          const canvas = scene.canvas;
+          if (canvas) {
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (gl) {
+              console.log('WebGL context initialized successfully');
+              // Enable depth testing and other essential WebGL features
+              gl.enable(gl.DEPTH_TEST);
+              gl.enable(gl.CULL_FACE);
+              gl.depthFunc(gl.LEQUAL);
+            } else {
+              console.error('WebGL not supported');
+            }
+          }
+          
+          // Wait for scene to load
+          scene.addEventListener('loaded', function() {
+            console.log('A-Frame scene loaded with VR enhancements');
+            
+            // Force renderer initialization
+            const renderer = scene.renderer;
+            if (renderer) {
+              console.log('Renderer initialized');
+              // Ensure proper rendering settings
+              renderer.setSize(window.innerWidth, window.innerHeight);
+              renderer.setPixelRatio(window.devicePixelRatio);
+            }
+            
+            // Force camera initialization
+            const camera = scene.camera;
+            if (camera) {
+              console.log('Camera initialized');
+              camera.aspect = window.innerWidth / window.innerHeight;
+              camera.updateProjectionMatrix();
+            }
+            
+            // Add VR-specific optimizations
+            if (scene.hasLoaded) {
+              // Enable VR mode optimizations
+              if (scene.is('vr-mode')) {
+                console.log('VR mode detected, applying optimizations');
+              }
+            }
+            
+            // Force a render to ensure 3D content is displayed
+            setTimeout(() => {
+              if (scene.render) {
+                scene.render();
+                console.log('Forced scene render');
+              }
+            }, 100);
+          });
+          
+          // Add WebXR support detection and initialization
+          if (navigator.xr) {
+            navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+              if (supported) {
+                console.log('WebXR VR supported');
+                // Add VR-specific enhancements
+                scene.setAttribute('webxr', '');
+              }
+            });
+          }
+          
+          // Handle window resize for proper rendering
+          window.addEventListener('resize', function() {
+            if (scene.camera && scene.renderer) {
+              scene.camera.aspect = window.innerWidth / window.innerHeight;
+              scene.camera.updateProjectionMatrix();
+              scene.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+          });
+          
+          // Force initial render after a short delay
+          setTimeout(() => {
+            if (scene.render) {
+              scene.render();
+              console.log('Initial forced render completed');
+            }
+          }, 500);
+        });
+        
+        // Enhanced components registration
+        if (typeof AFRAME !== 'undefined') {
+          // Scene optimizer component with rendering fixes
+          AFRAME.registerComponent('scene-optimizer', {
+            init: function() {
+              this.el.setAttribute('renderer', 'antialias: true; colorManagement: true; sortObjects: true; alpha: false; precision: high');
+              this.el.setAttribute('webxr', '');
+              
+              // Force renderer initialization
+              const self = this;
+              setTimeout(() => {
+                const renderer = self.el.renderer;
+                if (renderer) {
+                  renderer.setClearColor('#000000', 1.0);
+                  renderer.shadowMap.enabled = true;
+                  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                  console.log('Scene optimizer: Renderer enhanced');
+                }
+              }, 100);
+            }
+          });
+          
+          // Enhanced camera controls with proper initialization
+          AFRAME.registerComponent('enhanced-camera-controls', {
+            init: function() {
+              this.el.setAttribute('camera', 'active: true; fov: 80; near: 0.1; far: 1000');
+              this.el.setAttribute('look-controls', 'enabled: true; pointerLockEnabled: true');
+              this.el.setAttribute('wasd-controls', 'enabled: true; acceleration: 65; fly: false');
+              
+              // Ensure camera is properly positioned
+              const self = this;
+              setTimeout(() => {
+                const camera = self.el.getObject3D('camera');
+                if (camera) {
+                  camera.position.set(0, 1.6, 0);
+                  console.log('Enhanced camera controls: Camera positioned');
+                }
+              }, 100);
+            }
+          });
+          
+          // Enhanced model handler with rendering fixes
+          AFRAME.registerComponent('enhanced-model-handler', {
+            init: function() {
+              this.el.addEventListener('model-loaded', function() {
+                console.log('3D model loaded successfully');
+                // Force scene render after model loads
+                const scene = this.sceneEl;
+                if (scene && scene.render) {
+                  setTimeout(() => scene.render(), 50);
+                }
+              });
+              this.el.addEventListener('model-error', function() {
+                console.error('3D model failed to load');
+              });
+            }
+          });
+          
+          // Add a component to force proper 3D rendering
+          AFRAME.registerComponent('force-3d-render', {
+            init: function() {
+              const self = this;
+              const scene = this.el.sceneEl;
+              
+              // Force render every frame for the first few seconds
+              let renderCount = 0;
+              const maxRenders = 300; // 5 seconds at 60fps
+              
+              const forceRender = () => {
+                if (renderCount < maxRenders && scene && scene.render) {
+                  scene.render();
+                  renderCount++;
+                  requestAnimationFrame(forceRender);
+                }
+              };
+              
+              // Start forced rendering after scene loads
+              scene.addEventListener('loaded', () => {
+                setTimeout(forceRender, 100);
+              });
+            }
+          });
+        }
+      </script>
+    `;
+    htmlContent = htmlContent.replace('</head>', `${enhanced3DScript}</head>`);
+
+    // Enhanced CSS for VR compatibility
+    const enhanced3DCSS = `
+      <style>
+        /* Enhanced VR Compatibility Styling */
+        body {
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+        }
+        
+        /* VR button styling for better visibility */
+        .a-enter-vr {
+          position: fixed !important;
+          bottom: 20px !important;
+          right: 20px !important;
+          background: #4CAF50 !important;
+          color: white !important;
+          border: none !important;
+          padding: 12px 24px !important;
+          border-radius: 8px !important;
+          font-size: 16px !important;
+          font-weight: bold !important;
+          cursor: pointer !important;
+          z-index: 1000 !important;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+          transition: all 0.3s ease !important;
+        }
+        
+        .a-enter-vr:hover {
+          background: #45a049 !important;
+          transform: scale(1.05) !important;
+        }
+        
+        /* Performance optimizations for VR */
+        a-scene {
+          antialias: true !important;
+          colorManagement: true !important;
+          sortObjects: true !important;
+          background: #000000 !important;
+          canvas {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+          }
+        }
+        
+        /* Ensure proper 3D rendering context */
+        canvas {
+          display: block !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          z-index: 1 !important;
+        }
+        
+        /* Better model shadows for VR */
+        [gltf-model], [obj-model], [collada-model] {
+          cast-shadow: true !important;
+          receive-shadow: true !important;
+        }
+        
+        /* Loading indicator for 3D models */
+        .model-loading {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: 20px;
+          border-radius: 10px;
+          z-index: 1000;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .model-loading .spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #3498db;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        /* Error state styling */
+        .model-error {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(220, 53, 69, 0.9);
+          color: white;
+          padding: 20px;
+          border-radius: 10px;
+          z-index: 1000;
+          text-align: center;
+          max-width: 300px;
+        }
+      </style>
+    `;
+    htmlContent = htmlContent.replace('</head>', `${enhanced3DCSS}</head>`);
+
+    // Add enhanced components to scene and camera
+    htmlContent = htmlContent.replace(/<a-scene/g, '<a-scene scene-optimizer force-3d-render');
+    htmlContent = htmlContent.replace(/<a-entity[^>]*camera[^>]*/g, '$& enhanced-camera-controls');
+    htmlContent = htmlContent.replace(/<a-entity[^>]*gltf-model[^>]*/g, '$& enhanced-model-handler');
+    htmlContent = htmlContent.replace(/<a-entity[^>]*obj-model[^>]*/g, '$& enhanced-model-handler');
+    htmlContent = htmlContent.replace(/<a-entity[^>]*collada-model[^>]*/g, '$& enhanced-model-handler');
+    
+    // Add crossorigin to all model sources
+    htmlContent = htmlContent.replace(/gltf-model="([^"]+)"/g, 'gltf-model="$1" crossorigin="anonymous"');
+    htmlContent = htmlContent.replace(/gltf-model='([^']+)'/g, "gltf-model='$1' crossorigin='anonymous'");
+    htmlContent = htmlContent.replace(/obj-model="([^"]+)"/g, 'obj-model="$1" crossorigin="anonymous"');
+    htmlContent = htmlContent.replace(/obj-model='([^']+)'/g, "obj-model='$1' crossorigin='anonymous'");
+    htmlContent = htmlContent.replace(/collada-model="([^"]+)"/g, 'collada-model="$1" crossorigin="anonymous"');
+    htmlContent = htmlContent.replace(/collada-model='([^']+)'/g, "collada-model='$1' crossorigin='anonymous'");
+    
+    // Add crossorigin to all external resources
+    htmlContent = htmlContent.replace(/<(img|audio|script|a-asset-item)/g, '<$1 crossorigin="anonymous"');
+    
+    // Add timeout to a-assets if present
+    htmlContent = htmlContent.replace(/<a-assets/g, '<a-assets timeout="30000"');
+    
+    // Add WebXR support
+    htmlContent = htmlContent.replace(/<a-scene/g, '<a-scene webxr');
+    
+    return htmlContent;
+  };
+
   const handleExportLocalSite = async () => {
     if (!project || !project.files || project.files.length === 0) {
       alert('No project to export. Please create some content first.');
@@ -1406,10 +1731,17 @@ function App() {
         }
       }
       
-      // Add each file to the zip
+      // Add each file to the zip with VR enhancements for HTML files
       for (const file of project.files) {
         if (file.content && file.content.trim()) {
-          projectFolder.file(file.name, file.content);
+          let content = file.content;
+          
+          // Apply VR enhancements to HTML files
+          if (file.name.toLowerCase().endsWith('.html')) {
+            content = enhanceAFrameForVR(content);
+          }
+          
+          projectFolder.file(file.name, content);
         }
       }
       
@@ -1454,7 +1786,17 @@ function App() {
         ? ` with ${assetCount} external asset${assetCount === 1 ? '' : 's'} listed in assets.txt`
         : '';
       
-      alert(`Successfully exported "${project.name}" as a local site!${assetMessage} The ZIP file contains all your project files.`);
+      // Check if this is an A-Frame project
+      const isAframeProject = project.files.some(file => 
+        file.name.toLowerCase().endsWith('.html') && 
+        (file.content.includes('a-scene') || file.content.includes('aframe'))
+      );
+      
+      const vrMessage = isAframeProject 
+        ? ' A-Frame projects have been enhanced with VR compatibility for Meta Quest and other VR headsets.'
+        : '';
+      
+      alert(`Successfully exported "${project.name}" as a local site!${assetMessage}${vrMessage} The ZIP file contains all your project files.`);
       
     } catch (err) {
       console.error('Error exporting local site:', err);

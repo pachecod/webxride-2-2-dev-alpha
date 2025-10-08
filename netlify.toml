@@ -38,7 +38,33 @@
     VITE_IS_DEVELOP_BRANCH = "true"
     VITE_BRANCH = "develop"
 
-# Redirects for SPA
+# Redirects for SPA - exclude static assets
+# Static assets first (these won't be redirected)
+[[redirects]]
+  from = "/embeds/*"
+  to = "/embeds/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/examples/*"
+  to = "/examples/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/storytelling_templates/*"
+  to = "/storytelling_templates/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/experimental/*"
+  to = "/experimental/:splat"
+  status = 200
+  force = true
+
+# SPA fallback for everything else
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -94,11 +94,12 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
   useEffect(() => {
     if (!iframeRef.current && showInline) return;
 
-    try {
-      const htmlFile = files.find(f => f.id === 'index.html' || f.name === 'index.html');
-      const cssFile = files.find(f => f.id === 'styles.css' || f.id === 'style.css' || f.name === 'style.css' || f.name === 'styles.css');
-      const jsFile = files.find(f => f.id === 'script.js' || f.name === 'script.js');
-      const customFiles = files.filter(f => f.type === FileType.CUSTOM);
+    const loadPreview = async () => {
+      try {
+        const htmlFile = files.find(f => f.id === 'index.html' || f.name === 'index.html');
+        const cssFile = files.find(f => f.id === 'styles.css' || f.id === 'style.css' || f.name === 'style.css' || f.name === 'styles.css');
+        const jsFile = files.find(f => f.id === 'script.js' || f.name === 'script.js');
+        const customFiles = files.filter(f => f.type === FileType.CUSTOM);
 
       console.log('Preview - All available files:', files.map(f => ({ id: f.id, name: f.name, type: f.type })));
       console.log('Preview - Files found:', {
@@ -351,16 +352,59 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
         </style>
       `;
       
-      // Inject CSS if it exists - replace any external CSS references with inline content
+      // Handle CSS - either from project files or external references
+      let cssContent = '';
+      
+      // First, try to get CSS from project files
       if (cssFile && cssFile.content.trim()) {
-        console.log('Preview - Injecting CSS:', {
+        cssContent = cssFile.content;
+        console.log('Preview - Using CSS from project files:', {
           hasCssFile: !!cssFile,
-          cssContentLength: cssFile.content.length,
-          cssContentPreview: cssFile.content.substring(0, 100) + '...',
-          htmlBeforeInjection: htmlContent.includes('<link rel="stylesheet" href="styles.css">') || htmlContent.includes('<link rel="stylesheet" href="style.css">')
+          cssContentLength: cssContent.length,
+          cssContentPreview: cssContent.substring(0, 100) + '...'
+        });
+      } else {
+        // If no CSS file in project, try to load external CSS references
+        const cssLinks = htmlContent.match(/<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi);
+        if (cssLinks && cssLinks.length > 0) {
+          console.log('Preview - Found external CSS links:', cssLinks);
+          
+          // Try to fetch the CSS content for each link
+          for (const link of cssLinks) {
+            const hrefMatch = link.match(/href=["']([^"']+)["']/);
+            if (hrefMatch) {
+              const cssUrl = hrefMatch[1];
+              console.log('Preview - Attempting to load external CSS:', cssUrl);
+              
+              try {
+                // For absolute paths, try to fetch the CSS
+                if (cssUrl.startsWith('/')) {
+                  const fullUrl = `${window.location.origin}${cssUrl}`;
+                  const response = await fetch(fullUrl);
+                  if (response.ok) {
+                    const externalCss = await response.text();
+                    cssContent += externalCss + '\n';
+                    console.log('Preview - Successfully loaded external CSS:', cssUrl, 'Length:', externalCss.length);
+                  } else {
+                    console.warn('Preview - Failed to load external CSS:', cssUrl, 'Status:', response.status);
+                  }
+                }
+              } catch (error) {
+                console.warn('Preview - Error loading external CSS:', cssUrl, error);
+              }
+            }
+          }
+        }
+      }
+      
+      // Inject CSS if we have any content
+      if (cssContent.trim()) {
+        console.log('Preview - Injecting CSS:', {
+          cssContentLength: cssContent.length,
+          cssContentPreview: cssContent.substring(0, 100) + '...'
         });
         
-        const styleTag = `<style>${cssFile.content}</style>`;
+        const styleTag = `<style>${cssContent}</style>`;
         
         // Remove any existing link tags that reference CSS files
         htmlContent = htmlContent.replace(/<link[^>]*rel=["']stylesheet["'][^>]*href=["'][^"']*\.css["'][^>]*>/gi, '');
@@ -692,12 +736,15 @@ setTimeout(function() {
         }
       }
       
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } catch (err) {
-      setError(`Preview error: ${err instanceof Error ? err.message : String(err)}`);
-    }
+        return () => {
+          URL.revokeObjectURL(url);
+        };
+      } catch (err) {
+        setError(`Preview error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    };
+
+    loadPreview();
   }, [files, framework, showInline, reloadKey]);
 
   const togglePreviewMode = () => {

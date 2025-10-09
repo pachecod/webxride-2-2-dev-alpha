@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft } from 'lucide-react';
-import { supabase, getFiles, createRequiredFolders } from '../lib/supabase';
+import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft, Edit, X } from 'lucide-react';
+import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage } from '../lib/supabase';
 import { FileUpload } from './FileUpload';
 import { CommonFileUpload } from './CommonFileUpload';
 import { ClassUserSelector } from './ClassUserSelector';
@@ -415,6 +415,8 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
   const [currentPreviewCategory, setCurrentPreviewCategory] = useState<string>('');
   const [movementMode, setMovementMode] = useState<'move' | 'look'>('move');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [renameFile, setRenameFile] = useState<FileInfo | null>(null);
+  const [newFileName, setNewFileName] = useState('');
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -476,36 +478,32 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
           }
         }
       } else {
-        // Load common assets
-        const commonAssetsResult = await getFiles({ 
-          limit: filesPerPage === 'all' ? 100 : filesPerPage, // Cap at 100
-          offset: filesPerPage === 'all' ? 0 : page['images'] || 0,
-          folder: 'common-assets'
-        });
-
-        // Group common assets by category
-        const groupedCommonFiles: FilesByCategory = {
+        // Load common assets - load each category separately with proper pagination
+        const categorizedCommonFiles: FilesByCategory = {
           images: [],
           '3d': [],
           audio: [],
           other: []
         };
-
-        commonAssetsResult.files.forEach(file => {
-          const category = file.type || 'other';
-          if (groupedCommonFiles[category]) {
-            groupedCommonFiles[category].push(file);
-          }
-        });
-
-        setCommonFiles(groupedCommonFiles);
-
-        // Calculate totals for common assets
         const commonTotals: { [key: string]: number } = {};
-        Object.keys(groupedCommonFiles).forEach(category => {
-          commonTotals[category] = groupedCommonFiles[category].length;
+        
+        // Load all categories in parallel for better performance
+        const categoryPromises = Object.keys(categorizedCommonFiles).map(async (category) => {
+          let limit = filesPerPage === 'all' ? 100 : filesPerPage; // Cap at 100 even in 'all' mode
+          let offset = filesPerPage === 'all' ? 0 : (page[category] || 0) * (filesPerPage as number);
+          const result = await getFiles({ limit, offset, folder: category, user: 'common-assets' });
+          return { category, result };
         });
-
+        
+        const categoryResults = await Promise.all(categoryPromises);
+        
+        // Process results
+        categoryResults.forEach(({ category, result }) => {
+          categorizedCommonFiles[category] = result.files;
+          commonTotals[category] = result.total;
+        });
+        
+        setCommonFiles(categorizedCommonFiles);
         setTotalFilesByCategory(commonTotals);
       }
 
@@ -574,6 +572,54 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
     } catch (error) {
       console.error('Error deleting file:', error);
       alert('Failed to delete file');
+    }
+  };
+
+  const handleRenameFile = async () => {
+    if (!renameFile || !newFileName.trim()) {
+      return;
+    }
+
+    try {
+      // Clean the filename - spaces already replaced with hyphens in onChange
+      let cleanName = newFileName.trim();
+      
+      console.log('Original input:', cleanName);
+      
+      // Remove extension if user added one (look for last dot)
+      if (cleanName.includes('.')) {
+        cleanName = cleanName.substring(0, cleanName.lastIndexOf('.'));
+        console.log('After removing extension:', cleanName);
+      }
+      
+      // Keep only alphanumeric, hyphens, and underscores
+      // Put hyphen at the END of character class to avoid range issues
+      cleanName = cleanName.replace(/[^a-zA-Z0-9_-]/g, '');
+      console.log('After sanitization:', cleanName);
+      
+      if (!cleanName) {
+        alert('Please enter a valid file name (letters, numbers, hyphens, and underscores only)');
+        return;
+      }
+      
+      const filePath = renameFile.folder ? `${renameFile.folder}/${renameFile.name}` : renameFile.name;
+      console.log('Old file path:', filePath);
+      console.log('New name to send:', cleanName);
+      
+      const result = await renameFileInStorage(filePath, cleanName);
+      
+      if (result.success) {
+        alert('File renamed successfully!');
+        setRenameFile(null);
+        setNewFileName('');
+        loadFiles();
+      } else {
+        const errorMsg = result.error?.message || 'Unknown error';
+        alert(`Failed to rename file: ${errorMsg}`);
+      }
+    } catch (err) {
+      console.error('Error renaming file:', err);
+      alert('Failed to rename file');
     }
   };
 
@@ -1080,6 +1126,19 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                                       <FileText size={10} className="text-blue-400 hover:text-blue-300" />
                                     </button>
                                   ) : null}
+                                  <button
+                                    onClick={() => {
+                                      setRenameFile(file);
+                                      // Extract name without extension and timestamp
+                                      // Remove timestamp pattern (_digits) at the end if present
+                                      let baseName = file.originalName.replace(/_\d+$/, '');
+                                      setNewFileName(baseName);
+                                    }}
+                                    className="p-0.5 hover:bg-gray-600 rounded transition-colors"
+                                    title="Rename file"
+                                  >
+                                    <Edit size={10} className="text-blue-400 hover:text-blue-300" />
+                                  </button>
                                   <button
                                     onClick={() => deleteFile(file.name, file.folder || 'other')}
                                     className="p-0.5 hover:bg-gray-600 rounded transition-colors"
@@ -1721,6 +1780,26 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                   </button>
                   <button
                     onClick={() => {
+                      setRenameFile(previewFile);
+                      // Extract name without extension and timestamp
+                      let baseName = previewFile.originalName.replace(/_\d+$/, '');
+                      // Remove extension from display name
+                      const lastDot = baseName.lastIndexOf('.');
+                      if (lastDot > 0) {
+                        baseName = baseName.substring(0, lastDot);
+                      }
+                      setNewFileName(baseName);
+                      setPreviewUrl(null);
+                      setPreviewFile(null);
+                    }}
+                    className="px-3 py-2 bg-blue-700 hover:bg-blue-600 rounded text-white text-sm flex items-center gap-1"
+                    title="Rename file"
+                  >
+                    <Edit size={14} />
+                    Rename
+                  </button>
+                  <button
+                    onClick={() => {
                       deleteFile(previewFile.name, previewFile.folder || 'other');
                       setPreviewUrl(null);
                       setPreviewFile(null);
@@ -1766,6 +1845,72 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                 disabled={loadingHtmlDraft}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename File Modal */}
+      {renameFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Rename File</h3>
+              <button
+                onClick={() => {
+                  setRenameFile(null);
+                  setNewFileName('');
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                New File Name
+              </label>
+              <input
+                type="text"
+                value={newFileName}
+                onChange={(e) => {
+                  // Auto-replace spaces with hyphens as user types
+                  const value = e.target.value.replace(/\s+/g, '-');
+                  setNewFileName(value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleRenameFile();
+                  } else if (e.key === 'Escape') {
+                    setRenameFile(null);
+                    setNewFileName('');
+                  }
+                }}
+                className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                placeholder="Enter new file name (no spaces)..."
+                autoFocus
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Spaces will be replaced with hyphens. Extension will be preserved automatically.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setRenameFile(null);
+                  setNewFileName('');
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRenameFile}
+                disabled={!newFileName.trim()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded transition-colors"
+              >
+                Rename
               </button>
             </div>
           </div>

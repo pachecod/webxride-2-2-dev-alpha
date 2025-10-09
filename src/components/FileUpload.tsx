@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X } from 'lucide-react';
-import { supabase, getFileType, getContentType, validateFileSize } from '../lib/supabase';
+import { supabase, getFileType, getContentType, validateFileSize, validateFileExtension } from '../lib/supabase';
 import { resizeImage } from '../lib/image-utils';
 
 interface FileUploadProps {
@@ -19,6 +19,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, onFile
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceInfo, setSourceInfo] = useState('');
   const [showSourceFields, setShowSourceFields] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<{ title: string; message: string } | null>(null);
   const singleFileInputRef = useRef<HTMLInputElement>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,6 +34,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, onFile
       
       try {
         const extension = file.name.split('.').pop()?.toLowerCase() || '';
+        
+        // Validate file extension first
+        const extensionValidation = await validateFileExtension(file.name);
+        if (!extensionValidation.valid) {
+          console.error('File extension validation failed:', extensionValidation.error);
+          setIsUploading(false);
+          setErrorDialog({
+            title: 'File Type Not Supported',
+            message: extensionValidation.error || 'This file type is not allowed.'
+          });
+          return; // Stop upload process
+        }
+        
         const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
         const sanitizedName = nameWithoutExt.replace(/[^a-zA-Z0-9.-]/g, '-');
         const uniqueId = Date.now();
@@ -43,8 +57,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, onFile
         const sizeValidation = validateFileSize(file, fileType);
         if (!sizeValidation.valid) {
           console.error('File size validation failed:', sizeValidation.error);
-          alert(sizeValidation.error);
-          continue; // Skip this file and continue with the next one
+          setIsUploading(false);
+          setErrorDialog({
+            title: 'File Too Large',
+            message: sizeValidation.error || 'This file exceeds the size limit.'
+          });
+          return; // Stop upload process
         }
         
         const filePath = `${selectedUser}/${fileType}/${fileName}`;
@@ -222,7 +240,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, onFile
                   </div>
                   <div>
                     <p className="text-gray-300 font-medium">Other:</p>
-                    <p className="text-gray-300">PDF, TXT, ZIP, etc.</p>
+                    <p className="text-gray-300">TXT, JSON, XML, CSV</p>
                   </div>
                 </div>
               </div>
@@ -317,6 +335,34 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, onFile
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Error Dialog */}
+      {errorDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-lg w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">{errorDialog.title}</h3>
+              <button
+                onClick={() => setErrorDialog(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="text-gray-300 whitespace-pre-line text-sm">
+              {errorDialog.message}
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setErrorDialog(null)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}

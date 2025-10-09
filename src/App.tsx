@@ -16,12 +16,13 @@ import { AboutPageManagement } from './components/AboutPageManagement';
 import { StudentFilesView } from './components/StudentFilesView';
 import { AdminFilesView } from './components/AdminFilesView';
 import { FileType, Project, File, Framework } from './types';
-import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage } from './lib/supabase';
+import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage } from './lib/supabase';
 import { AdminPasswordGate } from './components/AdminPasswordGate';
 import { StudentPasswordGate } from './components/StudentPasswordGate';
 import { loadStartersData, loadTemplateFromPublicPath } from './lib/template-loader';
 import { createAFrameInspectorHTML } from './lib/aframe-inspector-utils';
 import { SnippetsManagement } from './components/SnippetsManagement';
+import { BlockedExtensionsManagement } from './components/BlockedExtensionsManagement';
 
 // Minimal default template - only index.html with basic structure
 const minimalTemplate: Project = {
@@ -287,7 +288,8 @@ function AdminTools({
   handleSaveHtml, 
   handleLoadSavedHtml, 
   handleDeleteSavedHtml, 
-  handleDeleteTemplate, 
+  handleDeleteTemplate,
+  handleRenameTemplate, 
   selectedUser, 
   onUserSelect, 
   isAdmin, 
@@ -305,6 +307,7 @@ function AdminTools({
   const [showClassManagement, setShowClassManagement] = useState(false);
   const [showSnippets, setShowSnippets] = useState(false);
   const [showAboutPage, setShowAboutPage] = useState(false);
+  const [showBlockedExtensions, setShowBlockedExtensions] = useState(false);
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
   const [showStartersPanel, setShowStartersPanel] = useState(false);
 
@@ -383,6 +386,7 @@ function AdminTools({
             // This could be used for additional file selection logic if needed
           }}
           onDeleteTemplate={handleDeleteTemplate}
+          onRenameTemplate={handleRenameTemplate}
           selectedUser={selectedUser}
           isAdmin={true}
           onUserSelect={onUserSelect}
@@ -509,9 +513,9 @@ function AdminTools({
               {/* Admin Panel Navigation */}
               <div className="flex flex-wrap gap-2 mb-4">
                 <button
-                  onClick={() => { setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); }}
+                  onClick={() => { setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
-                    !showClassManagement && !showSnippets && !showAboutPage
+                    !showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
@@ -519,7 +523,7 @@ function AdminTools({
                   Manage Settings
                 </button>
                 <button
-                  onClick={() => { setShowClassManagement(true); setShowSnippets(false); setShowAboutPage(false); }}
+                  onClick={() => { setShowClassManagement(true); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showClassManagement
                       ? 'bg-blue-600 text-white'
@@ -529,7 +533,7 @@ function AdminTools({
                   Classes
                 </button>
                 <button
-                  onClick={() => { setShowSnippets(true); setShowClassManagement(false); setShowAboutPage(false); }}
+                  onClick={() => { setShowSnippets(true); setShowClassManagement(false); setShowAboutPage(false); setShowBlockedExtensions(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showSnippets
                       ? 'bg-blue-600 text-white'
@@ -539,7 +543,7 @@ function AdminTools({
                   Snippets
                 </button>
                 <button
-                  onClick={() => { setShowAboutPage(true); setShowClassManagement(false); setShowSnippets(false); }}
+                  onClick={() => { setShowAboutPage(true); setShowClassManagement(false); setShowSnippets(false); setShowBlockedExtensions(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showAboutPage
                       ? 'bg-blue-600 text-white'
@@ -548,12 +552,22 @@ function AdminTools({
                 >
                   About Page
                 </button>
+                <button
+                  onClick={() => { setShowBlockedExtensions(true); setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); }}
+                  className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
+                    showBlockedExtensions
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Blocked Extensions
+                </button>
               </div>
 
               
               <div className="space-y-6">
                 {/* Student Management */}
-                {!showClassManagement && !showSnippets && !showAboutPage && (
+                {!showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions && (
                   <div className="space-y-6">
                     {/* AI Assistant Settings */}
                     <div className="bg-gray-700 rounded-lg p-4">
@@ -594,6 +608,9 @@ function AdminTools({
                 
                 {/* About Page Management */}
                 {showAboutPage && <AboutPageManagement />}
+                
+                {/* Blocked Extensions Management */}
+                {showBlockedExtensions && <BlockedExtensionsManagement />}
               </div>
             </div>
           </div>
@@ -637,7 +654,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, setSplitToEditor, setSplitToEven, setSplitToPreview
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, handleRenameTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, setSplitToEditor, setSplitToEven, setSplitToPreview
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -702,6 +719,7 @@ function MainApp({
             // This could be used for additional file selection logic if needed
           }}
           onDeleteTemplate={handleDeleteTemplate}
+          onRenameTemplate={handleRenameTemplate}
           selectedUser={selectedUser}
           isAdmin={isAdmin}
           onUserSelect={onUserSelect}
@@ -1843,6 +1861,51 @@ function App() {
     }
   };
 
+  const handleRenameTemplate = async (template: any, newName: string) => {
+    if (!selectedUser) {
+      alert('Please sign in as admin to rename templates.');
+      return;
+    }
+    const isAdmin = selectedUser === 'admin';
+    const isCreator = template.creator_id === selectedUser;
+    if (!isAdmin && !isCreator) {
+      alert('You do not have permission to rename this template.');
+      return;
+    }
+    
+    if (!newName || newName.trim() === '') {
+      alert('Please enter a valid template name.');
+      return;
+    }
+    
+    if (newName === template.name) {
+      return; // No change needed
+    }
+    
+    try {
+      console.log('=== RENAMING TEMPLATE ===');
+      console.log('Template:', template);
+      console.log('Old ID:', template.id);
+      console.log('New name:', newName);
+      
+      const result = await renameTemplateInStorage(template.id, newName);
+      console.log('Rename result:', result);
+      
+      if (result.success) {
+        console.log('Template renamed successfully, triggering refresh...');
+        alert('Template renamed successfully!');
+        // Refresh the entire interface
+        window.location.reload();
+      } else {
+        console.error('Rename failed:', result.error);
+        alert('Failed to rename template: ' + (result.error?.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error renaming template:', err);
+      alert('Failed to rename template: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
   const onUserSelect = async (userName: string) => {
     setSelectedUser(userName);
     localStorage.setItem('selected-user', userName);
@@ -2090,6 +2153,7 @@ function App() {
               handleLoadSavedHtml={handleLoadSavedHtml}
               handleDeleteSavedHtml={handleDeleteSavedHtml}
               handleDeleteTemplate={handleDeleteTemplate}
+              handleRenameTemplate={handleRenameTemplate}
               selectedUser={selectedUser}
               onUserSelect={onUserSelect}
               isAdmin={true}
@@ -2159,6 +2223,7 @@ function App() {
               handleLoadSavedHtml={handleLoadSavedHtml}
               handleDeleteSavedHtml={handleDeleteSavedHtml}
               handleDeleteTemplate={handleDeleteTemplate}
+              handleRenameTemplate={handleRenameTemplate}
               selectedUser={selectedUser}
               onUserSelect={onUserSelect}
               isAdmin={selectedUser === 'admin'}

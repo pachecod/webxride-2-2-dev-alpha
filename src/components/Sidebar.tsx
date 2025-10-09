@@ -1,5 +1,5 @@
 import React from 'react';
-import { Code, FileCode, ArrowRight, Trash2, File } from 'lucide-react';
+import { Code, FileCode, ArrowRight, Trash2, File, Edit } from 'lucide-react';
 import { Framework, Project, FileType } from '../types';
 import { FileList } from './FileList';
 import { supabase, loadTemplateFromStorage, listUserHtmlByName, getTemplatesFromStorage, getTemplatesWithOrder, saveTemplateOrder, loadTemplateOrder } from '../lib/supabase';
@@ -34,6 +34,7 @@ interface SidebarProps {
   onLoadSavedHtml?: (folderName: string) => void;
   onDeleteSavedHtml?: (folderName: string) => void;
   onDeleteTemplate?: (template: any) => void;
+  onRenameTemplate?: (template: any, newName: string) => void;
   selectedUser?: string | null;
   isAdmin?: boolean;
   onUserSelect?: (user: string) => void;
@@ -53,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onLoadSavedHtml,
   onDeleteSavedHtml,
   onDeleteTemplate,
+  onRenameTemplate,
   selectedUser,
   isAdmin = false,
   onUserSelect
@@ -72,15 +74,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isReordering, setIsReordering] = React.useState(false);
   const [draggedTemplate, setDraggedTemplate] = React.useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = React.useState(false);
+  const [renameTemplate, setRenameTemplate] = React.useState<any | null>(null);
+  const [newTemplateName, setNewTemplateName] = React.useState('');
 
   const frameworkIcons = {
     [Framework.HTML]: <FileCode size={16} className="text-orange-400" />,
     [Framework.AFRAME]: <Code size={16} className="text-blue-400" />,
     [Framework.BABYLON]: <Code size={16} className="text-purple-400" />,
   };
-
-  // Hotspot Template Bridge
-  const [hotspotBridge, setHotspotBridge] = React.useState<any>(null);
 
   // Debug logging for admin status
   React.useEffect(() => {
@@ -255,37 +256,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       });
     }
   }, [refreshTemplates]);
-
-  // Initialize Hotspot Template Bridge
-  React.useEffect(() => {
-    const initHotspotBridge = async () => {
-      try {
-        // Load the bridge script
-        const script = document.createElement('script');
-        script.src = '/experimental/webxride-integrations/hotspot-template-bridge.js?v=1.0.1';
-        script.onload = () => {
-          console.log('Hotspot bridge script loaded in sidebar');
-          if ((window as any).HotspotTemplateBridge) {
-            console.log('HotspotTemplateBridge class found, creating instance');
-            const bridge = new (window as any).HotspotTemplateBridge();
-            bridge.initialize({
-              currentUser: selectedUser,
-              isAdmin: isAdmin
-            });
-            setHotspotBridge(bridge);
-            console.log('Hotspot bridge initialized successfully');
-          } else {
-            console.error('HotspotTemplateBridge class not found in sidebar');
-          }
-        };
-        document.head.appendChild(script);
-      } catch (error) {
-        console.error('Error initializing hotspot bridge:', error);
-      }
-    };
-
-    initHotspotBridge();
-  }, [selectedUser, isAdmin]);
 
   // Subscribe to file changes
   React.useEffect(() => {
@@ -550,6 +520,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                           <span className="text-xs text-gray-500 ml-2">by {template.creator_email}</span>
                         )}
                       </button>
+                      {onRenameTemplate && isAdmin && (
+                        <button
+                          onClick={() => {
+                            setRenameTemplate(template);
+                            setNewTemplateName(template.name);
+                          }}
+                          className="ml-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded transition-all p-1"
+                          title={`Rename template "${template.name}"`}
+                        >
+                          <Edit size={16} />
+                        </button>
+                      )}
                       {onDeleteTemplate && isAdmin && (
                         <button
                           onClick={() => onDeleteTemplate(template)}
@@ -583,39 +565,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
             )}
-
-            {/* 360° Tour Creation Section - Temporarily Hidden */}
-            {/* <div className="px-3 py-2 border-t border-gray-700">
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                360° Interactive Tours
-              </h2>
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    console.log('Create 360° Tour button clicked');
-                    console.log('hotspotBridge available:', !!hotspotBridge);
-                    if (hotspotBridge) {
-                      console.log('Launching hotspot editor...');
-                      hotspotBridge.launchEditor('webxride-enhanced').catch((error: any) => {
-                        console.error('Error launching hotspot editor:', error);
-                        alert('Error launching hotspot editor: ' + error.message);
-                      });
-                    } else {
-                      console.log('Hotspot bridge not available');
-                      alert('Hotspot editor is loading. Please try again in a moment.');
-                    }
-                  }}
-                  className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors flex items-center justify-center space-x-2"
-                  disabled={!hotspotBridge}
-                >
-                  <span>🎯</span>
-                  <span>Create 360° Tour</span>
-                </button>
-                <div className="text-xs text-gray-500 text-center">
-                  Create interactive 360° tours with hotspots
-                </div>
-              </div>
-            </div> */}
 
             <div className="px-3 py-2">
               <div className="flex items-center justify-between mb-2">
@@ -692,6 +641,59 @@ const Sidebar: React.FC<SidebarProps> = ({
           </>
         )}
       </div>
+
+      {/* Rename Template Modal */}
+      {renameTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Rename Template</h3>
+            <input
+              type="text"
+              value={newTemplateName}
+              onChange={(e) => setNewTemplateName(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded mb-4"
+              placeholder="Enter new template name"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (onRenameTemplate && newTemplateName.trim()) {
+                    onRenameTemplate(renameTemplate, newTemplateName.trim());
+                    setRenameTemplate(null);
+                    setNewTemplateName('');
+                  }
+                } else if (e.key === 'Escape') {
+                  setRenameTemplate(null);
+                  setNewTemplateName('');
+                }
+              }}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setRenameTemplate(null);
+                  setNewTemplateName('');
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (onRenameTemplate && newTemplateName.trim()) {
+                    onRenameTemplate(renameTemplate, newTemplateName.trim());
+                    setRenameTemplate(null);
+                    setNewTemplateName('');
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                disabled={!newTemplateName.trim()}
+              >
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

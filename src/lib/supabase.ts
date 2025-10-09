@@ -306,17 +306,16 @@ export const getFileType = (fileName: string): string => {
 };
 
 export const getOriginalName = (fileName: string): string => {
-  // Remove timestamp and random ID suffixes
+  // Remove timestamp suffixes added during upload
   const parts = fileName.split('.');
   if (parts.length < 2) return fileName;
   
   const nameWithoutExt = parts.slice(0, -1).join('.');
   const extension = parts[parts.length - 1];
   
-  // Remove user ID prefix if present (UUID or similar, followed by dash)
-  const nameNoUserPrefix = nameWithoutExt.replace(/^[a-z0-9\-]+-/, '');
-  // Remove pattern like "-abc123-1234567890"
-  const cleanName = nameNoUserPrefix.replace(/-[a-z0-9]+-\d+$/, '');
+  // Only remove timestamp pattern at the end: _1234567890
+  // This is what gets added during upload (uniqueId)
+  const cleanName = nameWithoutExt.replace(/_\d{13}$/, '');
   
   return `${cleanName}.${extension}`;
 };
@@ -348,6 +347,85 @@ export const FILE_SIZE_LIMITS = {
   other: 25 * 1024 * 1024      // 25MB for other files
 } as const;
 
+// Supported file extensions by category
+export const SUPPORTED_EXTENSIONS = {
+  images: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'],
+  audio: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'],
+  '3d': ['glb', 'gltf', 'obj', 'fbx'],
+  other: ['txt', 'json', 'xml', 'csv']
+};
+
+// Get all supported extensions as a flat array
+export const getAllSupportedExtensions = (): string[] => {
+  return Object.values(SUPPORTED_EXTENSIONS).flat();
+};
+
+// Load blocked extensions from storage (using templates bucket for admin config)
+export const loadBlockedExtensions = async (): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase.storage
+      .from('templates')
+      .download('blocked-extensions.json');
+    
+    if (error) {
+      console.log('No blocked extensions file found, using defaults:', error);
+      return ['exe', 'bat', 'sh', 'cmd', 'com', 'heic', 'heif']; // Default blocked
+    }
+    
+    const text = await data.text();
+    const blocked = JSON.parse(text);
+    return blocked.extensions || [];
+  } catch (error) {
+    console.error('Error loading blocked extensions:', error);
+    return ['exe', 'bat', 'sh', 'cmd', 'com', 'heic', 'heif']; // Default blocked
+  }
+};
+
+// Save blocked extensions to storage (using templates bucket for admin config)
+export const saveBlockedExtensions = async (extensions: string[]): Promise<{ success: boolean; error?: any }> => {
+  try {
+    console.log('Saving blocked extensions:', extensions);
+    const data = { extensions };
+    const jsonContent = JSON.stringify(data, null, 2);
+    
+    const { data: uploadData, error } = await supabase.storage
+      .from('templates')
+      .upload('blocked-extensions.json', jsonContent, {
+        contentType: 'application/json',
+        upsert: true
+      });
+    
+    console.log('Upload result:', { uploadData, error });
+    
+    if (error) {
+      console.error('Upload error details:', error);
+      throw error;
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving blocked extensions:', error);
+    return { success: false, error };
+  }
+};
+
+// Validate file extension against blocked list
+export const validateFileExtension = async (fileName: string): Promise<{ valid: boolean; error?: string; blockedExtension?: string }> => {
+  const extension = fileName.split('.').pop()?.toLowerCase() || '';
+  const blockedExtensions = await loadBlockedExtensions();
+  
+  if (blockedExtensions.includes(extension)) {
+    const supportedFormats = getAllSupportedExtensions().join(', ').toUpperCase();
+    return {
+      valid: false,
+      blockedExtension: extension,
+      error: `Sorry, but that file type (.${extension.toUpperCase()}) is not supported. You may need to convert the file to one of these supported formats first.\n\nNote: If you are uploading from an iOS device, photos may need to be converted from HEIC to JPG.\n\nSupported formats:\n• Images: ${SUPPORTED_EXTENSIONS.images.map(e => e.toUpperCase()).join(', ')}\n• Audio: ${SUPPORTED_EXTENSIONS.audio.map(e => e.toUpperCase()).join(', ')}\n• 3D Models: ${SUPPORTED_EXTENSIONS['3d'].map(e => e.toUpperCase()).join(', ')}\n• Other: ${SUPPORTED_EXTENSIONS.other.map(e => e.toUpperCase()).join(', ')}`
+    };
+  }
+  
+  return { valid: true };
+};
+
 // Validate file size before upload
 export const validateFileSize = (file: File, fileType: string): { valid: boolean; error?: string } => {
   const limit = FILE_SIZE_LIMITS[fileType as keyof typeof FILE_SIZE_LIMITS] || FILE_SIZE_LIMITS.other;
@@ -362,6 +440,71 @@ export const validateFileSize = (file: File, fileType: string): { valid: boolean
   }
   
   return { valid: true };
+};
+
+// Rename file in storage
+export const renameFile = async (oldPath: string, newName: string): Promise<{ success: boolean; newPath?: string; error?: any }> => {
+  try {
+    console.log('Renaming file:', { oldPath, newName });
+    
+    // Download the file
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('files')
+      .download(oldPath);
+    
+    if (downloadError) {
+      console.error('Error downloading file:', downloadError);
+      throw downloadError;
+    }
+    
+    // Get the extension from old path
+    const extension = oldPath.split('.').pop() || '';
+    
+    // Don't re-sanitize - the name is already sanitized from the frontend
+    // Just use the provided name as-is
+    
+    // Create new path (keep same folder structure, just change filename)
+    const pathParts = oldPath.split('/');
+    pathParts[pathParts.length - 1] = `${newName}.${extension}`;
+    const newPath = pathParts.join('/');
+    
+    console.log('New path:', newPath);
+    
+    // Get content type
+    const contentType = getContentType(extension);
+    
+    // Upload to new location
+    const { error: uploadError } = await supabase.storage
+      .from('files')
+      .upload(newPath, fileData, {
+        contentType,
+        upsert: false // Don't allow overwriting
+      });
+    
+    if (uploadError) {
+      console.error('Error uploading renamed file:', uploadError);
+      throw uploadError;
+    }
+    
+    // Delete old file
+    const { error: deleteError } = await supabase.storage
+      .from('files')
+      .remove([oldPath]);
+    
+    if (deleteError) {
+      console.error('Error deleting old file:', deleteError);
+      // Try to clean up the new file
+      await supabase.storage.from('files').remove([newPath]);
+      throw deleteError;
+    }
+    
+    console.log('File renamed successfully');
+    return { success: true, newPath };
+    
+  } catch (error) {
+    console.error('Error renaming file:', error);
+    return { success: false, error };
+  }
 };
 
 // Utility functions for bucket setup and validation
@@ -649,6 +792,126 @@ export const deleteTemplateFromStorage = async (templateId: string) => {
     
   } catch (error) {
     console.error(`Error deleting template ${templateId} from Storage:`, error);
+    return { success: false, error };
+  }
+};
+
+// Rename template in Storage
+export const renameTemplateInStorage = async (oldTemplateId: string, newTemplateName: string) => {
+  try {
+    console.log(`=== RENAMING TEMPLATE ${oldTemplateId} TO ${newTemplateName} ===`);
+    
+    // Create new template ID from name
+    const newTemplateId = newTemplateName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    
+    // Check if new template name already exists
+    const existingTemplate = await findTemplateByName(newTemplateName);
+    if (existingTemplate && existingTemplate.id !== oldTemplateId) {
+      throw new Error(`A template with the name "${newTemplateName}" already exists`);
+    }
+    
+    // List all files in the old template folder
+    const { data: files, error: listError } = await supabase.storage
+      .from('templates')
+      .list(oldTemplateId, { limit: 100, offset: 0 });
+    
+    if (listError) {
+      console.error('Error listing template files:', listError);
+      throw listError;
+    }
+    
+    console.log(`Files found in template ${oldTemplateId}:`, files);
+    
+    if (!files || files.length === 0) {
+      throw new Error('No files found in template folder');
+    }
+    
+    // Filter out directory entries
+    const actualFiles = files.filter(file => 
+      file.name && 
+      file.name !== '' && 
+      !file.name.endsWith('/') &&
+      file.metadata?.mimetype !== 'application/x-directory'
+    );
+    
+    console.log(`Found ${actualFiles.length} files to copy`);
+    
+    // Copy each file to new location
+    for (const file of actualFiles) {
+      const oldPath = `${oldTemplateId}/${file.name}`;
+      const newPath = `${newTemplateId}/${file.name}`;
+      
+      // Download the file
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('templates')
+        .download(oldPath);
+      
+      if (downloadError) {
+        console.error(`Error downloading ${oldPath}:`, downloadError);
+        throw downloadError;
+      }
+      
+      // Update metadata.json with new name if this is the metadata file
+      let uploadData: Blob | string = fileData;
+      if (file.name === 'metadata.json') {
+        const metadataText = await fileData.text();
+        const metadata = JSON.parse(metadataText);
+        metadata.name = newTemplateName;
+        metadata.updated_at = new Date().toISOString();
+        uploadData = JSON.stringify(metadata, null, 2);
+      }
+      
+      // Upload to new location
+      const contentType = file.name.endsWith('.html') ? 'text/html' :
+                         file.name.endsWith('.css') ? 'text/css' :
+                         file.name.endsWith('.js') ? 'application/javascript' :
+                         file.name.endsWith('.json') ? 'application/json' :
+                         'text/plain';
+      
+      const { error: uploadError } = await supabase.storage
+        .from('templates')
+        .upload(newPath, uploadData, {
+          contentType,
+          upsert: true
+        });
+      
+      if (uploadError) {
+        console.error(`Error uploading ${newPath}:`, uploadError);
+        throw uploadError;
+      }
+      
+      console.log(`Copied ${oldPath} to ${newPath}`);
+    }
+    
+    // Update template order
+    try {
+      const { data: currentOrder } = await loadTemplateOrder();
+      if (currentOrder && Array.isArray(currentOrder)) {
+        const updatedOrder = currentOrder.map(id => id === oldTemplateId ? newTemplateId : id);
+        await saveTemplateOrder(updatedOrder);
+        console.log(`Updated template order, renamed ${oldTemplateId} to ${newTemplateId}`);
+      }
+    } catch (orderError) {
+      console.error('Error updating template order:', orderError);
+      // Don't fail the rename if order update fails
+    }
+    
+    // Delete old template folder
+    const filePaths = actualFiles.map(file => `${oldTemplateId}/${file.name}`);
+    const { error: deleteError } = await supabase.storage
+      .from('templates')
+      .remove(filePaths);
+    
+    if (deleteError) {
+      console.error('Error deleting old template files:', deleteError);
+      throw new Error(`Failed to delete old template files: ${deleteError.message}`);
+    }
+    
+    console.log(`Successfully renamed template from ${oldTemplateId} to ${newTemplateId}`);
+    return { success: true, newTemplateId };
+    
+  } catch (error) {
+    console.error(`Error renaming template:`, error);
     return { success: false, error };
   }
 };

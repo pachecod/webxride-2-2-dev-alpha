@@ -1,1 +1,0 @@
-console.log('HotspotTemplateBridge script loading...'); class HotspotTemplateBridge { constructor() { console.log('Bridge created'); } } window.HotspotTemplateBridge = HotspotTemplateBridge; console.log('Bridge exported');

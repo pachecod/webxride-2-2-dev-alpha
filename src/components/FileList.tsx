@@ -715,23 +715,28 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
     searchByTags();
   }, [searchTags, selectedUser, isAdmin]);
   
-  // Filter files by tag search results
+  // Filter files by tag search results AND filename
   const filterFilesByTags = (filesByCategory: FilesByCategory): FilesByCategory => {
-    if (tagFilteredPaths.length === 0 && !searchTags.trim()) {
+    if (!searchTags.trim()) {
       return filesByCategory;
     }
     
-    if (searchTags.trim() && tagFilteredPaths.length === 0) {
-      // Search active but no results - return empty
-      return { images: [], '3d': [], audio: [], other: [], html: [] };
-    }
-    
+    const searchTerms = searchTags.toLowerCase().split(',').map(t => t.trim()).filter(t => t);
     const filtered: FilesByCategory = {};
     
     Object.entries(filesByCategory).forEach(([category, files]) => {
       filtered[category] = files.filter(file => {
         const filePath = file.folder ? `${file.folder}/${file.name}` : file.name;
-        return tagFilteredPaths.includes(filePath);
+        
+        // Check if file matches by tag (from database search)
+        const matchesByTag = tagFilteredPaths.includes(filePath);
+        
+        // Check if file matches by filename
+        const fileName = file.originalName.toLowerCase();
+        const matchesByFilename = searchTerms.some(term => fileName.includes(term));
+        
+        // Include file if it matches either tags OR filename
+        return matchesByTag || matchesByFilename;
       });
     });
     
@@ -1050,7 +1055,7 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
         </div>
       </div>
 
-      {/* Tag Search Box */}
+      {/* Tag & Filename Search Box */}
       <div className="mb-4 px-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -1058,13 +1063,13 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
             type="text"
             value={searchTags}
             onChange={(e) => setSearchTags(e.target.value)}
-            placeholder="Search by tags (comma-separated)..."
+            placeholder="Search by tags or filename..."
             className="w-full pl-10 pr-3 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
           />
         </div>
         {searchTags && (
           <p className="text-xs text-gray-400 mt-1">
-            Searching across all file types for tags: <span className="text-blue-400">{searchTags}</span>
+            Searching across all file types for: <span className="text-blue-400">{searchTags}</span>
           </p>
         )}
       </div>

@@ -565,6 +565,41 @@ export const deleteFileTags = async (filePath: string, createdBy: string): Promi
   }
 };
 
+// Get all unique tags for a user (or all users if admin)
+export const getAllTags = async (createdBy: string, isAdmin: boolean): Promise<{ tag: string; count: number }[]> => {
+  try {
+    let query = supabase
+      .from('file_tags')
+      .select('tag_name');
+    
+    // If not admin, only show user's own tags
+    if (!isAdmin) {
+      query = query.eq('created_by', createdBy);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error getting all tags:', error);
+      return [];
+    }
+    
+    // Count occurrences of each tag
+    const tagCounts: { [key: string]: number } = {};
+    data?.forEach(item => {
+      tagCounts[item.tag_name] = (tagCounts[item.tag_name] || 0) + 1;
+    });
+    
+    // Convert to array and sort by count (descending)
+    return Object.entries(tagCounts)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+  } catch (error) {
+    console.error('Error getting all tags:', error);
+    return [];
+  }
+};
+
 // Rename file in storage
 export const renameFile = async (oldPath: string, newName: string): Promise<{ success: boolean; newPath?: string; error?: any }> => {
   try {

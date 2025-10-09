@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft, Edit, X, Tag, Plus } from 'lucide-react';
-import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage, saveFileTags, getFileTags, searchFilesByTags, deleteFileTags } from '../lib/supabase';
+import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft, Edit, X, Tag, Plus, List } from 'lucide-react';
+import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage, saveFileTags, getFileTags, searchFilesByTags, deleteFileTags, getAllTags } from '../lib/supabase';
 import { FileUpload } from './FileUpload';
 import { CommonFileUpload } from './CommonFileUpload';
 import { ClassUserSelector } from './ClassUserSelector';
@@ -421,6 +421,8 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
   const [editTagsFile, setEditTagsFile] = useState<FileInfo | null>(null);
   const [tagInput, setTagInput] = useState('');
   const [searchTags, setSearchTags] = useState('');
+  const [showTagBrowser, setShowTagBrowser] = useState(false);
+  const [allTags, setAllTags] = useState<{ tag: string; count: number }[]>([]);
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -1057,15 +1059,29 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
 
       {/* Tag & Filename Search Box */}
       <div className="mb-4 px-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-          <input
-            type="text"
-            value={searchTags}
-            onChange={(e) => setSearchTags(e.target.value)}
-            placeholder="Search by tags or filename..."
-            className="w-full pl-10 pr-3 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
-          />
+        <div className="flex gap-2 items-center mb-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              value={searchTags}
+              onChange={(e) => setSearchTags(e.target.value)}
+              placeholder="Search by tags or filename..."
+              className="w-full pl-10 pr-3 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              const tags = await getAllTags(selectedUser || 'common-assets', isAdmin || false);
+              setAllTags(tags);
+              setShowTagBrowser(true);
+            }}
+            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm flex items-center gap-1 whitespace-nowrap"
+            title="Browse all tags"
+          >
+            <List size={16} />
+            Show Tags
+          </button>
         </div>
         {searchTags && (
           <p className="text-xs text-gray-400 mt-1">
@@ -2204,6 +2220,74 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
               >
                 Save Tags
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tag Browser Modal */}
+      {showTagBrowser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <Tag size={20} className="text-purple-400" />
+                  Browse Tags
+                  {isAdmin && <span className="text-xs text-gray-400 ml-2">(All Users)</span>}
+                </h3>
+                <button
+                  onClick={() => setShowTagBrowser(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <p className="text-sm text-gray-400 mt-2">
+                Click on any tag to filter files
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {allTags.length === 0 ? (
+                <div className="text-center py-8">
+                  <Tag size={48} className="text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-400">No tags found</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Add tags to your files to see them here
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {allTags.map(({ tag, count }) => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        setSearchTags(tag);
+                        setShowTagBrowser(false);
+                      }}
+                      className="flex items-center justify-between p-3 bg-gray-700 hover:bg-purple-600 rounded-lg transition-colors text-left group"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Tag size={16} className="text-purple-400 group-hover:text-white flex-shrink-0" />
+                        <span className="text-white truncate">{tag}</span>
+                      </div>
+                      <span className="ml-2 px-2 py-1 bg-gray-800 group-hover:bg-purple-700 text-gray-300 group-hover:text-white text-xs rounded flex-shrink-0">
+                        {count} {count === 1 ? 'file' : 'files'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-700 bg-gray-900">
+              <button
+                onClick={() => setShowTagBrowser(false)}
+                className="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
+              >
+                Close
               </button>
             </div>
           </div>

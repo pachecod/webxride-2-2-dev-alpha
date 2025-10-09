@@ -6,14 +6,21 @@ import { AuthProvider } from './lib/auth';
 import { AuthGate } from './components/AuthGate.tsx';
 import './index.css';
 
+// Feature flag: Enable auth system (set to true when ready to test)
+const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <BrowserRouter>
-        <AuthGate>
-          <App />
-        </AuthGate>
-      </BrowserRouter>
-    </AuthProvider>
+    <BrowserRouter>
+      {AUTH_ENABLED ? (
+        <AuthProvider>
+          <AuthGate>
+            <App />
+          </AuthGate>
+        </AuthProvider>
+      ) : (
+        <App />
+      )}
+    </BrowserRouter>
   </StrictMode>
 );

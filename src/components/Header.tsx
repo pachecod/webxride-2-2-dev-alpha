@@ -1,8 +1,17 @@
 import React from 'react';
-import { Settings, AlertTriangle, Sparkles, Download } from 'lucide-react';
+import { Settings, AlertTriangle, Sparkles, Download, LogOut, User } from 'lucide-react';
 import { ClassUserSelector } from './ClassUserSelector';
 import webxrideLogo from '../assets/webxride-logo.png';
 // import { FileUpload } from './FileUpload';
+
+// Try to import auth, but handle if it's not available
+let useAuth: any = null;
+try {
+  const authModule = await import('../lib/auth');
+  useAuth = authModule.useAuth;
+} catch (e) {
+  // Auth not available, that's ok
+}
 
 interface HeaderProps {
   projectName: string;
@@ -87,6 +96,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const showDevelopmentBanner = isDevelopmentDeployment();
   console.log('🔍 Banner Debug: Final decision - show banner:', showDevelopmentBanner);
+  
+  // Check if auth is enabled
+  const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true';
+  const auth = AUTH_ENABLED && useAuth ? useAuth() : null;
 
   return (
     <>
@@ -142,8 +155,24 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {/* ClassUserSelector will be here */}
-          {onUserSelect && (
+          {/* Show auth user info and sign-out when auth is enabled */}
+          {AUTH_ENABLED && auth?.isAuthenticated && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded border border-gray-700">
+              <User size={16} className="text-blue-400" />
+              <span className="text-sm text-white">{auth.user?.email}</span>
+              <button
+                onClick={() => auth.signOut()}
+                className="ml-2 px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs text-white transition-colors flex items-center gap-1"
+                title="Sign out"
+              >
+                <LogOut size={12} />
+                Sign Out
+              </button>
+            </div>
+          )}
+          
+          {/* ClassUserSelector - only show when auth is NOT enabled */}
+          {!AUTH_ENABLED && onUserSelect && (
             <ClassUserSelector 
               selectedUser={selectedUser || null}
               onUserSelect={onUserSelect}

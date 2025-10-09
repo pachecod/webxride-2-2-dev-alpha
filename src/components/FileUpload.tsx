@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X } from 'lucide-react';
-import { supabase, getFileType, getContentType, validateFileSize, validateFileExtension } from '../lib/supabase';
+import { supabase, getFileType, getContentType, validateFileSize, validateFileExtension, saveFileTags } from '../lib/supabase';
 import { resizeImage } from '../lib/image-utils';
 
 interface FileUploadProps {
@@ -130,6 +130,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, onFile
           .getPublicUrl(filePath);
 
         console.log(`Successfully uploaded ${file.name}, public URL:`, publicUrl);
+        
+        // Save tags to database if any were provided
+        if (tagArray.length > 0) {
+          await saveFileTags(filePath, fileName, tagArray, selectedUser);
+        }
+        
         onUploadComplete(publicUrl);
       } catch (error) {
         console.error(`Error uploading ${file.name}:`, error);

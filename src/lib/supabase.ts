@@ -443,63 +443,124 @@ export const validateFileSize = (file: File, fileType: string): { valid: boolean
   return { valid: true };
 };
 
-// Update file metadata (for tags, source info, etc.)
-// Note: Supabase Storage requires re-uploading the file to update metadata
-export const updateFileMetadata = async (filePath: string, metadata: { tags?: string[]; sourceUrl?: string; sourceInfo?: string; [key: string]: any }): Promise<{ success: boolean; error?: any }> => {
+// Save tags to database
+export const saveFileTags = async (filePath: string, fileName: string, tags: string[], createdBy: string): Promise<{ success: boolean; error?: any }> => {
   try {
-    console.log('Updating file metadata:', { filePath, metadata });
+    console.log('Saving tags to database:', { filePath, fileName, tags, createdBy });
     
-    // Download the current file
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('files')
-      .download(filePath);
+    // First, delete existing tags for this file by this user
+    const { error: deleteError } = await supabase
+      .from('file_tags')
+      .delete()
+      .eq('file_path', filePath)
+      .eq('created_by', createdBy);
     
-    if (downloadError) {
-      console.error('Error downloading file:', downloadError);
-      throw downloadError;
+    if (deleteError && deleteError.code !== 'PGRST116') { // Ignore "no rows deleted" error
+      console.error('Error deleting old tags:', deleteError);
+      throw deleteError;
     }
     
-    // Get current file info to preserve existing metadata
-    const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
-    const fileName = filePath.split('/').pop();
-    
-    const { data: fileList, error: listError } = await supabase.storage
-      .from('files')
-      .list(folderPath, { limit: 1000 });
-    
-    if (listError) throw listError;
-    
-    const fileInfo = fileList?.find(f => f.name === fileName);
-    
-    // Merge new metadata with existing
-    const updatedMetadata = {
-      ...(fileInfo?.metadata || {}),
-      ...metadata,
-      updatedAt: new Date().toISOString()
-    };
-    
-    // Get content type
-    const extension = fileName?.split('.').pop() || '';
-    const contentType = fileInfo?.metadata?.mimetype || getContentType(extension);
-    
-    // Re-upload file with updated metadata
-    const { error: uploadError } = await supabase.storage
-      .from('files')
-      .upload(filePath, fileData, {
-        contentType,
-        upsert: true,
-        metadata: updatedMetadata
-      });
-    
-    if (uploadError) {
-      console.error('Error uploading with new metadata:', uploadError);
-      throw uploadError;
+    // Insert new tags
+    if (tags.length > 0) {
+      const tagRecords = tags.map(tag => ({
+        file_path: filePath,
+        file_name: fileName,
+        tag_name: tag.toLowerCase().trim(),
+        created_by: createdBy
+      }));
+      
+      const { error: insertError } = await supabase
+        .from('file_tags')
+        .insert(tagRecords);
+      
+      if (insertError) {
+        console.error('Error inserting tags:', insertError);
+        throw insertError;
+      }
     }
     
-    console.log('File metadata updated successfully');
+    console.log('Tags saved successfully');
     return { success: true };
   } catch (error) {
-    console.error('Error updating file metadata:', error);
+    console.error('Error saving tags:', error);
+    return { success: false, error };
+  }
+};
+
+// Get tags for a file
+export const getFileTags = async (filePath: string, createdBy?: string): Promise<string[]> => {
+  try {
+    let query = supabase
+      .from('file_tags')
+      .select('tag_name')
+      .eq('file_path', filePath);
+    
+    if (createdBy) {
+      query = query.eq('created_by', createdBy);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error getting tags:', error);
+      return [];
+    }
+    
+    return data?.map(t => t.tag_name) || [];
+  } catch (error) {
+    console.error('Error getting tags:', error);
+    return [];
+  }
+};
+
+// Get files by tag search (user-specific or admin-wide)
+export const searchFilesByTags = async (searchTags: string[], createdBy: string, isAdmin: boolean): Promise<string[]> => {
+  try {
+    console.log('Searching files by tags:', { searchTags, createdBy, isAdmin });
+    
+    let query = supabase
+      .from('file_tags')
+      .select('file_path');
+    
+    // If not admin, only show user's own tagged files
+    if (!isAdmin) {
+      query = query.eq('created_by', createdBy);
+    }
+    
+    // Search for any of the provided tags
+    const lowerTags = searchTags.map(t => t.toLowerCase().trim());
+    query = query.in('tag_name', lowerTags);
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error searching tags:', error);
+      return [];
+    }
+    
+    // Return unique file paths
+    const uniquePaths = [...new Set(data?.map(t => t.file_path) || [])];
+    console.log('Found files with tags:', uniquePaths);
+    return uniquePaths;
+  } catch (error) {
+    console.error('Error searching tags:', error);
+    return [];
+  }
+};
+
+// Delete all tags for a file
+export const deleteFileTags = async (filePath: string, createdBy: string): Promise<{ success: boolean; error?: any }> => {
+  try {
+    const { error } = await supabase
+      .from('file_tags')
+      .delete()
+      .eq('file_path', filePath)
+      .eq('created_by', createdBy);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting tags:', error);
     return { success: false, error };
   }
 };

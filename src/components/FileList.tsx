@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft, Edit, X, Tag, Plus } from 'lucide-react';
-import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage, updateFileMetadata } from '../lib/supabase';
+import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage, saveFileTags, getFileTags, searchFilesByTags, deleteFileTags } from '../lib/supabase';
 import { FileUpload } from './FileUpload';
 import { CommonFileUpload } from './CommonFileUpload';
 import { ClassUserSelector } from './ClassUserSelector';
@@ -442,6 +442,20 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
     console.log('🚀 Loading files with parallel category loading for better performance...');
     
     try {
+      // Load tags from database for all files by this user or admin
+      const loadTagsForFiles = async (filesByCategory: FilesByCategory) => {
+        const allFiles = Object.values(filesByCategory).flat();
+        
+        // Load tags for each file
+        await Promise.all(
+          allFiles.map(async (file) => {
+            const filePath = file.folder ? `${file.folder}/${file.name}` : file.name;
+            const tags = await getFileTags(filePath, selectedUser || undefined);
+            file.tags = tags;
+          })
+        );
+      };
+      
       if (activeTab === 'my-files') {
         // Load user files for all categories
         const categorizedFiles: FilesByCategory = {
@@ -472,6 +486,10 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
         
         setFiles(categorizedFiles);
         setTotalFilesByCategory(totals);
+        
+        // Load tags from database
+        await loadTagsForFiles(categorizedFiles);
+        setFiles({...categorizedFiles}); // Trigger re-render with tags
         
         // Extract HTML titles
         for (const file of categorizedFiles.html) {
@@ -509,6 +527,10 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
         
         setCommonFiles(categorizedCommonFiles);
         setTotalFilesByCategory(commonTotals);
+        
+        // Load tags from database
+        await loadTagsForFiles(categorizedCommonFiles);
+        setCommonFiles({...categorizedCommonFiles}); // Trigger re-render with tags
       }
 
     } catch (err) {
@@ -571,6 +593,10 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
 
       if (error) throw error;
 
+      // Also delete tags for this file
+      const user = selectedUser || 'common-assets';
+      await deleteFileTags(filePath, user);
+
       loadFiles();
       if (previewUrl) setPreviewUrl(null);
     } catch (error) {
@@ -585,8 +611,10 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
     try {
       const tagArray = tagInput.trim() ? tagInput.split(',').map(t => t.trim()).filter(t => t) : [];
       const filePath = editTagsFile.folder ? `${editTagsFile.folder}/${editTagsFile.name}` : editTagsFile.name;
+      const fileName = editTagsFile.originalName;
+      const user = selectedUser || 'common-assets';
       
-      const result = await updateFileMetadata(filePath, { tags: tagArray });
+      const result = await saveFileTags(filePath, fileName, tagArray, user);
       
       if (result.success) {
         alert('Tags updated successfully!');
@@ -663,24 +691,47 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
     });
   };
 
-  // Filter files by tag search
-  const filterFilesByTags = (filesByCategory: FilesByCategory): FilesByCategory => {
-    if (!searchTags.trim()) return filesByCategory;
+  // Filter files by tag search using database query
+  const [tagFilteredPaths, setTagFilteredPaths] = useState<string[]>([]);
+  
+  // Search tags in database when searchTags changes
+  useEffect(() => {
+    const searchByTags = async () => {
+      if (!searchTags.trim()) {
+        setTagFilteredPaths([]);
+        return;
+      }
+      
+      const searchTagArray = searchTags.split(',').map(t => t.trim()).filter(t => t);
+      if (searchTagArray.length === 0) {
+        setTagFilteredPaths([]);
+        return;
+      }
+      
+      const paths = await searchFilesByTags(searchTagArray, selectedUser || 'common-assets', isAdmin || false);
+      setTagFilteredPaths(paths);
+    };
     
-    const searchTagArray = searchTags.toLowerCase().split(',').map(t => t.trim()).filter(t => t);
-    if (searchTagArray.length === 0) return filesByCategory;
+    searchByTags();
+  }, [searchTags, selectedUser, isAdmin]);
+  
+  // Filter files by tag search results
+  const filterFilesByTags = (filesByCategory: FilesByCategory): FilesByCategory => {
+    if (tagFilteredPaths.length === 0 && !searchTags.trim()) {
+      return filesByCategory;
+    }
+    
+    if (searchTags.trim() && tagFilteredPaths.length === 0) {
+      // Search active but no results - return empty
+      return { images: [], '3d': [], audio: [], other: [], html: [] };
+    }
     
     const filtered: FilesByCategory = {};
     
     Object.entries(filesByCategory).forEach(([category, files]) => {
       filtered[category] = files.filter(file => {
-        if (!file.tags || file.tags.length === 0) return false;
-        
-        // Check if any of the file's tags match any of the search tags
-        const fileTags = file.tags.map(t => t.toLowerCase());
-        return searchTagArray.some(searchTag => 
-          fileTags.some(fileTag => fileTag.includes(searchTag) || searchTag.includes(fileTag))
-        );
+        const filePath = file.folder ? `${file.folder}/${file.name}` : file.name;
+        return tagFilteredPaths.includes(filePath);
       });
     });
     

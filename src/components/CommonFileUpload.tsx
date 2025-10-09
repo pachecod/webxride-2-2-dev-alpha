@@ -18,6 +18,7 @@ export const CommonFileUpload: React.FC<CommonFileUploadProps> = ({ onUploadComp
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceInfo, setSourceInfo] = useState('');
   const [showSourceFields, setShowSourceFields] = useState(false);
+  const [tags, setTags] = useState('');
   const [errorDialog, setErrorDialog] = useState<{ title: string; message: string } | null>(null);
   const singleFileInputRef = useRef<HTMLInputElement>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
@@ -90,11 +91,15 @@ export const CommonFileUpload: React.FC<CommonFileUploadProps> = ({ onUploadComp
           });
         }
 
+        // Parse tags (comma-separated)
+        const tagArray = tags.trim() ? tags.split(',').map(t => t.trim()).filter(t => t) : [];
+        
         const metadata = {
           sourceUrl: sourceUrl.trim() || null,
           sourceInfo: sourceInfo.trim() || null,
           uploadedBy: 'admin',
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
+          tags: tagArray.length > 0 ? tagArray : null
         };
         
         console.log('Common upload with metadata:', metadata);
@@ -109,7 +114,8 @@ export const CommonFileUpload: React.FC<CommonFileUploadProps> = ({ onUploadComp
               sourceUrl: metadata.sourceUrl,
               sourceInfo: metadata.sourceInfo,
               uploadedBy: metadata.uploadedBy,
-              uploadedAt: metadata.uploadedAt
+              uploadedAt: metadata.uploadedAt,
+              tags: metadata.tags
             }
           });
 
@@ -298,6 +304,20 @@ export const CommonFileUpload: React.FC<CommonFileUploadProps> = ({ onUploadComp
                           rows={3}
                           className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                         />
+                      </div>
+                      <div>
+                        <label htmlFor="commonTags" className="block text-xs text-gray-400 mb-1">
+                          Tags (comma-separated)
+                        </label>
+                        <input
+                          type="text"
+                          id="commonTags"
+                          value={tags}
+                          onChange={(e) => setTags(e.target.value)}
+                          placeholder="landscape, nature, outdoor, etc."
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Add tags to organize and search your files</p>
                       </div>
                     </div>
                   )}

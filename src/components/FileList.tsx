@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft, Edit, X } from 'lucide-react';
-import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage } from '../lib/supabase';
+import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft, Edit, X, Tag, Plus } from 'lucide-react';
+import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage, updateFileMetadata } from '../lib/supabase';
 import { FileUpload } from './FileUpload';
 import { CommonFileUpload } from './CommonFileUpload';
 import { ClassUserSelector } from './ClassUserSelector';
@@ -28,6 +28,7 @@ interface FileInfo {
   sourceInfo?: string | null;
   uploadedBy?: string;
   uploadedAt?: string;
+  tags?: string[];
 }
 
 interface FilesByCategory {
@@ -417,6 +418,9 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [renameFile, setRenameFile] = useState<FileInfo | null>(null);
   const [newFileName, setNewFileName] = useState('');
+  const [editTagsFile, setEditTagsFile] = useState<FileInfo | null>(null);
+  const [tagInput, setTagInput] = useState('');
+  const [searchTags, setSearchTags] = useState('');
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -575,6 +579,30 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
     }
   };
 
+  const handleSaveTags = async () => {
+    if (!editTagsFile) return;
+
+    try {
+      const tagArray = tagInput.trim() ? tagInput.split(',').map(t => t.trim()).filter(t => t) : [];
+      const filePath = editTagsFile.folder ? `${editTagsFile.folder}/${editTagsFile.name}` : editTagsFile.name;
+      
+      const result = await updateFileMetadata(filePath, { tags: tagArray });
+      
+      if (result.success) {
+        alert('Tags updated successfully!');
+        setEditTagsFile(null);
+        setTagInput('');
+        loadFiles();
+      } else {
+        const errorMsg = result.error?.message || 'Unknown error';
+        alert(`Failed to update tags: ${errorMsg}`);
+      }
+    } catch (err) {
+      console.error('Error updating tags:', err);
+      alert('Failed to update tags');
+    }
+  };
+
   const handleRenameFile = async () => {
     if (!renameFile || !newFileName.trim()) {
       return;
@@ -634,6 +662,33 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
       return newSet;
     });
   };
+
+  // Filter files by tag search
+  const filterFilesByTags = (filesByCategory: FilesByCategory): FilesByCategory => {
+    if (!searchTags.trim()) return filesByCategory;
+    
+    const searchTagArray = searchTags.toLowerCase().split(',').map(t => t.trim()).filter(t => t);
+    if (searchTagArray.length === 0) return filesByCategory;
+    
+    const filtered: FilesByCategory = {};
+    
+    Object.entries(filesByCategory).forEach(([category, files]) => {
+      filtered[category] = files.filter(file => {
+        if (!file.tags || file.tags.length === 0) return false;
+        
+        // Check if any of the file's tags match any of the search tags
+        const fileTags = file.tags.map(t => t.toLowerCase());
+        return searchTagArray.some(searchTag => 
+          fileTags.some(fileTag => fileTag.includes(searchTag) || searchTag.includes(fileTag))
+        );
+      });
+    });
+    
+    return filtered;
+  };
+
+  // Get filtered files
+  const currentFiles = activeTab === 'my-files' ? filterFilesByTags(files) : filterFilesByTags(commonFiles);
 
   const handlePreview = (file: FileInfo) => {
     console.log('Opening preview for:', file.url, 'type:', file.type);
@@ -861,7 +916,7 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
     );
   }
 
-  const currentFiles = activeTab === 'my-files' ? files : commonFiles;
+  // currentFiles is now declared earlier with tag filtering
   const hasFiles = Object.values(currentFiles).some(category => category.length > 0);
   const totalFiles = Object.values(currentFiles).reduce((sum, category) => sum + category.length, 0);
 
@@ -942,6 +997,25 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
             </div>
           )}
         </div>
+      </div>
+
+      {/* Tag Search Box */}
+      <div className="mb-4 px-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+          <input
+            type="text"
+            value={searchTags}
+            onChange={(e) => setSearchTags(e.target.value)}
+            placeholder="Search by tags (comma-separated)..."
+            className="w-full pl-10 pr-3 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+          />
+        </div>
+        {searchTags && (
+          <p className="text-xs text-gray-400 mt-1">
+            Searching across all file types for tags: <span className="text-blue-400">{searchTags}</span>
+          </p>
+        )}
       </div>
 
       {/* Rest of the existing file list rendering code remains the same, but uses currentFiles instead of files */}
@@ -1072,6 +1146,16 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                                         </>
                                       )}
                                     </div>
+                                    {/* Tags Display */}
+                                    {file.tags && file.tags.length > 0 && (
+                                      <div className="mt-1 flex flex-wrap gap-1">
+                                        {file.tags.map((tag, idx) => (
+                                          <span key={idx} className="text-xs bg-blue-900/30 text-blue-300 px-2 py-0.5 rounded-full border border-blue-700/50">
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
                                     {/* Source Metadata Display */}
                                     {(file.sourceUrl || file.sourceInfo) && (
                                       <div className="mt-1 text-xs text-gray-500">
@@ -1126,6 +1210,16 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                                       <FileText size={10} className="text-blue-400 hover:text-blue-300" />
                                     </button>
                                   ) : null}
+                                  <button
+                                    onClick={() => {
+                                      setEditTagsFile(file);
+                                      setTagInput(file.tags ? file.tags.join(', ') : '');
+                                    }}
+                                    className="p-0.5 hover:bg-gray-600 rounded transition-colors"
+                                    title="Edit tags"
+                                  >
+                                    <Tag size={10} className="text-purple-400 hover:text-purple-300" />
+                                  </button>
                                   <button
                                     onClick={() => {
                                       setRenameFile(file);
@@ -1751,6 +1845,25 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                 </div>
               )}
 
+              {/* Tags Display */}
+              {previewFile.tags && previewFile.tags.length > 0 && (
+                <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700 w-full max-w-lg">
+                  <div className="flex items-start gap-2">
+                    <Tag className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-300 mb-2">Tags</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {previewFile.tags.map((tag, idx) => (
+                          <span key={idx} className="text-xs bg-purple-900/30 text-purple-300 px-2 py-1 rounded-full border border-purple-700/50">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Modal action buttons */}
               <div className="flex flex-col gap-2 mt-2">
                 {/* Source Info Checkbox */}
@@ -1769,7 +1882,7 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                   </div>
                 )}
                 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => copyUrl(previewFile.url, previewFile.originalName, previewFile)}
                     className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm flex items-center gap-1"
@@ -1777,6 +1890,19 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                   >
                     <Copy size={14} />
                     Copy URL
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditTagsFile(previewFile);
+                      setTagInput(previewFile.tags ? previewFile.tags.join(', ') : '');
+                      setPreviewUrl(null);
+                      setPreviewFile(null);
+                    }}
+                    className="px-3 py-2 bg-purple-700 hover:bg-purple-600 rounded text-white text-sm flex items-center gap-1"
+                    title="Edit tags"
+                  >
+                    <Tag size={14} />
+                    Edit Tags
                   </button>
                   <button
                     onClick={() => {
@@ -1911,6 +2037,117 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded transition-colors"
               >
                 Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Tags Modal */}
+      {editTagsFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Tag size={20} className="text-purple-400" />
+                Edit Tags
+              </h3>
+              <button
+                onClick={() => {
+                  setEditTagsFile(null);
+                  setTagInput('');
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mb-2">
+              <p className="text-sm text-gray-400 mb-3">
+                File: <span className="text-white">{editTagsFile.originalName}</span>
+              </p>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Tags (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveTags();
+                  } else if (e.key === 'Escape') {
+                    setEditTagsFile(null);
+                    setTagInput('');
+                  }
+                }}
+                className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                placeholder="landscape, nature, outdoor, etc."
+                autoFocus
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Use tags to organize and quickly find your files
+              </p>
+            </div>
+            {/* Tag suggestions */}
+            {editTagsFile.type && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-400 mb-2">Common tags for {editTagsFile.type}:</p>
+                <div className="flex flex-wrap gap-1">
+                  {editTagsFile.type === 'images' && ['landscape', 'portrait', 'nature', 'urban', 'abstract'].map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        const current = tagInput.trim();
+                        setTagInput(current ? `${current}, ${tag}` : tag);
+                      }}
+                      className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                  {editTagsFile.type === 'audio' && ['music', 'sound-effect', 'voice', 'ambient', 'loop'].map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        const current = tagInput.trim();
+                        setTagInput(current ? `${current}, ${tag}` : tag);
+                      }}
+                      className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                  {editTagsFile.type === '3d' && ['character', 'building', 'prop', 'environment', 'vehicle'].map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        const current = tagInput.trim();
+                        setTagInput(current ? `${current}, ${tag}` : tag);
+                      }}
+                      className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setEditTagsFile(null);
+                  setTagInput('');
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveTags}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+              >
+                Save Tags
               </button>
             </div>
           </div>

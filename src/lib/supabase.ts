@@ -263,7 +263,8 @@ export const getFiles = async (options?: { limit?: number; offset?: number; fold
                 sourceUrl: file.metadata?.sourceUrl || null,
                 sourceInfo: file.metadata?.sourceInfo || null,
                 uploadedBy: file.metadata?.uploadedBy || null,
-                uploadedAt: file.metadata?.uploadedAt || null
+                uploadedAt: file.metadata?.uploadedAt || null,
+                tags: file.metadata?.tags || []
               };
               console.log(`Adding file:`, fileInfo);
               console.log(`File metadata:`, file.metadata);
@@ -440,6 +441,67 @@ export const validateFileSize = (file: File, fileType: string): { valid: boolean
   }
   
   return { valid: true };
+};
+
+// Update file metadata (for tags, source info, etc.)
+// Note: Supabase Storage requires re-uploading the file to update metadata
+export const updateFileMetadata = async (filePath: string, metadata: { tags?: string[]; sourceUrl?: string; sourceInfo?: string; [key: string]: any }): Promise<{ success: boolean; error?: any }> => {
+  try {
+    console.log('Updating file metadata:', { filePath, metadata });
+    
+    // Download the current file
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('files')
+      .download(filePath);
+    
+    if (downloadError) {
+      console.error('Error downloading file:', downloadError);
+      throw downloadError;
+    }
+    
+    // Get current file info to preserve existing metadata
+    const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
+    const fileName = filePath.split('/').pop();
+    
+    const { data: fileList, error: listError } = await supabase.storage
+      .from('files')
+      .list(folderPath, { limit: 1000 });
+    
+    if (listError) throw listError;
+    
+    const fileInfo = fileList?.find(f => f.name === fileName);
+    
+    // Merge new metadata with existing
+    const updatedMetadata = {
+      ...(fileInfo?.metadata || {}),
+      ...metadata,
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Get content type
+    const extension = fileName?.split('.').pop() || '';
+    const contentType = fileInfo?.metadata?.mimetype || getContentType(extension);
+    
+    // Re-upload file with updated metadata
+    const { error: uploadError } = await supabase.storage
+      .from('files')
+      .upload(filePath, fileData, {
+        contentType,
+        upsert: true,
+        metadata: updatedMetadata
+      });
+    
+    if (uploadError) {
+      console.error('Error uploading with new metadata:', uploadError);
+      throw uploadError;
+    }
+    
+    console.log('File metadata updated successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating file metadata:', error);
+    return { success: false, error };
+  }
 };
 
 // Rename file in storage

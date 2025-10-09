@@ -15,6 +15,23 @@ BEGIN
       RAISE NOTICE 'Renamed snippets.name to snippets.title';
     END IF;
     
+    -- Check if it has 'content' column instead of 'code'
+    IF EXISTS (SELECT 1 FROM information_schema.columns 
+               WHERE table_name = 'snippets' AND column_name = 'content') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'snippets' AND column_name = 'code') THEN
+      -- Rename 'content' to 'code'
+      ALTER TABLE snippets RENAME COLUMN content TO code;
+      RAISE NOTICE 'Renamed snippets.content to snippets.code';
+    END IF;
+    
+    -- Ensure title column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'snippets' AND column_name = 'title') THEN
+      ALTER TABLE snippets ADD COLUMN title text NOT NULL DEFAULT '';
+      RAISE NOTICE 'Added title column to snippets table';
+    END IF;
+    
     -- Ensure code column exists
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                    WHERE table_name = 'snippets' AND column_name = 'code') THEN

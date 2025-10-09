@@ -1,29 +1,35 @@
 -- SQL for Supabase snippets table
--- Drop existing table if needed to recreate with correct structure
--- WARNING: Only run this if you don't have important snippets already
--- DROP TABLE IF EXISTS snippets CASCADE;
 
--- Create table (will skip if already exists with correct structure)
-CREATE TABLE IF NOT EXISTS snippets (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  title text NOT NULL,
-  code text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
--- Add columns if table exists but is missing them
+-- Handle existing snippets table structure migration
 DO $$ 
 BEGIN
-  -- Add title column if it doesn't exist
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                 WHERE table_name = 'snippets' AND column_name = 'title') THEN
-    ALTER TABLE snippets ADD COLUMN title text NOT NULL DEFAULT '';
-  END IF;
-  
-  -- Add code column if it doesn't exist
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                 WHERE table_name = 'snippets' AND column_name = 'code') THEN
-    ALTER TABLE snippets ADD COLUMN code text NOT NULL DEFAULT '';
+  -- Check if snippets table exists
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'snippets') THEN
+    -- Check if it has 'name' column instead of 'title'
+    IF EXISTS (SELECT 1 FROM information_schema.columns 
+               WHERE table_name = 'snippets' AND column_name = 'name') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'snippets' AND column_name = 'title') THEN
+      -- Rename 'name' to 'title'
+      ALTER TABLE snippets RENAME COLUMN name TO title;
+      RAISE NOTICE 'Renamed snippets.name to snippets.title';
+    END IF;
+    
+    -- Ensure code column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'snippets' AND column_name = 'code') THEN
+      ALTER TABLE snippets ADD COLUMN code text NOT NULL DEFAULT '';
+      RAISE NOTICE 'Added code column to snippets table';
+    END IF;
+  ELSE
+    -- Table doesn't exist, create it
+    CREATE TABLE snippets (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      title text NOT NULL,
+      code text NOT NULL,
+      created_at timestamptz DEFAULT now()
+    );
+    RAISE NOTICE 'Created snippets table';
   END IF;
 END $$;
 

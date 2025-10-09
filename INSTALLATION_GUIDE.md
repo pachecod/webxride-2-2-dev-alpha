@@ -85,7 +85,28 @@ VITE_TEACHER_CODE=your_teacher_code_here
 -- This sets up proper file access policies for all folders
 ```
 
-#### C. Seed Default Data (Optional)
+#### C. WebXRide 2.0 Features (Required for full functionality)
+```sql
+-- 1. Classes table (organize students by class)
+-- Copy and paste: scripts/setup-classes-database.sql
+
+-- 2. Snippets table (code snippet library)
+-- Copy and paste: scripts/setup-snippets.sql
+
+-- 3. About page table (customizable about page)
+-- Copy and paste: scripts/setup-about-page.sql
+
+-- 4. Default templates table (default template selection)
+-- Copy and paste: scripts/setup-default-templates.sql
+```
+
+#### D. WebXRide 2.1 Features - File Tagging (Required)
+```sql
+-- File tags table (tag-based file organization and search)
+-- Copy and paste: scripts/setup-file-tags.sql
+```
+
+#### E. Seed Default Data (Optional)
 ```bash
 # Set your environment variables first
 export VITE_SUPABASE_URL=your_url
@@ -97,11 +118,16 @@ npm run seed-templates
 
 ### 3.3 Verify Setup
 
-After running the scripts, you should see:
+After running the scripts, you should see these tables:
 - ✅ Storage bucket `files` created
 - ✅ Storage policies configured
 - ✅ `students` table with default users
 - ✅ `templates` table ready
+- ✅ `classes` table ready
+- ✅ `snippets` table ready
+- ✅ `about_page` table ready
+- ✅ `default_templates` table ready
+- ✅ `file_tags` table ready ⭐NEW in 2.1
 - ✅ All RLS policies active
 
 ---

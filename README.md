@@ -1,6 +1,6 @@
 # WebXRide - Advanced WebXR Development Platform
 
-A powerful, performance-optimized platform for creating and managing WebXR experiences, 3D content, and interactive web applications.
+**Version 2.1** - A powerful, performance-optimized platform for creating and managing WebXR experiences, 3D content, and interactive web applications.
 
 ## Performance Highlights
 
@@ -8,6 +8,14 @@ A powerful, performance-optimized platform for creating and managing WebXR exper
 - **Progressive Image Loading** - Thumbnails → Preview → Full-size optimization
 - **Enhanced 3D Preview** - Advanced camera controls and model handling
 - **Smart Caching** - Efficient file management and user experience
+
+## What's New in 2.1 🎉
+
+- **🏷️ File Tagging System** - Tag your files for easy organization and discovery
+- **🔍 Smart Search** - Search by tags AND filenames across all categories
+- **📚 Tag Browser** - Browse all your tags with file counts and one-click filtering
+- **👥 User-Specific Tags** - Students see their own tags, admins see everyone's
+- **💾 Database-Powered** - Fast, reliable tag storage and search
 
 ## Quick Start
 
@@ -34,23 +42,32 @@ npm run dev
 ## Key Features
 
 - **File Management** - Organized by type with smart categorization
+- **File Tagging** ⭐NEW - Tag files, search across tags and names, browse tag collections
 - **3D Model Support** - GLTF, OBJ, Collada with enhanced preview
 - **User Management** - Role-based access control
-- **Template System** - Reusable project templates
+- **Template System** - Reusable project templates with rename capability
 - **Performance Optimized** - Fast loading for users with many files
 - **AI-Powered Code Assistant** - "Ridey" provides intelligent code suggestions (optional)
 - **Enhanced Preview Controls** - Intuitive Small/Medium/Large preview sizing
-- **Improved Resizing System** - Reliable preset-based layout controls
+- **File Renaming** - Rename uploaded files with validation
+- **Blocked Extensions** - Admin control over allowed file types
 
 ## Documentation
 
-- **[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)** - Complete setup guide
+### Setup & Installation
+- **[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)** - Complete setup guide (includes 2.1 features)
+- **[UPGRADE_GUIDE.md](UPGRADE_GUIDE.md)** - Upgrade from 2.0 to 2.1
 - **[DEVELOPMENT_SETUP.md](DEVELOPMENT_SETUP.md)** - Development environment
 - **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** - Database configuration
+
+### User Guides
+- **[USER_GUIDE_TAGGING.md](USER_GUIDE_TAGGING.md)** ⭐NEW - Complete guide to file tagging and search
 - **[ENHANCED_3D_PREVIEW.md](ENHANCED_3D_PREVIEW.md)** - 3D features
+- **[ENHANCED_PREVIEW_CONTROLS.md](ENHANCED_PREVIEW_CONTROLS.md)** - Preview and resizing system
+
+### Advanced
 - **[STORAGE_MIGRATION.md](STORAGE_MIGRATION.md)** - Storage setup
 - **[AI_ASSISTANT_SETUP.md](AI_ASSISTANT_SETUP.md)** - AI Assistant (Ridey) setup guide
-- **[ENHANCED_PREVIEW_CONTROLS.md](ENHANCED_PREVIEW_CONTROLS.md)** - New preview and resizing system
 - **[CHANGELOG.md](CHANGELOG.md)** - Complete changelog of all features and updates
 
 ## Performance Improvements

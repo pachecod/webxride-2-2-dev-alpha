@@ -16,6 +16,12 @@ ALTER TABLE students ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES classes(i
 -- 3. Create RLS policies for classes table
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can read classes" ON classes;
+DROP POLICY IF EXISTS "Anyone can insert classes" ON classes;
+DROP POLICY IF EXISTS "Anyone can update classes" ON classes;
+DROP POLICY IF EXISTS "Anyone can delete classes" ON classes;
+
 -- Allow anyone to read classes (for class selection)
 CREATE POLICY "Anyone can read classes" ON classes 
 FOR SELECT USING (true);

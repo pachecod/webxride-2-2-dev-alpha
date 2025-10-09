@@ -91,6 +91,11 @@ strong {
 ALTER TABLE about_page ENABLE ROW LEVEL SECURITY;
 
 -- 4. Create RLS policies
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can read about page" ON about_page;
+DROP POLICY IF EXISTS "Authenticated users can update about page" ON about_page;
+DROP POLICY IF EXISTS "Authenticated users can insert about page" ON about_page;
+
 -- Allow anyone to read the about page
 CREATE POLICY "Anyone can read about page" ON about_page 
 FOR SELECT USING (true);

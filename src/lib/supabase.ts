@@ -2001,9 +2001,28 @@ export const getStudents = async () => {
 
 export const addStudent = async (name: string) => {
   try {
+    // Get the default class ID
+    const { data: defaultClass } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('name', 'Default Class')
+      .single();
+    
+    if (!defaultClass) {
+      throw new Error('Default class not found. Please create a default class first.');
+    }
+    
+    // Generate username from name
+    const username = name.toLowerCase().replace(/\s+/g, '-');
+    
     const { data, error } = await supabase
       .from('students')
-      .insert({ name })
+      .insert({ 
+        name, 
+        username,
+        class_id: defaultClass.id,
+        is_active: true 
+      })
       .select()
       .single();
     

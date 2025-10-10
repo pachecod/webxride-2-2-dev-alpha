@@ -311,6 +311,21 @@ function AdminTools({
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
   const [showStartersPanel, setShowStartersPanel] = useState(false);
 
+  // Check if there's a project to load from the file management view
+  React.useEffect(() => {
+    const loadProjectData = sessionStorage.getItem('loadProject');
+    if (loadProjectData) {
+      sessionStorage.removeItem('loadProject'); // Clear it immediately
+      try {
+        const { user, projectName } = JSON.parse(loadProjectData);
+        // Load the project
+        handleLoadSavedHtml(projectName);
+      } catch (error) {
+        console.error('Error loading project from session storage:', error);
+      }
+    }
+  }, []);
+
   // Function to refresh templates (will be set by Sidebar)
   const refreshTemplates = () => {
     if (refreshTemplatesRef) {
@@ -512,6 +527,12 @@ function AdminTools({
               
               {/* Admin Panel Navigation */}
               <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  onClick={() => window.location.href = '/admin-tools/myfiles'}
+                  className="px-3 py-2 rounded text-sm transition-colors flex-shrink-0 bg-green-600 text-white hover:bg-green-700"
+                >
+                  📁 File Management
+                </button>
                 <button
                   onClick={() => { setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${

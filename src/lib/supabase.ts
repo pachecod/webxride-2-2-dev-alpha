@@ -76,6 +76,79 @@ export const resetPassword = async (email: string) => {
   }
 };
 
+// User Password Management (Admin-set passwords for students)
+export const setUserPassword = async (username: string, password: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('students')
+      .update({ 
+        password: password,
+        password_set_at: new Date().toISOString()
+      })
+      .eq('username', username)
+      .select();
+    
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error setting user password:', error);
+    return { data: null, error };
+  }
+};
+
+export const getUserPassword = async (username: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('students')
+      .select('password, password_set_at')
+      .eq('username', username)
+      .single();
+    
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error getting user password:', error);
+    return { data: null, error };
+  }
+};
+
+export const authenticateUser = async (username: string, password: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('username', username)
+      .eq('password', password)
+      .eq('is_active', true)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned - invalid credentials
+        return { data: null, error: new Error('Invalid username or password') };
+      }
+      throw error;
+    }
+    
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error authenticating user:', error);
+    return { data: null, error };
+  }
+};
+
+export const generateRandomPassword = () => {
+  // Generate a simple memorable password (for students)
+  const adjectives = ['Happy', 'Sunny', 'Bright', 'Lucky', 'Swift'];
+  const nouns = ['Lion', 'Eagle', 'Tiger', 'Wolf', 'Bear'];
+  const numbers = Math.floor(Math.random() * 100);
+  
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const noun = nouns[Math.floor(Math.random() * nouns.length)];
+  
+  return `${adj}${noun}${numbers}`;
+};
+
 // Project functions
 export const getUserProjects = async () => {
   try {
@@ -2107,13 +2180,53 @@ export const getStudentsByClass = async (classId: string) => {
 
 export const getStudentsWithClasses = async () => {
   try {
-    return await supabase
+    // First try the original view-based approach
+    const { data: studentsFromView, error: viewError } = await supabase
       .from('students_with_classes')
       .select('*')
       .order('class_name, name');
+    
+    if (!viewError && studentsFromView) {
+      // Now try to enrich with password data if available
+      try {
+        const { data: passwordData } = await supabase
+          .from('students')
+          .select('name, username, password, password_set_at, is_active');
+        
+        if (passwordData) {
+          // Merge password data into students
+          const enrichedData = studentsFromView.map(student => {
+            const pwd = passwordData.find(p => p.name === student.name);
+            return {
+              ...student,
+              username: pwd?.username || student.name.toLowerCase().replace(/\s+/g, '-'),
+              password: pwd?.password,
+              password_set_at: pwd?.password_set_at,
+              is_active: pwd?.is_active ?? true
+            };
+          });
+          return { data: enrichedData, error: null };
+        }
+      } catch (pwdError) {
+        console.log('Password columns not available yet:', pwdError);
+        // Return data without passwords if columns don't exist
+      }
+      
+      return { data: studentsFromView, error: null };
+    }
+    
+    // Fallback to direct query if view doesn't work
+    const { data: students, error } = await supabase
+      .from('students')
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
+    
+    return { data: students || [], error: null };
   } catch (error) {
     console.error('Error getting students with classes:', error);
-    throw error;
+    return { data: null, error };
   }
 };
 

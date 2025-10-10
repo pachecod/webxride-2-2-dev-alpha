@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Save, X, Users, GraduationCap } from 'lucide-react';
-import { getStudentsWithClasses, addStudent, removeStudent, updateStudent } from '../lib/supabase';
+import { Plus, Trash2, Edit2, Save, X, Users, GraduationCap, Key, Eye, EyeOff, RefreshCw, Copy } from 'lucide-react';
+import { getStudentsWithClasses, addStudent, removeStudent, updateStudent, setUserPassword, generateRandomPassword } from '../lib/supabase';
 
 interface Student {
   id: string;
@@ -9,6 +9,9 @@ interface Student {
   class_name?: string;
   class_description?: string;
   created_at: string;
+  password?: string;
+  password_set_at?: string;
+  username?: string;
 }
 
 export const StudentManagement: React.FC = () => {
@@ -21,6 +24,8 @@ export const StudentManagement: React.FC = () => {
   const [addingStudent, setAddingStudent] = useState(false);
   const [removingStudent, setRemovingStudent] = useState<string | null>(null);
   const [selectedClassFilter, setSelectedClassFilter] = useState<string>('all');
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
+  const [settingPassword, setSettingPassword] = useState<string | null>(null);
 
   const loadStudents = async () => {
     try {
@@ -95,6 +100,46 @@ export const StudentManagement: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingStudent(null);
     setEditingName('');
+  };
+
+  // Password management functions
+  const handleSetPassword = async (username: string, password?: string) => {
+    const newPassword = password || generateRandomPassword();
+    setSettingPassword(username);
+    
+    try {
+      const { error } = await setUserPassword(username, newPassword);
+      if (error) throw error;
+      
+      // Reload students to get updated password
+      await loadStudents();
+      alert(`Password set successfully!\nUsername: ${username}\nPassword: ${newPassword}\n\nShare this with the student.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set password');
+    } finally {
+      setSettingPassword(null);
+    }
+  };
+
+  const togglePasswordVisibility = (username: string) => {
+    setVisiblePasswords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(username)) {
+        newSet.delete(username);
+      } else {
+        newSet.add(username);
+      }
+      return newSet;
+    });
+  };
+
+  const copyPassword = async (password: string, username: string) => {
+    try {
+      await navigator.clipboard.writeText(password);
+      alert(`Password copied for ${username}!`);
+    } catch (err) {
+      alert('Failed to copy password');
+    }
   };
 
   // Get unique classes for filter
@@ -232,7 +277,7 @@ export const StudentManagement: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col flex-1">
                       <span className="text-sm font-medium">{student.name}</span>
                       {student.class_name && (
                         <div className="flex items-center gap-1 mt-1">
@@ -240,8 +285,53 @@ export const StudentManagement: React.FC = () => {
                           <span className="text-xs text-gray-400">{student.class_name}</span>
                         </div>
                       )}
+                      {/* Password info */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Key size={12} className="text-green-400" />
+                        {student.password ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-300">
+                              {visiblePasswords.has(student.username || student.name) 
+                                ? student.password 
+                                : '••••••••'}
+                            </span>
+                            <button
+                              onClick={() => togglePasswordVisibility(student.username || student.name)}
+                              className="p-0.5 text-gray-400 hover:text-gray-200"
+                              title={visiblePasswords.has(student.username || student.name) ? 'Hide' : 'Show'}
+                            >
+                              {visiblePasswords.has(student.username || student.name) ? (
+                                <EyeOff size={12} />
+                              ) : (
+                                <Eye size={12} />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => copyPassword(student.password!, student.name)}
+                              className="p-0.5 text-gray-400 hover:text-gray-200"
+                              title="Copy password"
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-500">No password set</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleSetPassword(student.username || student.name)}
+                        disabled={settingPassword === (student.username || student.name)}
+                        className="p-1 text-green-400 hover:text-green-300 disabled:opacity-50"
+                        title={student.password ? "Reset password" : "Set password"}
+                      >
+                        {settingPassword === (student.username || student.name) ? (
+                          <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                      </button>
                       <button
                         onClick={() => handleStartEdit(student)}
                         className="p-1 text-blue-400 hover:text-blue-300"

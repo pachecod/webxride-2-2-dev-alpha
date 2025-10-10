@@ -2001,15 +2001,33 @@ export const getStudents = async () => {
 
 export const addStudent = async (name: string) => {
   try {
-    // Get the default class ID
+    // Get any available class (prefer "Default Class" if it exists)
     const { data: defaultClass } = await supabase
       .from('classes')
-      .select('id')
+      .select('id, name')
       .eq('name', 'Default Class')
       .single();
     
-    if (!defaultClass) {
-      throw new Error('Default class not found. Please create a default class first.');
+    let classId;
+    let className;
+    
+    if (defaultClass) {
+      classId = defaultClass.id;
+      className = defaultClass.name;
+    } else {
+      // If no "Default Class", get the first available class
+      const { data: firstClass } = await supabase
+        .from('classes')
+        .select('id, name')
+        .limit(1)
+        .single();
+      
+      if (!firstClass) {
+        throw new Error('No classes found. Please create a class first.');
+      }
+      
+      classId = firstClass.id;
+      className = firstClass.name;
     }
     
     // Generate username from name
@@ -2020,7 +2038,7 @@ export const addStudent = async (name: string) => {
       .insert({ 
         name, 
         username,
-        class_id: defaultClass.id,
+        class_id: classId,
         is_active: true 
       })
       .select()

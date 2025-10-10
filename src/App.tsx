@@ -18,7 +18,7 @@ import { AdminFilesView } from './components/AdminFilesView';
 import { FileType, Project, File, Framework } from './types';
 import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage } from './lib/supabase';
 import { AdminPasswordGate } from './components/AdminPasswordGate';
-import { StudentPasswordGate } from './components/StudentPasswordGate';
+import { SimpleAuthGate } from './components/SimpleAuthGate';
 import { loadStartersData, loadTemplateFromPublicPath } from './lib/template-loader';
 import { createAFrameInspectorHTML } from './lib/aframe-inspector-utils';
 import { SnippetsManagement } from './components/SnippetsManagement';
@@ -2201,16 +2201,16 @@ function App() {
           </AdminPasswordGate>
         } />
         <Route path="/myfiles" element={
-          <StudentPasswordGate>
+          <SimpleAuthGate onUserSelect={onUserSelect}>
             <StudentFilesView
               selectedUser={selectedUser}
               onBack={() => window.location.href = '/'}
               onUserSelect={onUserSelect}
             />
-          </StudentPasswordGate>
+          </SimpleAuthGate>
         } />
         <Route path="/*" element={
-          <StudentPasswordGate>
+          <SimpleAuthGate onUserSelect={onUserSelect}>
             <MainApp
               project={project}
               setProject={setProject}
@@ -2257,7 +2257,7 @@ function App() {
               setSplitToEven={setSplitToEven}
               setSplitToPreview={setSplitToPreview}
             />
-          </StudentPasswordGate>
+          </SimpleAuthGate>
         } />
       </Routes>
     </>

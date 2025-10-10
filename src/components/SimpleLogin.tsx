@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { LogIn, User, Lock } from 'lucide-react';
-import { authenticateUser } from '../lib/supabase';
 import webxrideLogo from '../assets/webxride-logo.png';
 
 interface SimpleLoginProps {
-  onLogin: (username: string) => void;
+  onLogin: (username: string, password: string) => Promise<void>;
 }
 
 export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
@@ -25,23 +24,13 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
     setLoading(true);
     
     try {
-      const { data, error } = await authenticateUser(username.trim(), password.trim());
-      
-      if (error || !data) {
-        setError('Invalid username or password');
-        setLoading(false);
-        return;
-      }
-
-      // Store logged in user
-      localStorage.setItem('loggedInUser', username.trim());
-      localStorage.setItem('userLoginTime', new Date().toISOString());
-      
-      // Call onLogin callback
-      onLogin(username.trim());
+      // Call the onLogin callback which handles authentication
+      await onLogin(username.trim(), password.trim());
+      // If we get here, login was successful
     } catch (err) {
       console.error('Login error:', err);
-      setError('An error occurred during login');
+      setError(err instanceof Error ? err.message : 'Invalid username or password');
+    } finally {
       setLoading(false);
     }
   };

@@ -106,7 +106,11 @@ export const Header: React.FC<HeaderProps> = ({
   
   // Check if auth is enabled
   const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true';
+  const USE_SIMPLE_AUTH = import.meta.env.VITE_USE_SIMPLE_AUTH === 'true';
   const auth = AUTH_ENABLED && useAuth ? useAuth() : null;
+  
+  // Check if user is authenticated with simple auth
+  const isSimpleAuthUser = USE_SIMPLE_AUTH && localStorage.getItem('authenticatedUser');
 
   return (
     <>
@@ -178,8 +182,27 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
           
-          {/* ClassUserSelector - only show when auth is NOT enabled */}
-          {!AUTH_ENABLED && onUserSelect && (
+          {/* Simple Auth User Display - show when using simple auth and user is logged in */}
+          {USE_SIMPLE_AUTH && isSimpleAuthUser && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded border border-gray-700">
+              <User size={16} className="text-blue-400" />
+              <span className="text-sm text-white">{localStorage.getItem('authenticatedUser')}</span>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('authenticatedUser');
+                  window.location.reload();
+                }}
+                className="ml-2 px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs text-white transition-colors flex items-center gap-1"
+                title="Logout"
+              >
+                <LogOut size={12} />
+                Logout
+              </button>
+            </div>
+          )}
+          
+          {/* ClassUserSelector - only show when auth is NOT enabled and NOT using simple auth */}
+          {!AUTH_ENABLED && !USE_SIMPLE_AUTH && onUserSelect && (
             <ClassUserSelector 
               selectedUser={selectedUser || null}
               onUserSelect={onUserSelect}

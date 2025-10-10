@@ -6,12 +6,19 @@ import webxrideLogo from '../assets/webxride-logo.png';
 
 // Try to import auth, but handle if it's not available
 let useAuth: any = null;
-try {
-  const authModule = await import('../lib/auth');
-  useAuth = authModule.useAuth;
-} catch (e) {
-  // Auth not available, that's ok
-}
+
+// Initialize auth module asynchronously
+const initializeAuth = async () => {
+  try {
+    const authModule = await import('../lib/auth');
+    useAuth = authModule.useAuth;
+  } catch (e) {
+    // Auth not available, that's ok
+  }
+};
+
+// Call the async function
+initializeAuth();
 
 interface HeaderProps {
   projectName: string;

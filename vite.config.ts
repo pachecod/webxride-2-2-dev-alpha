@@ -14,6 +14,7 @@ export default defineConfig({
     ]
   },
   build: {
+    target: 'esnext', // Support modern JavaScript features including top-level await
     rollupOptions: {
       // Disable native binary to avoid platform-specific issues
       external: [],

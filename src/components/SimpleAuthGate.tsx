@@ -57,16 +57,6 @@ export const SimpleAuthGate: React.FC<SimpleAuthGateProps> = ({ children, onUser
 
   return (
     <div className="h-full flex flex-col">
-      {/* Add logout button in header */}
-      <div className="bg-gray-800 text-white p-2 flex justify-between items-center">
-        <span>Logged in as: <strong>{authenticatedUser}</strong></span>
-        <button
-          onClick={handleLogout}
-          className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
-        >
-          Logout
-        </button>
-      </div>
       {children}
     </div>
   );

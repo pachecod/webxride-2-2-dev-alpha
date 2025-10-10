@@ -53,22 +53,20 @@ CREATE TABLE IF NOT EXISTS classes (
 -- Enable RLS
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 
--- Allow all authenticated users to read classes
-CREATE POLICY "Allow authenticated users to read classes"
+-- Allow anyone to read classes (permissive for admin interface)
+CREATE POLICY "Anyone can read classes"
   ON classes FOR SELECT
-  TO authenticated
   USING (true);
 
--- Allow all authenticated users to insert/update/delete classes
-CREATE POLICY "Allow authenticated users to manage classes"
+-- Allow anyone to manage classes (permissive for admin interface)
+CREATE POLICY "Anyone can manage classes"
   ON classes FOR ALL
-  TO authenticated
   USING (true)
   WITH CHECK (true);
 
 -- Insert a default class
 INSERT INTO classes (name, description) 
-VALUES ('General', 'Default class for all students')
+VALUES ('Default Class', 'Default class for all students')
 ON CONFLICT (name) DO NOTHING;
 ```
 
@@ -96,16 +94,14 @@ CREATE INDEX IF NOT EXISTS idx_students_class_id ON students(class_id);
 -- Enable RLS
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 
--- Allow authenticated users to read all students
-CREATE POLICY "Allow authenticated users to read students"
+-- Allow anyone to read students (permissive for admin interface)
+CREATE POLICY "Anyone can read students"
   ON students FOR SELECT
-  TO authenticated
   USING (true);
 
--- Allow authenticated users to manage students
-CREATE POLICY "Allow authenticated users to manage students"
+-- Allow anyone to manage students (permissive for admin interface)
+CREATE POLICY "Anyone can manage students"
   ON students FOR ALL
-  TO authenticated
   USING (true)
   WITH CHECK (true);
 
@@ -210,16 +206,14 @@ CREATE TABLE IF NOT EXISTS templates (
 -- Enable RLS
 ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
 
--- Allow all authenticated users to read templates
-CREATE POLICY "Allow authenticated users to read templates"
+-- Allow anyone to read templates (permissive for admin interface)
+CREATE POLICY "Anyone can read templates"
   ON templates FOR SELECT
-  TO authenticated
   USING (true);
 
--- Allow authenticated users to manage templates
-CREATE POLICY "Allow authenticated users to manage templates"
+-- Allow anyone to manage templates (permissive for admin interface)
+CREATE POLICY "Anyone can manage templates"
   ON templates FOR ALL
-  TO authenticated
   USING (true)
   WITH CHECK (true);
 ```
@@ -244,10 +238,9 @@ CREATE INDEX IF NOT EXISTS idx_file_tags_user ON file_tags(user_id);
 -- Enable RLS
 ALTER TABLE file_tags ENABLE ROW LEVEL SECURITY;
 
--- Allow authenticated users full access
-CREATE POLICY "Allow authenticated users to manage tags"
+-- Allow anyone to manage file tags (permissive for admin interface)
+CREATE POLICY "Anyone can manage file tags"
   ON file_tags FOR ALL
-  TO authenticated
   USING (true)
   WITH CHECK (true);
 ```
@@ -269,16 +262,14 @@ CREATE TABLE IF NOT EXISTS snippets (
 -- Enable RLS
 ALTER TABLE snippets ENABLE ROW LEVEL SECURITY;
 
--- Allow all authenticated users to read snippets
-CREATE POLICY "Allow authenticated users to read snippets"
+-- Allow anyone to read snippets (permissive for admin interface)
+CREATE POLICY "Anyone can read snippets"
   ON snippets FOR SELECT
-  TO authenticated
   USING (true);
 
--- Allow authenticated users to manage snippets
-CREATE POLICY "Allow authenticated users to manage snippets"
+-- Allow anyone to manage snippets (permissive for admin interface)
+CREATE POLICY "Anyone can manage snippets"
   ON snippets FOR ALL
-  TO authenticated
   USING (true)
   WITH CHECK (true);
 ```
@@ -303,12 +294,9 @@ ALTER TABLE about_page ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read about page" ON about_page 
 FOR SELECT USING (true);
 
--- Allow authenticated users to manage about page
-CREATE POLICY "Authenticated users can update about page" ON about_page 
-FOR UPDATE USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can insert about page" ON about_page 
-FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+-- Allow anyone to manage about page (permissive for admin interface)
+CREATE POLICY "Anyone can manage about page" ON about_page 
+FOR ALL USING (true);
 
 -- Insert default content
 INSERT INTO about_page (title, content, css_content, updated_by) VALUES (

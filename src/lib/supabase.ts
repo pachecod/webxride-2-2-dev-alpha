@@ -79,16 +79,25 @@ export const resetPassword = async (email: string) => {
 // User Password Management (Admin-set passwords for students)
 export const setUserPassword = async (username: string, password: string) => {
   try {
+    // Try to match by username first, then fall back to name
     const { data, error } = await supabase
       .from('students')
       .update({ 
         password: password,
-        password_set_at: new Date().toISOString()
+        password_set_at: new Date().toISOString(),
+        // Also set username if it doesn't exist
+        username: username.toLowerCase().replace(/\s+/g, '-')
       })
-      .eq('username', username)
+      .or(`username.eq.${username},name.eq.${username}`)
       .select();
     
     if (error) throw error;
+    
+    // If no rows were updated, log a warning
+    if (!data || data.length === 0) {
+      console.warn('No student found with username or name:', username);
+    }
+    
     return { data, error: null };
   } catch (error) {
     console.error('Error setting user password:', error);
@@ -274,14 +283,14 @@ export const getFiles = async (options?: { limit?: number; offset?: number; fold
       const categories = ['images', 'audio', '3d', 'other'];
       folders = categories.map(cat => `common-assets/${cat}`);
       console.log('Common assets mode - checking folders:', folders);
-    } else if (userFilter && userFilter !== 'admin') {
-      // Only list files for the selected student
+    } else if (userFilter) {
+      // Specific user selected (student or admin) - only show their files
       folders = [`${userFilter}/${folderFilter}`];
-      console.log('Student mode - checking folders:', folders);
+      console.log('Specific user mode - checking folders for user:', userFilter, folders);
     } else {
-      // Admin: list all files in all user folders
+      // No user filter - show all users' files (for "Everyone's" view)
       // First, get all user folders, then for each user, check the specific category folder
-      console.log('Admin mode - listing all user folders first...');
+      console.log('Everyone mode - listing all user folders first...');
       const { data: userFolders, error: userFoldersError } = await supabase.storage.from('files').list('', { limit: 1000 });
       if (userFoldersError) {
         console.warn('Error listing user folders:', userFoldersError);
@@ -291,7 +300,7 @@ export const getFiles = async (options?: { limit?: number; offset?: number; fold
       folders = (userFolders || [])
         .filter(f => f.name && !f.name.startsWith('.') && f.name !== 'templates' && f.name !== 'common-assets')
         .map(f => `${f.name}/${folderFilter}`);
-      console.log('Admin mode - checking folders:', folders);
+      console.log('Everyone mode - checking folders:', folders);
     }
     
     for (const folder of folders) {
@@ -1656,9 +1665,119 @@ export const saveUserHtmlByName = async (userName: string, files: Array<{name: s
   }
 };
 
+// Helper function to extract user name from folder name
+// Folder names are like: "student1-project-name-1010:0459pm"
+const extractUserNameFromFolderName = (folderName: string): string => {
+  // Split by dash and take the first part as the user name
+  const parts = folderName.split('-');
+  if (parts.length > 0) {
+    return parts[0];
+  }
+  return 'Unknown';
+};
+
+// List ALL users' HTML files (admin only)
+export const listAllUsersHtml = async () => {
+  try {
+    console.log('Listing all users HTML files');
+    
+    const bucketName = 'files';
+    const userHtmlPath = 'user-html';
+    
+    // List all folders in the user-html subfolder
+    const { data: allFolders, error } = await supabase.storage
+      .from(bucketName)
+      .list(userHtmlPath, { limit: 1000, offset: 0 });
+
+    if (error) {
+      console.error('Error listing all user HTML files:', error);
+      throw error;
+    }
+
+    if (!allFolders || allFolders.length === 0) {
+      console.log('No folders found in user-html path');
+      return [];
+    }
+
+    console.log('Found all user folders:', allFolders.length);
+    console.log('📁 All folder names:', allFolders.map(f => f.name));
+
+    // Get metadata for ALL folders with fallback approach
+    const filesWithMetadata = await Promise.all(
+      allFolders.map(async (folder) => {
+        console.log(`🔍 Processing folder: ${folder.name}`);
+        try {
+          // Try direct download first
+          let metadataFile = null;
+          let error = null;
+          
+          const result = await supabase.storage
+            .from(bucketName)
+            .download(`${userHtmlPath}/${folder.name}/metadata.json`);
+          
+          metadataFile = result.data;
+          error = result.error;
+          
+          // If direct download fails, try signed URL
+          if (error || !metadataFile) {
+            console.log(`Direct download failed for ${folder.name}, trying signed URL...`);
+            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+              .from(bucketName)
+              .createSignedUrl(`${userHtmlPath}/${folder.name}/metadata.json`, 60);
+            
+            if (!signedUrlError && signedUrlData?.signedUrl) {
+              try {
+                const response = await fetch(signedUrlData.signedUrl);
+                if (response.ok) {
+                  metadataFile = await response.blob();
+                  error = null;
+                }
+              } catch (fetchError) {
+                console.error(`Fetch via signed URL failed for ${folder.name}:`, fetchError);
+              }
+            }
+          }
+          
+          if (metadataFile) {
+            const text = await metadataFile.text();
+            const metadata = JSON.parse(text);
+            const result = {
+              ...metadata,  // Spread metadata first
+              name: folder.name,  // Then override with the FULL folder name (with timestamp)
+              displayName: metadata.name || folder.name,  // Keep the short name for display
+              userName: metadata.userName || extractUserNameFromFolderName(folder.name),
+              timestamp: metadata.timestamp || folder.created_at
+            };
+            console.log(`✅ Loaded metadata for ${folder.name}, returning:`, result);
+            return result;
+          }
+        } catch (err) {
+          console.error(`Error loading metadata for ${folder.name}:`, err);
+        }
+        
+        // Fallback: extract user name from folder name
+        const fallbackResult = {
+          name: folder.name,
+          displayName: folder.name,
+          userName: extractUserNameFromFolderName(folder.name),
+          timestamp: folder.created_at
+        };
+        console.log(`⚠️ Using fallback for ${folder.name}, returning:`, fallbackResult);
+        return fallbackResult;
+      })
+    );
+
+    console.log('📦 All files with metadata:', filesWithMetadata);
+    return filesWithMetadata.filter(Boolean);
+  } catch (error) {
+    console.error('Error listing all users HTML files:', error);
+    return [];
+  }
+};
+
 export const listUserHtmlByName = async (userName: string) => {
   try {
-    console.log('Listing user HTML by name:', { userName });
+    console.log('🚀 listUserHtmlByName called for user:', userName);
     
     // Use the existing 'files' bucket with user-html subfolder
     const bucketName = 'files';
@@ -1685,15 +1804,43 @@ export const listUserHtmlByName = async (userName: string) => {
       folder.name.startsWith(userNamePrefix + '-')
     );
 
-    console.log('Found user folders:', userFolders);
+    console.log('📁 Found user folders:', userFolders);
+    console.log('📁 User folders names:', userFolders.map(f => f.name));
 
-    // Get metadata for each user folder
+    // Get metadata for each user folder with fallback approach
     const filesWithMetadata = await Promise.all(
       userFolders.map(async (folder) => {
         try {
-          const { data: metadataFile } = await supabase.storage
+          // Try direct download first
+          let metadataFile = null;
+          let error = null;
+          
+          const result = await supabase.storage
             .from(bucketName)
             .download(`${userHtmlPath}/${folder.name}/metadata.json`);
+          
+          metadataFile = result.data;
+          error = result.error;
+          
+          // If direct download fails, try signed URL
+          if (error || !metadataFile) {
+            console.log(`Direct download failed for ${folder.name}, trying signed URL...`);
+            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+              .from(bucketName)
+              .createSignedUrl(`${userHtmlPath}/${folder.name}/metadata.json`, 60);
+            
+            if (!signedUrlError && signedUrlData?.signedUrl) {
+              try {
+                const response = await fetch(signedUrlData.signedUrl);
+                if (response.ok) {
+                  metadataFile = await response.blob();
+                  error = null;
+                }
+              } catch (fetchError) {
+                console.error(`Fetch via signed URL failed for ${folder.name}:`, fetchError);
+              }
+            }
+          }
           
           if (metadataFile) {
             const text = await metadataFile.text();
@@ -1711,7 +1858,8 @@ export const listUserHtmlByName = async (userName: string) => {
     );
 
     const validFiles = filesWithMetadata.filter(Boolean);
-    console.log('Valid files with metadata:', validFiles);
+    console.log('📁 Valid files with metadata:', validFiles);
+    console.log('📁 Valid files names:', validFiles.map(f => f.name));
     return validFiles;
   } catch (error) {
     console.error('Error listing user HTML by name:', error);
@@ -1721,7 +1869,8 @@ export const listUserHtmlByName = async (userName: string) => {
 
 export const loadUserHtmlByName = async (userName: string, folderName: string, cacheBust?: number) => {
   try {
-    console.log('Loading user HTML by name:', { userName, folderName, cacheBust });
+    console.log('🔍 loadUserHtmlByName called with:', { userName, folderName, cacheBust });
+    console.log('🔍 Full folder name being used:', folderName);
     const bucketName = 'files';
     const userHtmlPath = 'user-html';
 
@@ -1729,17 +1878,77 @@ export const loadUserHtmlByName = async (userName: string, folderName: string, c
     const timestamp = cacheBust || Date.now();
     console.log('Using cache bust timestamp:', timestamp);
     
-    const { data: metadataFile, error: metadataError } = await supabase.storage
+    // Try multiple approaches to access the metadata
+    let metadataFile = null;
+    let metadataError = null;
+    
+    // Approach 1: Direct download
+    const result = await supabase.storage
       .from(bucketName)
       .download(`${userHtmlPath}/${folderName}/metadata.json`);
-
+    
+    metadataFile = result.data;
+    metadataError = result.error;
+    
+    // Approach 2: If direct download fails, try with signed URL
     if (metadataError || !metadataFile) {
-      console.error('Error loading metadata:', metadataError);
-      throw new Error('Could not load project metadata');
+      console.log('Direct download failed, trying signed URL approach...');
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from(bucketName)
+        .createSignedUrl(`${userHtmlPath}/${folderName}/metadata.json`, 60);
+      
+      if (!signedUrlError && signedUrlData?.signedUrl) {
+        console.log('Got signed URL, fetching metadata...');
+        try {
+          const response = await fetch(signedUrlData.signedUrl);
+          if (response.ok) {
+            const blob = await response.blob();
+            metadataFile = blob;
+            metadataError = null;
+          }
+        } catch (fetchError) {
+          console.error('Fetch via signed URL failed:', fetchError);
+        }
+      }
     }
 
-    const metadataText = await metadataFile.text();
-    const metadata = JSON.parse(metadataText);
+    // Approach 3: If both metadata approaches fail, try to list files directly
+    let metadata = null;
+    if (metadataError || !metadataFile) {
+      console.log('Metadata loading failed, trying to list files directly...');
+      try {
+        const { data: files, error: listError } = await supabase.storage
+          .from(bucketName)
+          .list(`${userHtmlPath}/${folderName}`);
+        
+        if (listError) {
+          console.error('Error listing files:', listError);
+          throw new Error(`Could not load project metadata: ${metadataError?.message || 'Unknown error'}`);
+        }
+        
+        // Create a basic metadata structure from the file list
+        metadata = {
+          name: folderName.split('-').slice(0, -1).join('-') || 'Loaded Project',
+          files: files.map(file => ({
+            name: file.name,
+            type: file.name.endsWith('.html') ? 'html' : 
+                  file.name.endsWith('.css') ? 'css' : 
+                  file.name.endsWith('.js') ? 'javascript' : 'html'
+          }))
+        };
+        console.log('Created metadata from file list:', metadata);
+      } catch (listError) {
+        console.error('Error listing files:', listError);
+        throw new Error(`Could not load project metadata: ${metadataError?.message || 'Unknown error'}`);
+      }
+    } else {
+      const metadataText = await metadataFile.text();
+      metadata = JSON.parse(metadataText);
+    }
+
+    if (!metadata) {
+      throw new Error(`Could not load project metadata: ${metadataError?.message || 'Unknown error'}`);
+    }
 
     console.log('Loaded metadata with timestamp:', metadata.updated_at || metadata.created_at, 'cacheBust:', timestamp);
     console.log('Metadata version:', metadata.version);
@@ -1752,13 +1961,40 @@ export const loadUserHtmlByName = async (userName: string, folderName: string, c
       metadata.files.map(async (fileInfo: any) => {
         console.log(`Loading file: ${fileInfo.name} with cache bust: ${timestamp}`);
         
-        const { data: fileContent, error } = await supabase.storage
+        // Try direct download first
+        let fileContent = null;
+        let error = null;
+        
+        const result = await supabase.storage
           .from(bucketName)
           .download(`${userHtmlPath}/${folderName}/${fileInfo.name}`);
+        
+        fileContent = result.data;
+        error = result.error;
+        
+        // If direct download fails, try signed URL
+        if (error || !fileContent) {
+          console.log(`Direct download failed for ${fileInfo.name}, trying signed URL...`);
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+            .from(bucketName)
+            .createSignedUrl(`${userHtmlPath}/${folderName}/${fileInfo.name}`, 60);
+          
+          if (!signedUrlError && signedUrlData?.signedUrl) {
+            try {
+              const response = await fetch(signedUrlData.signedUrl);
+              if (response.ok) {
+                fileContent = await response.blob();
+                error = null;
+              }
+            } catch (fetchError) {
+              console.error(`Fetch via signed URL failed for ${fileInfo.name}:`, fetchError);
+            }
+          }
+        }
 
         if (error || !fileContent) {
           console.error(`Error loading file ${fileInfo.name}:`, error);
-          throw new Error(`Could not load file ${fileInfo.name}`);
+          throw new Error(`Could not load file ${fileInfo.name}: ${error?.message || 'Unknown error'}`);
         }
 
         const content = await fileContent.text();

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Settings, Users, File, Trash2, Eye, Code } from 'lucide-react';
 import { FileList } from './FileList';
 import { UserSelector } from './UserSelector';
-import { listUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName } from '../lib/supabase';
+import { listUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, listAllUsersHtml } from '../lib/supabase';
 
 interface AdminFilesViewProps {
   selectedUser: string | null;
@@ -27,6 +27,9 @@ export const AdminFilesView: React.FC<AdminFilesViewProps> = ({
   const [fileListKey, setFileListKey] = useState(0);
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
   const [loadingSavedProjects, setLoadingSavedProjects] = useState(false);
+  const [showAllFiles, setShowAllFiles] = useState(false);
+  const [allUsersProjects, setAllUsersProjects] = useState<SavedProject[]>([]);
+  const [loadingAllUsersProjects, setLoadingAllUsersProjects] = useState(false);
 
   const handleUserSelect = (userName: string) => {
     onUserSelect(userName);
@@ -50,6 +53,11 @@ export const AdminFilesView: React.FC<AdminFilesViewProps> = ({
     }
   }, [activeTab, selectedUser]);
 
+  // Load everyone's projects when component mounts
+  useEffect(() => {
+    loadAllUsersProjects();
+  }, []);
+
   const loadSavedProjects = async () => {
     if (!selectedUser) return;
     
@@ -64,6 +72,21 @@ export const AdminFilesView: React.FC<AdminFilesViewProps> = ({
       setSavedProjects([]);
     } finally {
       setLoadingSavedProjects(false);
+    }
+  };
+
+  const loadAllUsersProjects = async () => {
+    setLoadingAllUsersProjects(true);
+    try {
+      console.log('AdminFilesView: Loading all users projects');
+      const projects = await listAllUsersHtml();
+      console.log('AdminFilesView: Received all users projects:', projects);
+      setAllUsersProjects(projects);
+    } catch (error) {
+      console.error('Error loading all users projects:', error);
+      setAllUsersProjects([]);
+    } finally {
+      setLoadingAllUsersProjects(false);
     }
   };
 
@@ -93,10 +116,13 @@ export const AdminFilesView: React.FC<AdminFilesViewProps> = ({
     }
   };
 
-  const handleOpenInEditor = (projectName: string) => {
+  const handleOpenInEditor = (projectName: string, userName?: string) => {
+    // If userName is provided (from Everyone's Pages), use it; otherwise use selectedUser
+    const userToLoad = userName || selectedUser;
+    
     // Store the project to load in sessionStorage
     sessionStorage.setItem('loadProject', JSON.stringify({
-      user: selectedUser,
+      user: userToLoad,
       projectName: projectName
     }));
     // Navigate to admin tools main page which has the editor
@@ -197,13 +223,32 @@ export const AdminFilesView: React.FC<AdminFilesViewProps> = ({
                 <p className="text-gray-400">Please select your name from the dropdown above to view your files.</p>
               </div>
             ) : (
-              <FileList 
-                key={`${activeTab}-${fileListKey}`} 
-                onLoadHtmlDraft={() => {}} // Not needed for this view
-                selectedUser={activeTab === 'common' ? 'common-assets' : selectedUser || ''}
-                isAdmin={true}
-                onUserSelect={handleUserSelect}
-              />
+              <>
+                {activeTab === 'user' && (
+                  <div className="mb-4 flex items-center gap-2">
+                    <span className="text-sm text-gray-300">Show files:</span>
+                    <select
+                      value={showAllFiles ? 'everyone' : 'mine'}
+                      onChange={(e) => {
+                        setShowAllFiles(e.target.value === 'everyone');
+                        setFileListKey(prev => prev + 1); // Refresh the file list
+                      }}
+                      className="bg-gray-700 text-white rounded px-3 py-1.5 border border-gray-600 text-sm"
+                    >
+                      <option value="mine">Mine</option>
+                      <option value="everyone">Everyone's</option>
+                    </select>
+                  </div>
+                )}
+                <FileList 
+                  key={`${activeTab}-${fileListKey}-${showAllFiles}`} 
+                  onLoadHtmlDraft={() => {}} // Not needed for this view
+                  selectedUser={activeTab === 'common' ? 'common-assets' : selectedUser || ''}
+                  isAdmin={true}
+                  onUserSelect={handleUserSelect}
+                  showAllUsers={activeTab === 'user' && showAllFiles}
+                />
+              </>
             )}
           </div>
 
@@ -285,6 +330,72 @@ export const AdminFilesView: React.FC<AdminFilesViewProps> = ({
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Everyone's Pages Section - Only show for user tab */}
+          {activeTab === 'user' && (
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h2 className="text-lg font-semibold mb-4">
+                Everyone's Pages
+              </h2>
+              <p className="text-gray-300 mb-4">
+                View and manage all saved HTML projects from all users.
+              </p>
+
+              {loadingAllUsersProjects ? (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <p className="text-gray-400 mt-2">Loading all projects...</p>
+                </div>
+              ) : allUsersProjects.length === 0 ? (
+                <div className="text-center py-8">
+                  <File className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                  <h3 className="text-lg font-medium text-gray-300 mb-2">No Projects Found</h3>
+                  <p className="text-gray-400">No users have saved any projects yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {allUsersProjects.map((project) => {
+                    // Extract the user name from the project
+                    const userName = (project as any).userName || project.name.split('-')[0];
+                    
+                    return (
+                      <div
+                        key={project.name}
+                        className="flex items-center justify-between p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <File className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-medium truncate">{project.name}</p>
+                            <p className="text-gray-400 text-xs">by {userName}</p>
+                            {project.metadata?.created_at && (
+                              <p className="text-gray-500 text-xs">
+                                {new Date(project.metadata.created_at).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => {
+                              // For Everyone's Pages, we need to pass the userName
+                              const userToLoad = (project as any).userName || project.name.split('-')[0];
+                              handleOpenInEditor(project.name, userToLoad);
+                            }}
+                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors flex items-center gap-1"
+                            title="Open in editor"
+                          >
+                            <Code className="w-4 h-4" />
+                            Edit
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, Trash2, FileText, Image as ImageIcon, FileAudio, File, Box, AlertCircle, ChevronDown, ChevronRight, RefreshCw, Search, ChevronLeft, Edit, X, Tag, Plus, List } from 'lucide-react';
-import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage, saveFileTags, getFileTags, searchFilesByTags, deleteFileTags, getAllTags } from '../lib/supabase';
+import { supabase, getFiles, createRequiredFolders, renameFile as renameFileInStorage, saveFileTags, getFileTags, searchFilesByTags, deleteFileTags, getAllTags, listAllUsersHtml } from '../lib/supabase';
 import { FileUpload } from './FileUpload';
 import { CommonFileUpload } from './CommonFileUpload';
 import { ClassUserSelector } from './ClassUserSelector';
@@ -40,6 +40,9 @@ interface FileListProps {
   selectedUser: string;
   isAdmin: boolean;
   onUserSelect?: (userName: string) => void;
+  showAllUsers?: boolean;
+  hideFilesPerPageControl?: boolean;
+  forcedFilesPerPage?: number | 'all';
 }
 
 interface MeshEditorModalProps {
@@ -392,7 +395,7 @@ const MeshEditorModal: React.FC<MeshEditorModalProps> = ({ open, onClose, modelU
   ) : null;
 };
 
-export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUser, isAdmin, onUserSelect }) => {
+export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUser, isAdmin, onUserSelect, showAllUsers = false, hideFilesPerPageControl = false, forcedFilesPerPage }) => {
   const [files, setFiles] = useState<FilesByCategory>({});
   const [commonFiles, setCommonFiles] = useState<FilesByCategory>({});
   const [activeTab, setActiveTab] = useState<'my-files' | 'common-assets'>('my-files');
@@ -402,6 +405,9 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [filesPerPage, setFilesPerPage] = useState<number | 'all'>(5);
+  
+  // Use forced files per page if provided, otherwise use local state
+  const effectiveFilesPerPage = forcedFilesPerPage !== undefined ? forcedFilesPerPage : filesPerPage;
   const [page, setPage] = useState<{ [key: string]: number }>({ images: 0, '3d': 0, audio: 0, other: 0 });
   const [totalFilesByCategory, setTotalFilesByCategory] = useState<{ [key: string]: number }>({});
   const [showHtmlDraftModal, setShowHtmlDraftModal] = useState(false);
@@ -442,6 +448,7 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
     setError(null);
     
     console.log('🚀 Loading files with parallel category loading for better performance...');
+    console.log('🔍 FileList props:', { selectedUser, isAdmin, showAllUsers, activeTab });
     
     try {
       // Load tags from database for all files by this user or admin
@@ -471,11 +478,46 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
         
         // Load all categories in parallel instead of sequentially for much better performance
         const categoryPromises = Object.keys(categorizedFiles).map(async (category) => {
-          let limit = filesPerPage === 'all' ? 100 : filesPerPage; // Cap at 100 even in 'all' mode
-          let offset = filesPerPage === 'all' ? 0 : (page[category] || 0) * (filesPerPage as number);
-          const folder = category === 'html' ? 'public_html' : category;
-          const result = await getFiles({ limit, offset, folder, user: selectedUser });
-          return { category, result };
+          console.log(`📂 Processing category: ${category}, showAllUsers: ${showAllUsers}`);
+          if (category === 'html' && showAllUsers) {
+            // For HTML files in "Everyone's" view, use listAllUsersHtml to get saved projects
+            const allProjects = await listAllUsersHtml();
+            console.log('📁 Loaded all projects for Everyone view:', allProjects);
+            
+            // Convert to FileInfo format
+            const htmlFiles = allProjects.map(project => {
+              const actualUser = project.userName || project.name.split('-')[0];
+              console.log(`📄 Processing project: ${project.name}, extracted user: ${actualUser}`);
+              
+              return {
+                name: project.name,
+                originalName: project.displayName || project.name,
+                url: `user-html/${project.name}/index.html`, // This will be used for loading
+                id: project.name,
+                type: 'html',
+                folder: 'user-html',
+                uploadedBy: project.userName || 'Unknown',
+                uploadedAt: project.timestamp,
+                // Store the actual user name for loading
+                actualUser: actualUser
+              };
+            });
+            
+            return { 
+              category, 
+              result: { 
+                files: htmlFiles, 
+                total: htmlFiles.length 
+              } 
+            };
+          } else {
+            let limit = effectiveFilesPerPage === 'all' ? 100 : effectiveFilesPerPage; // Cap at 100 even in 'all' mode
+            let offset = effectiveFilesPerPage === 'all' ? 0 : (page[category] || 0) * (effectiveFilesPerPage as number);
+            const folder = category === 'html' ? 'public_html' : category;
+            // If showAllUsers is true, pass undefined/null for user to get all files
+            const result = await getFiles({ limit, offset, folder, user: showAllUsers ? undefined : selectedUser });
+            return { category, result };
+          }
         });
         
         const categoryResults = await Promise.all(categoryPromises);
@@ -513,8 +555,8 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
         
         // Load all categories in parallel for better performance
         const categoryPromises = Object.keys(categorizedCommonFiles).map(async (category) => {
-          let limit = filesPerPage === 'all' ? 100 : filesPerPage; // Cap at 100 even in 'all' mode
-          let offset = filesPerPage === 'all' ? 0 : (page[category] || 0) * (filesPerPage as number);
+          let limit = effectiveFilesPerPage === 'all' ? 100 : effectiveFilesPerPage; // Cap at 100 even in 'all' mode
+          let offset = effectiveFilesPerPage === 'all' ? 0 : (page[category] || 0) * (effectiveFilesPerPage as number);
           const result = await getFiles({ limit, offset, folder: category, user: 'common-assets' });
           return { category, result };
         });
@@ -810,6 +852,31 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
   };
 
   const handleHtmlDraftClick = (file: FileInfo) => {
+    console.log('🖱️ HTML file clicked:', file);
+    console.log('🔍 File details:', {
+      name: file.name,
+      actualUser: file.actualUser,
+      folder: file.folder,
+      showAllUsers: showAllUsers
+    });
+    
+    // If this is from "Everyone's" view and it's a saved project, store the user info
+    if (showAllUsers && file.actualUser && file.folder === 'user-html') {
+      console.log('📤 Storing project to load:', {
+        user: file.actualUser,
+        projectName: file.name
+      });
+      
+      // Store the project to load in sessionStorage with the correct user
+      sessionStorage.setItem('loadProject', JSON.stringify({
+        user: file.actualUser,
+        projectName: file.name
+      }));
+      // Navigate to admin tools main page which has the editor
+      window.location.href = '/admin-tools';
+      return;
+    }
+    
     setPendingHtmlDraftUrl(file.url);
     setPendingHtmlDraftName(file.originalName);
     setShowHtmlDraftModal(true);
@@ -939,8 +1006,9 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
   }, [previewUrl, previewFile, currentPreviewIndex, currentPreviewCategory]);
 
   useEffect(() => {
+    console.log('🔄 FileList useEffect triggered:', { activeTab, filesPerPage, page, selectedUser, showAllUsers });
     loadFiles();
-  }, [activeTab, filesPerPage, page, selectedUser]);
+  }, [activeTab, filesPerPage, page, selectedUser, showAllUsers, forcedFilesPerPage]);
 
   if (loading) {
     return (
@@ -1029,9 +1097,10 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
             </button>
           </div>
         </div>
-                <div className="flex items-center gap-2 mb-2">
-          <label htmlFor="filesPerPage" className="text-xs text-gray-400">Show files:</label>
-                      <select
+        {!hideFilesPerPageControl && (
+          <div className="flex items-center gap-2 mb-2">
+            <label htmlFor="filesPerPage" className="text-xs text-gray-400">Show files:</label>
+            <select
               id="filesPerPage"
               value={filesPerPage}
               onChange={e => {
@@ -1048,13 +1117,14 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
               <option value="all">All (max 100)</option>
             </select>
           
-          {/* Performance warning for users with many files */}
-          {filesPerPage === 'all' && (
-            <div className="text-xs text-yellow-400 bg-yellow-900/20 px-2 py-1 rounded">
-              ⚠️ Loading up to 100 files per category
-            </div>
-          )}
-        </div>
+            {/* Performance warning for users with many files */}
+            {effectiveFilesPerPage === 'all' && (
+              <div className="text-xs text-yellow-400 bg-yellow-900/20 px-2 py-1 rounded">
+                ⚠️ Loading up to 100 files per category
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tag & Filename Search Box */}
@@ -1317,7 +1387,7 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                             );
                           })}
                         </div>
-                        {filesPerPage !== 'all' && categoryFiles.length > 0 && (
+                        {effectiveFilesPerPage !== 'all' && categoryFiles.length > 0 && (
                           <div className="flex justify-between items-center px-3 py-2 bg-gray-900 border-t border-gray-700">
                             <button
                               disabled={page[category] === 0}
@@ -1332,7 +1402,7 @@ export const FileList: React.FC<FileListProps> = ({ onLoadHtmlDraft, selectedUse
                             </button>
                             <span className="text-xs text-gray-400">Page {(page[category] || 0) + 1}</span>
                             <button
-                              disabled={((page[category] || 0) + 1) * (filesPerPage as number) >= (totalFilesByCategory[category] || 0)}
+                              disabled={((page[category] || 0) + 1) * (effectiveFilesPerPage as number) >= (totalFilesByCategory[category] || 0)}
                               onClick={() => {
                                 const newPage = (page[category] || 0) + 1;
                                 console.log(`Next clicked for category: ${category}, current page: ${page[category]}, new page: ${newPage}`);

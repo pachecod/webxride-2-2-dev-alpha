@@ -2,7 +2,7 @@ import React from 'react';
 import { Code, FileCode, ArrowRight, Trash2, File, Edit } from 'lucide-react';
 import { Framework, Project, FileType } from '../types';
 import { FileList } from './FileList';
-import { supabase, loadTemplateFromStorage, listUserHtmlByName, getTemplatesFromStorage, getTemplatesWithOrder, saveTemplateOrder, loadTemplateOrder } from '../lib/supabase';
+import { supabase, loadTemplateFromStorage, listUserHtmlByName, listAllUsersHtml, getTemplatesFromStorage, getTemplatesWithOrder, saveTemplateOrder, loadTemplateOrder } from '../lib/supabase';
 import { DBProject } from '../types';
 import { ChevronDown, ChevronRight, Plus, Copy, ExternalLink, Users, Settings, FileText, FolderOpen, GripVertical } from 'lucide-react';
 
@@ -71,6 +71,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [loadingTemplates, setLoadingTemplates] = React.useState(false);
   const [savedHtmlFiles, setSavedHtmlFiles] = React.useState<any[]>([]);
   const [loadingSavedHtml, setLoadingSavedHtml] = React.useState(false);
+  const [allUsersFiles, setAllUsersFiles] = React.useState<any[]>([]);
+  const [loadingAllUsersFiles, setLoadingAllUsersFiles] = React.useState(false);
+  const [showEveryonesFiles, setShowEveryonesFiles] = React.useState(false);
+  const [showAllUploadedFiles, setShowAllUploadedFiles] = React.useState(false);
+  const [adminFilesPerPage, setAdminFilesPerPage] = React.useState<number | 'all'>(5);
   const [isReordering, setIsReordering] = React.useState(false);
   const [draggedTemplate, setDraggedTemplate] = React.useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = React.useState(false);
@@ -402,7 +407,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     
     listUserHtmlByName(selectedUser)
       .then(files => {
-        console.log('Saved HTML files found for user:', selectedUser, files);
+        console.log('📁 Saved HTML files found for user:', selectedUser, files);
+        console.log('📁 File names in sidebar:', files?.map(f => f.name));
         setSavedHtmlFiles(files || []);
       })
       .catch(error => {
@@ -413,6 +419,27 @@ const Sidebar: React.FC<SidebarProps> = ({
         setLoadingSavedHtml(false);
       });
   }, [selectedUser]);
+
+  // Fetch ALL users' files (admin only, when on admin-tools page)
+  React.useEffect(() => {
+    if (isAdmin && window.location.pathname === '/admin-tools') {
+      setLoadingAllUsersFiles(true);
+      console.log('Loading all users files for admin');
+      
+      listAllUsersHtml()
+        .then(files => {
+          console.log('All users files found:', files);
+          setAllUsersFiles(files || []);
+        })
+        .catch(error => {
+          console.error('Error loading all users files:', error);
+          setAllUsersFiles([]);
+        })
+        .finally(() => {
+          setLoadingAllUsersFiles(false);
+        });
+    }
+  }, [isAdmin]);
 
   return (
     <aside 
@@ -572,19 +599,52 @@ const Sidebar: React.FC<SidebarProps> = ({
                   Uploaded Files
                 </h2>
                 <button
-                  onClick={() => window.location.href = '/myfiles'}
+                  onClick={() => {
+                    // Navigate to admin file management if admin, otherwise student view
+                    const targetPath = isAdmin && window.location.pathname === '/admin-tools' 
+                      ? '/admin-tools/myfiles' 
+                      : '/myfiles';
+                    window.location.href = targetPath;
+                  }}
                   className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
                   title="View files in larger interface"
                 >
                   View Larger
                 </button>
               </div>
+              {isAdmin && window.location.pathname === '/admin-tools' && (
+                <div className="text-xs mb-2">
+                  <span className="text-gray-400">Show files: </span>
+                  <select 
+                    value={adminFilesPerPage}
+                    onChange={(e) => setAdminFilesPerPage(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                    className="bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 ml-1"
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="all">All (Max)</option>
+                  </select>
+                  <select
+                    value={showAllUploadedFiles ? 'everyone' : 'mine'}
+                    onChange={(e) => setShowAllUploadedFiles(e.target.value === 'everyone')}
+                    className="bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 ml-1"
+                  >
+                    <option value="mine">Mine</option>
+                    <option value="everyone">Everyone's</option>
+                  </select>
+                </div>
+              )}
               <FileList 
                 key={fileListKey} 
                 onLoadHtmlDraft={onLoadHtmlDraft} 
-                selectedUser={selectedUser || ''}
+                selectedUser={showAllUploadedFiles ? '' : (selectedUser || '')}
                 isAdmin={isAdmin || false}
                 onUserSelect={typeof onUserSelect === 'function' ? onUserSelect : undefined}
+                showAllUsers={isAdmin && showAllUploadedFiles}
+                hideFilesPerPageControl={isAdmin && window.location.pathname === '/admin-tools'}
+                forcedFilesPerPage={isAdmin && window.location.pathname === '/admin-tools' ? adminFilesPerPage : undefined}
               />
             </div>
             
@@ -592,7 +652,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             {selectedUser && (
               <div className="px-3 py-2">
                 <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                  {selectedUser}'s Saved Work
+                  My Pages
                 </h2>
                 <nav className="space-y-1">
                   {loadingSavedHtml ? (
@@ -602,6 +662,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <div key={file.name} className="flex items-center justify-between group">
                         <button
                           onClick={() => {
+                            console.log('🖱️ Sidebar clicked on file:', file);
+                            console.log('🖱️ File name being passed:', file.name);
                             if (onLoadSavedHtml) {
                               onLoadSavedHtml(file.name);
                             } else {
@@ -633,9 +695,70 @@ const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                     ))
                   ) : (
-                    <div className="px-3 py-2 text-sm text-gray-400">No saved work found for {selectedUser}.</div>
+                    <div className="px-3 py-2 text-sm text-gray-400">No saved work found.</div>
                   )}
                 </nav>
+              </div>
+            )}
+
+            {/* Everyone's Pages - Admin Only */}
+            {isAdmin && window.location.pathname === '/admin-tools' && (
+              <div className="px-3 py-2 border-t border-gray-700 mt-2">
+                <button
+                  onClick={() => setShowEveryonesFiles(!showEveryonesFiles)}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2 hover:text-gray-300 transition-colors"
+                >
+                  <span>Everyone's Pages</span>
+                  {showEveryonesFiles ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </button>
+                
+                {showEveryonesFiles && (
+                  <nav className="space-y-1">
+                    {loadingAllUsersFiles ? (
+                      <div className="px-3 py-2 text-sm text-gray-400">Loading all files...</div>
+                    ) : allUsersFiles.length > 0 ? (
+                      allUsersFiles.map(file => (
+                        <div key={file.name} className="flex items-center justify-between group">
+                          <button
+                            onClick={() => {
+                              console.log('🖱️ Everyone\'s Pages clicked on file:', file);
+                              console.log('🖱️ Full file.name being passed:', file.name);
+                              if (onLoadSavedHtml) {
+                                onLoadSavedHtml(file.name);
+                              }
+                            }}
+                            className="flex-1 flex flex-col items-start px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                            title={`Load ${file.name}`}
+                          >
+                            <div className="flex items-center w-full">
+                              <File size={14} className="mr-2 flex-shrink-0" />
+                              <span className="truncate font-medium">
+                                {file.name}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500 ml-6">
+                              by {file.userName}
+                            </span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onDeleteSavedHtml) {
+                                onDeleteSavedHtml(file.name);
+                              }
+                            }}
+                            className="opacity-0 group-hover:opacity-100 px-2 py-1 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-all"
+                            title={`Delete ${file.name}`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-gray-400">No files found from any students.</div>
+                    )}
+                  </nav>
+                )}
               </div>
             )}
           </>

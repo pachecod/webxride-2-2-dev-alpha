@@ -32,6 +32,7 @@ interface HeaderProps {
   setShowStartersPanel?: (show: boolean) => void;
   onSaveHtml?: () => void;
   onExportLocalSite?: () => void;
+  projectOwner?: string | null;
 }
 
 
@@ -98,7 +99,8 @@ export const Header: React.FC<HeaderProps> = ({
   showStartersPanel,
   setShowStartersPanel,
   onSaveHtml,
-  onExportLocalSite
+  onExportLocalSite,
+  projectOwner
 }) => {
 
   const showDevelopmentBanner = isDevelopmentDeployment();
@@ -145,12 +147,19 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
             {onSaveHtml && (
-              <button
-                onClick={onSaveHtml}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white transition-colors"
-              >
-                Save
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onSaveHtml}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white transition-colors"
+                >
+                  Save
+                </button>
+                {projectOwner && projectOwner !== selectedUser && (
+                  <span className="text-xs text-yellow-400 bg-yellow-900/30 px-2 py-1 rounded border border-yellow-600/50">
+                    Editing {projectOwner}'s work
+                  </span>
+                )}
+              </div>
             )}
             {onExportLocalSite && (
               <button

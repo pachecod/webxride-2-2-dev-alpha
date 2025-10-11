@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { Home, Play, Save, Settings, Maximize2, Minimize2, X, ExternalLink, Edit3 } from 'lucide-react';
+import { Home, Play, Save, Settings, Maximize2, Minimize2, X, ExternalLink, Edit3, ChevronDown, ChevronRight, Users, Eye } from 'lucide-react';
 import JSZip from 'jszip';
 import Editor from './components/Editor';
 import Preview from './components/Preview';
@@ -23,6 +23,7 @@ import { loadStartersData, loadTemplateFromPublicPath } from './lib/template-loa
 import { createAFrameInspectorHTML } from './lib/aframe-inspector-utils';
 import { SnippetsManagement } from './components/SnippetsManagement';
 import { BlockedExtensionsManagement } from './components/BlockedExtensionsManagement';
+import { AdminImpersonation } from './components/AdminImpersonation';
 
 // Minimal default template - only index.html with basic structure
 const minimalTemplate: Project = {
@@ -301,30 +302,42 @@ function AdminTools({
   handleRideyToggle,
   setSplitToEditor,
   setSplitToEven,
-  setSplitToPreview
+  setSplitToPreview,
+  projectOwner
 }: any) {
   const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
+  
+  // Auto-select admin when AdminTools component mounts
+  React.useEffect(() => {
+    if (!selectedUser) {
+      console.log('🔧 AdminTools: Auto-selecting admin user');
+      onUserSelect('admin');
+    }
+  }, [selectedUser, onUserSelect]);
   const [showClassManagement, setShowClassManagement] = useState(false);
   const [showSnippets, setShowSnippets] = useState(false);
   const [showAboutPage, setShowAboutPage] = useState(false);
   const [showBlockedExtensions, setShowBlockedExtensions] = useState(false);
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
   const [showStartersPanel, setShowStartersPanel] = useState(false);
-
-  // Check if there's a project to load from the file management view
+  const [showImpersonation, setShowImpersonation] = useState(false);
+  
+  // Impersonation state - local to AdminTools, doesn't affect students
+  const [impersonatedUser, setImpersonatedUser] = useState<string | null>(null);
+  
+  // Get effective user for data operations (impersonated if set, otherwise admin)
+  const effectiveUserForData = impersonatedUser || selectedUser;
+  
+  // Debug logging
   React.useEffect(() => {
-    const loadProjectData = sessionStorage.getItem('loadProject');
-    if (loadProjectData) {
-      sessionStorage.removeItem('loadProject'); // Clear it immediately
-      try {
-        const { user, projectName } = JSON.parse(loadProjectData);
-        // Load the project
-        handleLoadSavedHtml(projectName);
-      } catch (error) {
-        console.error('Error loading project from session storage:', error);
-      }
-    }
-  }, []);
+    console.log('[AdminTools] Impersonation state changed:', {
+      impersonatedUser,
+      selectedUser,
+      effectiveUserForData
+    });
+  }, [impersonatedUser, selectedUser, effectiveUserForData]);
+
+  // Note: projectOwner is now passed as a prop from the parent App component
 
   // Function to refresh templates (will be set by Sidebar)
   const refreshTemplates = () => {
@@ -385,9 +398,12 @@ function AdminTools({
         setShowAdminPanel={setShowAdminPanel}
         showStartersPanel={showStartersPanel}
         setShowStartersPanel={setShowStartersPanel}
+        onSaveHtml={handleSaveHtml}
+        projectOwner={projectOwner}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
+          key={`admin-sidebar-${effectiveUserForData}`}
           onLoadTemplate={loadTemplate}
           templates={templates}
           projects={[]}
@@ -402,7 +418,7 @@ function AdminTools({
           }}
           onDeleteTemplate={handleDeleteTemplate}
           onRenameTemplate={handleRenameTemplate}
-          selectedUser={selectedUser}
+          selectedUser={effectiveUserForData}
           isAdmin={true}
           onUserSelect={onUserSelect}
         />
@@ -525,6 +541,28 @@ function AdminTools({
                 </button>
               </div>
               
+              {/* Impersonation Status Indicator */}
+              {impersonatedUser && (
+                <div className="mb-4 p-3 bg-purple-900/30 border border-purple-500 rounded">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Eye size={16} className="text-purple-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-purple-300 text-xs">Viewing as:</p>
+                        <p className="text-white font-semibold truncate">{impersonatedUser}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setImpersonatedUser(null)}
+                      className="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs text-white transition-colors flex items-center gap-1 flex-shrink-0"
+                      title="Stop viewing as this student"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Admin Panel Navigation */}
               <div className="flex flex-wrap gap-2 mb-4">
                 <button
@@ -590,6 +628,33 @@ function AdminTools({
                 {/* Student Management */}
                 {!showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions && (
                   <div className="space-y-6">
+                    {/* View as Student - Collapsible Section */}
+                    <div className="bg-gray-700 rounded-lg p-4">
+                      <button
+                        onClick={() => setShowImpersonation(!showImpersonation)}
+                        className="w-full flex items-center justify-between px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded text-white transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          <span className="font-semibold">View as Student</span>
+                        </div>
+                        {showImpersonation ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </button>
+                      
+                      {showImpersonation && (
+                        <div className="mt-3">
+                          <AdminImpersonation
+                            impersonatedUser={impersonatedUser}
+                            onImpersonate={setImpersonatedUser}
+                          />
+                        </div>
+                      )}
+                    </div>
+
                     {/* AI Assistant Settings */}
                     <div className="bg-gray-700 rounded-lg p-4">
                       <h3 className="text-lg font-semibold text-white mb-3">AI Assistant Settings</h3>
@@ -675,7 +740,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, handleRenameTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, setSplitToEditor, setSplitToEven, setSplitToPreview
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, handleRenameTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, setSplitToEditor, setSplitToEven, setSplitToPreview, projectOwner
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -724,6 +789,7 @@ function MainApp({
         isAdmin={isAdmin}
         onSaveHtml={handleSaveHtml}
         onExportLocalSite={handleExportLocalSite}
+        projectOwner={projectOwner}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -908,6 +974,39 @@ function App() {
     const saved = localStorage.getItem('ridey-enabled');
     return saved === 'true';
   });
+  
+  // Track the owner of the currently loaded project (for admins editing student work)
+  const [projectOwner, setProjectOwner] = useState<string | null>(null);
+
+  // Check if there's a project to load from the file management view (admin only)
+  React.useEffect(() => {
+    // Only run this effect if we have a selectedUser and we're on the admin-tools route
+    if (!selectedUser) return;
+    
+    const loadProjectData = sessionStorage.getItem('loadProject');
+    if (loadProjectData && selectedUser === 'admin' && window.location.pathname === '/admin-tools') {
+      sessionStorage.removeItem('loadProject'); // Clear it immediately
+      try {
+        const { user, projectName } = JSON.parse(loadProjectData);
+        console.log('Loading project from session storage:', { user, projectName });
+        // Load the project using the correct user
+        handleLoadSavedHtmlForUser(projectName, user);
+        // Track who owns this project so we can save back to them
+        setProjectOwner(user);
+      } catch (error) {
+        console.error('Error loading project from session storage:', error);
+        // Clear the session storage data if there's an error
+        sessionStorage.removeItem('loadProject');
+      }
+    } else if (selectedUser && selectedUser !== 'admin') {
+      // For students, ensure projectOwner is null and clear any session storage
+      setProjectOwner(null);
+      if (sessionStorage.getItem('loadProject')) {
+        console.log('Clearing session storage for student user');
+        sessionStorage.removeItem('loadProject');
+      }
+    }
+  }, [selectedUser]);
 
   // Function to refresh templates (will be set by Sidebar)
   const refreshTemplates = () => {
@@ -972,6 +1071,9 @@ function App() {
   const loadTemplate = (templateProject: Project) => {
     console.log('loadTemplate called with:', templateProject);
     console.log('Template files:', templateProject.files);
+    
+    // Clear projectOwner when loading a template (starting fresh)
+    setProjectOwner(null);
     
     // Defensive: ensure files is an array and has index.html
     if (!Array.isArray(templateProject.files) || templateProject.files.length === 0) {
@@ -1276,10 +1378,13 @@ function App() {
     
     const filenameWithTimestamp = `${filename}-${timestamp}`;
     
-    console.log('Saving HTML to cloud for user:', selectedUser);
+    // Use projectOwner if set (admin editing student's work), otherwise use selectedUser
+    const userToSaveAs = projectOwner || selectedUser;
+    
+    console.log('Saving HTML to cloud for user:', userToSaveAs, projectOwner ? '(editing student work)' : '(own work)');
     
     try {
-      const result = await saveUserHtmlByName(selectedUser, project.files, filenameWithTimestamp);
+      const result = await saveUserHtmlByName(userToSaveAs, project.files, filenameWithTimestamp);
       console.log('Save result:', result);
       
       if (result.error) {
@@ -1292,7 +1397,7 @@ function App() {
       alert(`HTML saved successfully as "${filenameWithTimestamp}"!`);
       
       // Refresh the saved HTML list in the sidebar
-      window.location.reload();
+      refreshTemplates();
       
     } catch (err) {
       console.error('Error saving HTML:', err);
@@ -1306,12 +1411,18 @@ function App() {
       return;
     }
     
-    console.log('Loading saved HTML for user:', selectedUser, 'from folder:', folderName);
+    // Clear projectOwner when loading own work
+    setProjectOwner(null);
+    return handleLoadSavedHtmlForUser(folderName, selectedUser);
+  };
+
+  const handleLoadSavedHtmlForUser = async (folderName: string, userName: string) => {
+    console.log('Loading saved HTML for user:', userName, 'from folder:', folderName);
     
     try {
       // Pass a cache-busting timestamp to ensure fresh data
       const cacheBust = Date.now();
-      const loadedFiles = await loadUserHtmlByName(selectedUser, folderName, cacheBust);
+      const loadedFiles = await loadUserHtmlByName(userName, folderName, cacheBust);
       console.log('Loaded files:', loadedFiles);
       
       if (loadedFiles.length === 0) {
@@ -1375,7 +1486,7 @@ function App() {
       console.log('Successfully deleted saved HTML');
       
       // Refresh the saved HTML list in the sidebar
-      window.location.reload();
+      refreshTemplates();
       
       alert('File deleted successfully!');
       
@@ -2188,6 +2299,7 @@ function App() {
               setSplitToEditor={setSplitToEditor}
               setSplitToEven={setSplitToEven}
               setSplitToPreview={setSplitToPreview}
+              projectOwner={projectOwner}
             />
           </AdminPasswordGate>
         } />
@@ -2256,6 +2368,7 @@ function App() {
               setSplitToEditor={setSplitToEditor}
               setSplitToEven={setSplitToEven}
               setSplitToPreview={setSplitToPreview}
+              projectOwner={projectOwner}
             />
           </SimpleAuthGate>
         } />

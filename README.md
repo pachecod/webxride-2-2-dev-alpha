@@ -1,6 +1,6 @@
 # WebXRide - Advanced WebXR Development Platform
 
-**Version 2.1** - A powerful, performance-optimized platform for creating and managing WebXR experiences, 3D content, and interactive web applications.
+**Version 2.2** - A powerful, performance-optimized platform for creating and managing WebXR experiences, 3D content, and interactive web applications.
 
 ## Performance Highlights
 
@@ -8,6 +8,15 @@
 - **Progressive Image Loading** - Thumbnails → Preview → Full-size optimization
 - **Enhanced 3D Preview** - Advanced camera controls and model handling
 - **Smart Caching** - Efficient file management and user experience
+
+## What's New in 2.2 🎉
+
+- **🔐 Admin Password Report System** - Comprehensive student password management with modal interface
+- **📊 Enhanced Password Generation** - Stronger, more secure passwords with expanded vocabulary
+- **📥 Download & Export** - Export password reports as TXT or CSV files for easy distribution
+- **🔄 Reliable Refresh System** - Fixed Tools and Templates pane refresh issues
+- **🎯 Improved Admin Interface** - Better default tab selection and consistent behavior
+- **📱 Modal UX** - Professional full-screen interfaces with keyboard shortcuts
 
 ## What's New in 2.1 🎉
 
@@ -42,12 +51,14 @@ npm run dev
 ## Key Features
 
 - **File Management** - Organized by type with smart categorization
-- **File Tagging** ⭐NEW - Tag files, search across tags and names, browse tag collections
+- **Admin Password Management** ⭐NEW - Comprehensive student password reports with export functionality
+- **File Tagging** - Tag files, search across tags and names, browse tag collections
 - **3D Model Support** - GLTF, OBJ, Collada with enhanced preview
-- **User Management** - Role-based access control
+- **User Management** - Role-based access control with enhanced admin tools
 - **Template System** - Reusable project templates with rename capability
 - **Performance Optimized** - Fast loading for users with many files
 - **AI-Powered Code Assistant** - "Ridey" provides intelligent code suggestions (optional)
+- **Modal Interfaces** ⭐NEW - Professional full-screen modals with keyboard shortcuts
 - **Enhanced Preview Controls** - Intuitive Small/Medium/Large preview sizing
 - **File Renaming** - Rename uploaded files with validation
 - **Blocked Extensions** - Admin control over allowed file types
@@ -55,13 +66,14 @@ npm run dev
 ## Documentation
 
 ### Setup & Installation
-- **[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)** - Complete setup guide (includes 2.1 features)
+- **[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)** - Complete setup guide (includes 2.2 features)
 - **[UPGRADE_GUIDE.md](UPGRADE_GUIDE.md)** - Upgrade from 2.0 to 2.1
 - **[DEVELOPMENT_SETUP.md](DEVELOPMENT_SETUP.md)** - Development environment
 - **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** - Database configuration
 
 ### User Guides
-- **[USER_GUIDE_TAGGING.md](USER_GUIDE_TAGGING.md)** ⭐NEW - Complete guide to file tagging and search
+- **[PASSWORD_REPORT_GUIDE.md](PASSWORD_REPORT_GUIDE.md)** ⭐NEW - Complete guide to admin password management
+- **[USER_GUIDE_TAGGING.md](USER_GUIDE_TAGGING.md)** - Complete guide to file tagging and search
 - **[ENHANCED_3D_PREVIEW.md](ENHANCED_3D_PREVIEW.md)** - 3D features
 - **[ENHANCED_PREVIEW_CONTROLS.md](ENHANCED_PREVIEW_CONTROLS.md)** - Preview and resizing system
 

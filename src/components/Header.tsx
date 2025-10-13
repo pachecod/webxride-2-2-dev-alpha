@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, AlertTriangle, Sparkles, Download, LogOut, User } from 'lucide-react';
+import { Settings, AlertTriangle, Sparkles, Download, LogOut, User, Send, Bell } from 'lucide-react';
 import { ClassUserSelector } from './ClassUserSelector';
 import webxrideLogo from '../assets/webxride-logo.png';
 // import { FileUpload } from './FileUpload';
@@ -31,8 +31,10 @@ interface HeaderProps {
   showStartersPanel?: boolean;
   setShowStartersPanel?: (show: boolean) => void;
   onSaveHtml?: () => void;
+  onSubmitToTeacher?: () => void;
   onExportLocalSite?: () => void;
   projectOwner?: string | null;
+  onViewNotifications?: () => void;
 }
 
 
@@ -99,8 +101,10 @@ export const Header: React.FC<HeaderProps> = ({
   showStartersPanel,
   setShowStartersPanel,
   onSaveHtml,
+  onSubmitToTeacher,
   onExportLocalSite,
-  projectOwner
+  projectOwner,
+  onViewNotifications
 }) => {
 
   const showDevelopmentBanner = isDevelopmentDeployment();
@@ -154,6 +158,17 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   Save
                 </button>
+                {/* Show Submit button for students only */}
+                {onSubmitToTeacher && !isAdmin && selectedUser !== 'admin' && (
+                  <button
+                    onClick={onSubmitToTeacher}
+                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-sm text-white transition-colors flex items-center gap-1"
+                    title="Save and submit to teacher for review"
+                  >
+                    <Send size={14} />
+                    Save & Submit
+                  </button>
+                )}
                 {projectOwner && projectOwner !== selectedUser && (
                   <span className="text-xs text-yellow-400 bg-yellow-900/30 px-2 py-1 rounded border border-yellow-600/50">
                     Editing {projectOwner}'s work
@@ -180,6 +195,17 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded border border-gray-700">
               <User size={16} className="text-blue-400" />
               <span className="text-sm text-white">{auth.user?.email}</span>
+              {/* Show notifications button for students */}
+              {onViewNotifications && auth.user?.email !== 'admin@example.com' && (
+                <button
+                  onClick={onViewNotifications}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs text-white transition-colors flex items-center gap-1"
+                  title="View notifications"
+                >
+                  <Bell size={12} />
+                  Notifications
+                </button>
+              )}
               <button
                 onClick={() => auth.signOut()}
                 className="ml-2 px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs text-white transition-colors flex items-center gap-1"
@@ -196,6 +222,17 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded border border-gray-700">
               <User size={16} className="text-blue-400" />
               <span className="text-sm text-white">{localStorage.getItem('authenticatedUser')}</span>
+              {/* Show notifications button for students */}
+              {onViewNotifications && localStorage.getItem('authenticatedUser') !== 'admin' && (
+                <button
+                  onClick={onViewNotifications}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs text-white transition-colors flex items-center gap-1"
+                  title="View notifications"
+                >
+                  <Bell size={12} />
+                  Notifications
+                </button>
+              )}
               <button
                 onClick={() => {
                   localStorage.removeItem('authenticatedUser');
@@ -212,11 +249,24 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* ClassUserSelector - only show when auth is NOT enabled and NOT using simple auth */}
           {!AUTH_ENABLED && !USE_SIMPLE_AUTH && onUserSelect && (
-            <ClassUserSelector 
-              selectedUser={selectedUser || null}
-              onUserSelect={onUserSelect}
-              isAdmin={isAdmin}
-            />
+            <div className="flex items-center gap-2">
+              <ClassUserSelector 
+                selectedUser={selectedUser || null}
+                onUserSelect={onUserSelect}
+                isAdmin={isAdmin}
+              />
+              {/* Show notifications button for students */}
+              {onViewNotifications && selectedUser && selectedUser !== 'admin' && (
+                <button
+                  onClick={onViewNotifications}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs text-white transition-colors flex items-center gap-1"
+                  title="View notifications"
+                >
+                  <Bell size={12} />
+                  Notifications
+                </button>
+              )}
+            </div>
           )}
           {isAdmin && (
             <>
@@ -256,6 +306,17 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <Settings size={16} />
                   <span>Manage Settings</span>
+                </button>
+              )}
+              {/* Show notifications button for admin */}
+              {onViewNotifications && (
+                <button
+                  onClick={onViewNotifications}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white transition-colors flex items-center gap-1"
+                  title="View student submissions"
+                >
+                  <Bell size={16} />
+                  Notifications
                 </button>
               )}
             </>

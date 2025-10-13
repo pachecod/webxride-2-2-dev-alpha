@@ -38,6 +38,7 @@ interface SidebarProps {
   selectedUser?: string | null;
   isAdmin?: boolean;
   onUserSelect?: (user: string) => void;
+  actualUser?: string | null; // The real logged-in user (before impersonation)
 }
 
 const STARTER_HTML = `<!DOCTYPE html>\n<html>\n<head>\n  <title>My First HTML Page</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n  <p>This is a paragraph.</p>\n</body>\n</html>`;
@@ -57,7 +58,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onRenameTemplate,
   selectedUser,
   isAdmin = false,
-  onUserSelect
+  onUserSelect,
+  actualUser
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(() => {
     const saved = localStorage.getItem('sidebar-expanded');
@@ -408,7 +410,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     listUserHtmlByName(selectedUser)
       .then(files => {
         console.log('📁 Saved HTML files found for user:', selectedUser, files);
-        console.log('📁 File names in sidebar:', files?.map(f => f.name));
+        console.log('📁 File names in sidebar:', files?.map(f => f?.name));
         setSavedHtmlFiles(files || []);
       })
       .catch(error => {
@@ -664,6 +666,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                           onClick={() => {
                             console.log('🖱️ Sidebar clicked on file:', file);
                             console.log('🖱️ File name being passed:', file.name);
+                            console.log('🖱️ Impersonation check:', { actualUser, selectedUser, isImpersonating: actualUser === 'admin' && selectedUser !== 'admin' });
+                            
+                            // If admin is impersonating a student, set the project owner
+                            if (actualUser === 'admin' && selectedUser && selectedUser !== 'admin') {
+                              console.log('🖱️ Admin impersonating student, setting loadProjectOwner to:', selectedUser);
+                              sessionStorage.setItem('loadProjectOwner', selectedUser);
+                            }
+                            
                             if (onLoadSavedHtml) {
                               onLoadSavedHtml(file.name);
                             } else {
@@ -723,6 +733,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                             onClick={() => {
                               console.log('🖱️ Everyone\'s Pages clicked on file:', file);
                               console.log('🖱️ Full file.name being passed:', file.name);
+                              console.log('🖱️ File owner (userName):', file.userName);
+                              // For Everyone's Pages, we need to load with the file owner's name
+                              // Store the owner info in sessionStorage so App.tsx can set projectOwner
+                              if (file.userName) {
+                                sessionStorage.setItem('loadProjectOwner', file.userName);
+                              }
                               if (onLoadSavedHtml) {
                                 onLoadSavedHtml(file.name);
                               }

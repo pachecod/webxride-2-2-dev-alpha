@@ -23,7 +23,7 @@ export const AdminFilesView: React.FC<AdminFilesViewProps> = ({
   onBack, 
   onUserSelect 
 }) => {
-  const [activeTab, setActiveTab] = useState<'common' | 'user'>('common');
+  const [activeTab, setActiveTab] = useState<'common' | 'user'>('user');
   const [fileListKey, setFileListKey] = useState(0);
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
   const [loadingSavedProjects, setLoadingSavedProjects] = useState(false);
@@ -94,7 +94,8 @@ export const AdminFilesView: React.FC<AdminFilesViewProps> = ({
     if (!selectedUser) return;
     
     try {
-      const files = await loadUserHtmlByName(selectedUser, projectName, Date.now());
+      const result = await loadUserHtmlByName(selectedUser, projectName, Date.now());
+      const files = result.files;
       
       if (files.length === 0) {
         alert('No files found in this project');

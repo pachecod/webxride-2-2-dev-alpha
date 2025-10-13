@@ -148,14 +148,17 @@ export const authenticateUser = async (username: string, password: string) => {
 
 export const generateRandomPassword = () => {
   // Generate a simple memorable password (for students)
-  const adjectives = ['Happy', 'Sunny', 'Bright', 'Lucky', 'Swift'];
-  const nouns = ['Lion', 'Eagle', 'Tiger', 'Wolf', 'Bear'];
+  const adjectives = ['Happy', 'Sunny', 'Bright', 'Lucky', 'Swift', 'Cool', 'Fast', 'Smart', 'Kind', 'Bold'];
+  const nouns = ['Lion', 'Eagle', 'Tiger', 'Wolf', 'Bear', 'Fox', 'Hawk', 'Shark', 'Dolphin', 'Panda'];
+  const symbols = ['@', '#', '$', '%', '^', '&', '*'];
   const numbers = Math.floor(Math.random() * 100);
   
   const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
   const noun = nouns[Math.floor(Math.random() * nouns.length)];
+  const symbol1 = symbols[Math.floor(Math.random() * symbols.length)];
+  const symbol2 = symbols[Math.floor(Math.random() * symbols.length)];
   
-  return `${adj}${noun}${numbers}`;
+  return `${adj}${noun}${symbol1}${numbers}${symbol2}`;
 };
 
 // Project functions
@@ -1570,7 +1573,13 @@ export const saveTemplateToStorage = async (template: {
   }
 };
 
-export const saveUserHtmlByName = async (userName: string, files: Array<{name: string, content: string, type?: string}>, projectName: string) => {
+export const saveUserHtmlByName = async (
+  userName: string, 
+  files: Array<{name: string, content: string, type?: string}>, 
+  projectName: string, 
+  adminComment?: string,
+  submissionData?: {studentComment?: string; isSubmitted?: boolean}
+) => {
   try {
     // Convert username to kebab-case
     const userNamePrefix = userName.toLowerCase().replace(/\s+/g, '-');
@@ -1593,7 +1602,7 @@ export const saveUserHtmlByName = async (userName: string, files: Array<{name: s
       timestamp = `-${mm}${dd}:${String(displayHours).padStart(2, '0')}${min}${ampm}`;
       folderName = `${userNamePrefix}-${projectName}${timestamp}`;
     }
-    console.log('Saving user HTML by name:', { userName, folderName, projectName });
+    console.log('Saving user HTML by name:', { userName, folderName, projectName, hasComment: !!adminComment, isSubmitted: submissionData?.isSubmitted });
     
     // Use the existing 'files' bucket instead of creating a new one
     const bucketName = 'files';
@@ -1603,7 +1612,7 @@ export const saveUserHtmlByName = async (userName: string, files: Array<{name: s
     
     // Create updated metadata file with enhanced cache busting
     const currentTimestamp = Date.now();
-    const metadata = {
+    const metadata: any = {
       name: folderName.split('-').slice(0, -1).join('-') || 'Updated Project',
       userName: userName,
       created_at: new Date().toISOString(),
@@ -1615,6 +1624,21 @@ export const saveUserHtmlByName = async (userName: string, files: Array<{name: s
         type: file.type || getFileType(file.name)
       }))
     };
+    
+    // Add admin comment if provided
+    if (adminComment) {
+      metadata.adminComment = adminComment;
+      metadata.commentDate = new Date().toISOString();
+    }
+    
+    // Add submission data if provided
+    if (submissionData?.isSubmitted) {
+      metadata.isSubmitted = true;
+      metadata.submittedDate = new Date().toISOString();
+      if (submissionData.studentComment) {
+        metadata.studentComment = submissionData.studentComment;
+      }
+    }
 
     console.log('Uploading metadata:', metadata);
 
@@ -2009,7 +2033,21 @@ export const loadUserHtmlByName = async (userName: string, folderName: string, c
     );
 
     console.log('Successfully loaded user HTML by name:', files.map(f => ({ name: f.name, contentLength: f.content.length })));
-    return files;
+    
+    // Return both files and metadata (including admin comments and submission data)
+    return {
+      files,
+      metadata: {
+        adminComment: metadata.adminComment,
+        commentDate: metadata.commentDate,
+        studentComment: metadata.studentComment,
+        isSubmitted: metadata.isSubmitted,
+        submittedDate: metadata.submittedDate,
+        version: metadata.version,
+        created_at: metadata.created_at,
+        updated_at: metadata.updated_at
+      }
+    };
   } catch (error) {
     console.error('Error loading user HTML by name:', error);
     throw error;

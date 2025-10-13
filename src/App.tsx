@@ -9,12 +9,18 @@ import Sidebar from './components/Sidebar';
 import FileTabs from './components/FileTabs';
 import { StudentManagement } from './components/StudentManagement';
 import { ClassManagement } from './components/ClassManagement';
+import { PasswordReport } from './components/PasswordReport';
 import { SaveTemplateDialog } from './components/SaveTemplateDialog';
+import { AdminSaveDialog } from './components/AdminSaveDialog';
+import { StudentSubmitDialog } from './components/StudentSubmitDialog';
+import { AdminCommentViewer } from './components/AdminCommentViewer';
+import { StudentNotificationInbox } from './components/StudentNotificationInbox';
 import { AboutPageComponent } from './components/AboutPage';
 import { AboutPageEditor } from './components/AboutPageEditor';
 import { AboutPageManagement } from './components/AboutPageManagement';
 import { StudentFilesView } from './components/StudentFilesView';
 import { AdminFilesView } from './components/AdminFilesView';
+import { SubmissionsInbox } from './components/SubmissionsInbox';
 import { FileType, Project, File, Framework } from './types';
 import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage } from './lib/supabase';
 import { AdminPasswordGate } from './components/AdminPasswordGate';
@@ -287,6 +293,7 @@ function AdminTools({
   handleCopyCode, 
   handleSaveTemplate, 
   handleSaveHtml, 
+  handleSubmitToTeacher,
   handleLoadSavedHtml, 
   handleDeleteSavedHtml, 
   handleDeleteTemplate,
@@ -297,6 +304,8 @@ function AdminTools({
   handleAddFile, 
   showAdminPanel, 
   setShowAdminPanel,
+  showStartersPanel,
+  setShowStartersPanel,
   showSaveTemplateButton,
   rideyEnabled,
   handleRideyToggle,
@@ -319,8 +328,8 @@ function AdminTools({
   const [showAboutPage, setShowAboutPage] = useState(false);
   const [showBlockedExtensions, setShowBlockedExtensions] = useState(false);
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
-  const [showStartersPanel, setShowStartersPanel] = useState(false);
   const [showImpersonation, setShowImpersonation] = useState(false);
+  const [showPasswordReport, setShowPasswordReport] = useState(false);
   
   // Impersonation state - local to AdminTools, doesn't affect students
   const [impersonatedUser, setImpersonatedUser] = useState<string | null>(null);
@@ -399,6 +408,7 @@ function AdminTools({
         showStartersPanel={showStartersPanel}
         setShowStartersPanel={setShowStartersPanel}
         onSaveHtml={handleSaveHtml}
+        onSubmitToTeacher={handleSubmitToTeacher}
         projectOwner={projectOwner}
       />
       <div className="flex flex-1 overflow-hidden">
@@ -421,6 +431,7 @@ function AdminTools({
           selectedUser={effectiveUserForData}
           isAdmin={true}
           onUserSelect={onUserSelect}
+          actualUser={selectedUser}
         />
         <main className="flex-1 flex flex-col overflow-hidden">
           <FileTabs 
@@ -566,15 +577,21 @@ function AdminTools({
               {/* Admin Panel Navigation */}
               <div className="flex flex-wrap gap-2 mb-4">
                 <button
+                  onClick={() => window.location.href = '/admin-tools/submissions'}
+                  className="px-3 py-2 rounded text-sm transition-colors flex-shrink-0 bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  📥 Student Submissions
+                </button>
+                <button
                   onClick={() => window.location.href = '/admin-tools/myfiles'}
                   className="px-3 py-2 rounded text-sm transition-colors flex-shrink-0 bg-green-600 text-white hover:bg-green-700"
                 >
                   📁 File Management
                 </button>
                 <button
-                  onClick={() => { setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); }}
+                  onClick={() => { setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
-                    !showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions
+                    !showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions && !showPasswordReport
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
@@ -582,7 +599,7 @@ function AdminTools({
                   Manage Settings
                 </button>
                 <button
-                  onClick={() => { setShowClassManagement(true); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); }}
+                  onClick={() => { setShowClassManagement(true); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showClassManagement
                       ? 'bg-blue-600 text-white'
@@ -592,7 +609,7 @@ function AdminTools({
                   Classes
                 </button>
                 <button
-                  onClick={() => { setShowSnippets(true); setShowClassManagement(false); setShowAboutPage(false); setShowBlockedExtensions(false); }}
+                  onClick={() => { setShowSnippets(true); setShowClassManagement(false); setShowAboutPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showSnippets
                       ? 'bg-blue-600 text-white'
@@ -602,7 +619,7 @@ function AdminTools({
                   Snippets
                 </button>
                 <button
-                  onClick={() => { setShowAboutPage(true); setShowClassManagement(false); setShowSnippets(false); setShowBlockedExtensions(false); }}
+                  onClick={() => { setShowAboutPage(true); setShowClassManagement(false); setShowSnippets(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showAboutPage
                       ? 'bg-blue-600 text-white'
@@ -612,7 +629,7 @@ function AdminTools({
                   About Page
                 </button>
                 <button
-                  onClick={() => { setShowBlockedExtensions(true); setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); }}
+                  onClick={() => { setShowBlockedExtensions(true); setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showBlockedExtensions
                       ? 'bg-blue-600 text-white'
@@ -621,12 +638,22 @@ function AdminTools({
                 >
                   Blocked Extensions
                 </button>
+                <button
+                  onClick={() => { setShowPasswordReport(true); setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); }}
+                  className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
+                    showPasswordReport
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Password Report
+                </button>
               </div>
 
               
               <div className="space-y-6">
                 {/* Student Management */}
-                {!showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions && (
+                {!showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions && !showPasswordReport && (
                   <div className="space-y-6">
                     {/* View as Student - Collapsible Section */}
                     <div className="bg-gray-700 rounded-lg p-4">
@@ -697,6 +724,13 @@ function AdminTools({
                 
                 {/* Blocked Extensions Management */}
                 {showBlockedExtensions && <BlockedExtensionsManagement />}
+                
+                {/* Password Report Modal */}
+                {showPasswordReport && (
+                  <PasswordReport 
+                    onClose={() => setShowPasswordReport(false)}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -740,7 +774,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, handleRenameTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, setSplitToEditor, setSplitToEven, setSplitToPreview, projectOwner
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleSubmitToTeacher, handleViewNotifications, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, handleRenameTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, setSplitToEditor, setSplitToEven, setSplitToPreview, projectOwner
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -788,8 +822,10 @@ function MainApp({
         onUserSelect={onUserSelect}
         isAdmin={isAdmin}
         onSaveHtml={handleSaveHtml}
+        onSubmitToTeacher={handleSubmitToTeacher}
         onExportLocalSite={handleExportLocalSite}
         projectOwner={projectOwner}
+        onViewNotifications={handleViewNotifications}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -810,6 +846,7 @@ function MainApp({
           selectedUser={selectedUser}
           isAdmin={isAdmin}
           onUserSelect={onUserSelect}
+          actualUser={selectedUser}
         />
         <main className="flex-1 flex flex-col overflow-hidden">
           <FileTabs 
@@ -967,7 +1004,12 @@ function App() {
     return savedUser || null;
   });
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showStartersPanel, setShowStartersPanel] = useState(false);
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [showAdminSaveDialog, setShowAdminSaveDialog] = useState(false);
+  const [showStudentSubmitDialog, setShowStudentSubmitDialog] = useState(false);
+  const [pendingSaveData, setPendingSaveData] = useState<{filename: string, filenameWithTimestamp: string} | null>(null);
+  const [pendingSubmitData, setPendingSubmitData] = useState<{filename: string, filenameWithTimestamp: string} | null>(null);
   const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
   const [rideyEnabled, setRideyEnabled] = useState(() => {
     // Load Ridey setting from localStorage, default to false (disabled)
@@ -977,6 +1019,9 @@ function App() {
   
   // Track the owner of the currently loaded project (for admins editing student work)
   const [projectOwner, setProjectOwner] = useState<string | null>(null);
+  
+  // Track admin comment from loaded project metadata
+  const [projectMetadata, setProjectMetadata] = useState<{adminComment?: string; commentDate?: string} | null>(null);
 
   // Check if there's a project to load from the file management view (admin only)
   React.useEffect(() => {
@@ -1072,8 +1117,9 @@ function App() {
     console.log('loadTemplate called with:', templateProject);
     console.log('Template files:', templateProject.files);
     
-    // Clear projectOwner when loading a template (starting fresh)
+    // Clear projectOwner and metadata when loading a template (starting fresh)
     setProjectOwner(null);
+    setProjectMetadata(null);
     
     // Defensive: ensure files is an array and has index.html
     if (!Array.isArray(templateProject.files) || templateProject.files.length === 0) {
@@ -1164,7 +1210,7 @@ function App() {
       console.log('Save completed successfully:', result.data);
       alert(`HTML saved successfully as "${filename}"!`);
       
-      // Refresh the saved HTML list in the sidebar
+      // Refresh the entire app to ensure everything is in sync
       window.location.reload();
       
     } catch (err) {
@@ -1348,8 +1394,8 @@ function App() {
       alert(`Template ${actionText} successfully! It will appear in the Templates tab after a moment.`);
     }
 
-    // Refresh the entire interface
-    window.location.reload();
+    // Refresh the Tools and Templates pane by forcing re-render
+    setSidebarRefreshKey(prev => prev + 1);
   };
 
   const handleSaveHtml = async () => {
@@ -1378,30 +1424,98 @@ function App() {
     
     const filenameWithTimestamp = `${filename}-${timestamp}`;
     
-    // Use projectOwner if set (admin editing student's work), otherwise use selectedUser
-    const userToSaveAs = projectOwner || selectedUser;
+    // Check if admin is editing student's work
+    const isAdminEditingStudentWork = selectedUser === 'admin' && projectOwner && projectOwner !== 'admin';
     
-    console.log('Saving HTML to cloud for user:', userToSaveAs, projectOwner ? '(editing student work)' : '(own work)');
+    console.log('Save check:', {
+      selectedUser,
+      projectOwner,
+      isAdminEditingStudentWork,
+      pathname: window.location.pathname
+    });
+    
+    if (isAdminEditingStudentWork) {
+      // Show the dialog to let admin choose save options
+      console.log('Showing admin save dialog');
+      setPendingSaveData({ filename, filenameWithTimestamp });
+      setShowAdminSaveDialog(true);
+    } else {
+      // Normal save flow (student saving own work, or admin saving admin's work)
+      console.log('Normal save flow');
+      const success = await performSave(selectedUser, filenameWithTimestamp);
+      if (success) {
+        alert(`HTML saved successfully as "${filenameWithTimestamp}"!`);
+        window.location.reload();
+      }
+    }
+  };
+
+  // Perform the actual save operation
+  const performSave = async (userName: string, filenameWithTimestamp: string, adminComment?: string, submissionData?: {studentComment?: string; isSubmitted?: boolean}) => {
+    if (!project) return;
+    
+    console.log('Saving HTML to cloud for user:', userName, adminComment ? '(with admin comment)' : '', submissionData?.isSubmitted ? '(submitted)' : '');
     
     try {
-      const result = await saveUserHtmlByName(userToSaveAs, project.files, filenameWithTimestamp);
+      const result = await saveUserHtmlByName(userName, project.files, filenameWithTimestamp, adminComment, submissionData);
       console.log('Save result:', result);
       
       if (result.error) {
         console.error('Save failed:', result.error);
         alert('Failed to save HTML: ' + (result.error instanceof Error ? result.error.message : 'Unknown error'));
-        return;
+        return false;
       }
       
       console.log('Save completed successfully:', result.data);
-      alert(`HTML saved successfully as "${filenameWithTimestamp}"!`);
-      
-      // Refresh the saved HTML list in the sidebar
-      refreshTemplates();
+      return true;
       
     } catch (err) {
       console.error('Error saving HTML:', err);
       alert('Failed to save HTML: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      return false;
+    }
+  };
+
+  // Handle admin's save choice when editing student work
+  const handleAdminSaveChoice = async (saveOption: 'admin-only' | 'both', comment?: string) => {
+    if (!pendingSaveData || !projectOwner || !project) return;
+    
+    const { filenameWithTimestamp } = pendingSaveData;
+    
+    try {
+      if (saveOption === 'admin-only') {
+        // Save only to admin's account (no comment needed since student won't see it)
+        const success = await performSave('admin', filenameWithTimestamp);
+        if (success) {
+          alert(`HTML saved to admin account as "${filenameWithTimestamp}"!`);
+          window.location.reload();
+        }
+      } else {
+        // Save to both: update student's original AND save to admin
+        // First, save/update the student's original WITH the comment
+        const studentSuccess = await performSave(projectOwner, filenameWithTimestamp, comment);
+        
+        // Then, save a copy to admin's account (without comment)
+        const adminSuccess = await performSave('admin', filenameWithTimestamp);
+        
+        if (studentSuccess && adminSuccess) {
+          const commentMsg = comment ? ' (with feedback)' : '';
+          alert(`HTML saved to both ${projectOwner}'s and admin's accounts as "${filenameWithTimestamp}"${commentMsg}!`);
+          window.location.reload();
+        } else if (studentSuccess) {
+          alert(`HTML saved to ${projectOwner}'s account, but failed to save to admin account.`);
+          window.location.reload();
+        } else if (adminSuccess) {
+          alert(`HTML saved to admin account, but failed to update ${projectOwner}'s account.`);
+          window.location.reload();
+        }
+      }
+    } catch (err) {
+      console.error('Error in admin save:', err);
+      alert('Failed to save HTML: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      // Clean up
+      setPendingSaveData(null);
     }
   };
 
@@ -1411,9 +1525,20 @@ function App() {
       return;
     }
     
-    // Clear projectOwner when loading own work
-    setProjectOwner(null);
-    return handleLoadSavedHtmlForUser(folderName, selectedUser);
+    // Check if there's a project owner set in sessionStorage (from Everyone's Pages click)
+    const loadProjectOwner = sessionStorage.getItem('loadProjectOwner');
+    sessionStorage.removeItem('loadProjectOwner'); // Clear it immediately
+    
+    if (loadProjectOwner && selectedUser === 'admin' && loadProjectOwner !== 'admin') {
+      // Admin is loading a student's file
+      console.log('Setting projectOwner to:', loadProjectOwner);
+      setProjectOwner(loadProjectOwner);
+      return handleLoadSavedHtmlForUser(folderName, loadProjectOwner);
+    } else {
+      // Loading own work
+      setProjectOwner(null);
+      return handleLoadSavedHtmlForUser(folderName, selectedUser);
+    }
   };
 
   const handleLoadSavedHtmlForUser = async (folderName: string, userName: string) => {
@@ -1422,12 +1547,21 @@ function App() {
     try {
       // Pass a cache-busting timestamp to ensure fresh data
       const cacheBust = Date.now();
-      const loadedFiles = await loadUserHtmlByName(userName, folderName, cacheBust);
-      console.log('Loaded files:', loadedFiles);
+      const result = await loadUserHtmlByName(userName, folderName, cacheBust);
+      console.log('Loaded result:', result);
+      
+      const loadedFiles = result.files;
+      const loadedMetadata = result.metadata;
       
       if (loadedFiles.length === 0) {
         alert('No files found in the saved project');
         return;
+      }
+      
+      // Store metadata (including admin comment if present)
+      if (loadedMetadata) {
+        setProjectMetadata(loadedMetadata);
+        console.log('Loaded metadata with admin comment:', loadedMetadata.adminComment);
       }
       
       // Create files with proper IDs based on their names
@@ -1468,6 +1602,77 @@ function App() {
     }
   };
 
+  // Handle student submission
+  const handleSubmitToTeacher = async () => {
+    if (!selectedUser || selectedUser === 'admin') {
+      alert('Only students can submit work to teacher.');
+      return;
+    }
+    
+    if (!project) {
+      alert('No project to submit.');
+      return;
+    }
+    
+    const filename = prompt('Enter a name for your submission:');
+    if (!filename) return;
+    
+    // Add date and time to the filename
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const timestamp = `${month}${day}:${String(displayHours).padStart(2, '0')}${minutes}${ampm}`;
+    
+    const filenameWithTimestamp = `${filename}-${timestamp}`;
+    
+    // Show the submit dialog
+    setPendingSubmitData({ filename, filenameWithTimestamp });
+    setShowStudentSubmitDialog(true);
+  };
+
+  // Handle student's submission with optional comment
+  const handleStudentSubmitChoice = async (studentComment?: string) => {
+    if (!pendingSubmitData || !selectedUser || !project) return;
+    
+    const { filenameWithTimestamp } = pendingSubmitData;
+    
+    try {
+      const success = await performSave(
+        selectedUser, 
+        filenameWithTimestamp, 
+        undefined, // no admin comment
+        { 
+          isSubmitted: true, 
+          studentComment: studentComment,
+        }
+      );
+      
+      if (success) {
+        alert(`Work submitted successfully as "${filenameWithTimestamp}"!${studentComment ? ' Your note has been included.' : ''}`);
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Error submitting work:', err);
+      alert('Failed to submit work: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setPendingSubmitData(null);
+    }
+  };
+
+  // Handle student viewing notifications
+  const handleViewNotifications = () => {
+    window.location.href = '/notifications';
+  };
+
+  // Handle admin viewing notifications (submissions)
+  function handleAdminViewNotifications() {
+    window.location.href = '/admin-tools/submissions';
+  }
+
   const handleDeleteSavedHtml = async (folderName: string) => {
     if (!selectedUser) {
       alert('Please select your name first before deleting saved work.');
@@ -1485,8 +1690,8 @@ function App() {
       await deleteUserHtmlByName(selectedUser, folderName);
       console.log('Successfully deleted saved HTML');
       
-      // Refresh the saved HTML list in the sidebar
-      refreshTemplates();
+      // Refresh the entire app to ensure everything is in sync
+      window.location.reload();
       
       alert('File deleted successfully!');
       
@@ -1981,8 +2186,8 @@ function App() {
       if (result.success) {
         console.log('Template deleted successfully, triggering refresh...');
         alert('Template deleted successfully!');
-        // Refresh the entire interface
-        window.location.reload();
+        // Refresh the Tools and Templates pane by forcing Sidebar re-render
+        setSidebarRefreshKey(prev => prev + 1);
       } else {
         console.error('Delete failed:', result.error);
         alert('Failed to delete template: ' + (result.error?.message || 'Unknown error'));
@@ -2026,7 +2231,7 @@ function App() {
       if (result.success) {
         console.log('Template renamed successfully, triggering refresh...');
         alert('Template renamed successfully!');
-        // Refresh the entire interface
+        // Refresh the entire app to ensure everything is in sync
         window.location.reload();
       } else {
         console.error('Rename failed:', result.error);
@@ -2234,6 +2439,36 @@ function App() {
         selectedUser={selectedUser}
         isAdmin={selectedUser === 'admin'}
       />
+      <AdminSaveDialog
+        isOpen={showAdminSaveDialog}
+        onClose={() => {
+          setShowAdminSaveDialog(false);
+          setPendingSaveData(null);
+        }}
+        onSave={handleAdminSaveChoice}
+        studentName={projectOwner || 'Student'}
+        adminName={selectedUser || 'Admin'}
+      />
+      
+      <StudentSubmitDialog
+        isOpen={showStudentSubmitDialog}
+        onClose={() => {
+          setShowStudentSubmitDialog(false);
+          setPendingSubmitData(null);
+        }}
+        onSubmit={handleStudentSubmitChoice}
+        studentName={selectedUser || 'Student'}
+      />
+      
+      {/* Show admin comment if present and user is a student (or admin is impersonating) */}
+      {projectMetadata?.adminComment && selectedUser !== 'admin' && (
+        <AdminCommentViewer
+          comment={projectMetadata.adminComment}
+          commentDate={projectMetadata.commentDate}
+          onDismiss={() => setProjectMetadata(null)}
+        />
+      )}
+      
       <Routes>
         <Route path="/about" element={
           <AboutPageComponent 
@@ -2282,6 +2517,7 @@ function App() {
               handleCopyCode={handleCopyCode}
               handleSaveTemplate={handleSaveTemplate}
               handleSaveHtml={handleSaveHtml}
+              handleSubmitToTeacher={handleSubmitToTeacher}
               handleLoadSavedHtml={handleLoadSavedHtml}
               handleDeleteSavedHtml={handleDeleteSavedHtml}
               handleDeleteTemplate={handleDeleteTemplate}
@@ -2292,6 +2528,8 @@ function App() {
               handleAddFile={handleAddFile}
               showAdminPanel={showAdminPanel}
               setShowAdminPanel={setShowAdminPanel}
+              showStartersPanel={showStartersPanel}
+              setShowStartersPanel={setShowStartersPanel}
               showSaveTemplateButton={true}
               handleExportLocalSite={handleExportLocalSite}
               rideyEnabled={rideyEnabled}
@@ -2311,6 +2549,28 @@ function App() {
               onUserSelect={onUserSelect}
             />
           </AdminPasswordGate>
+        } />
+        <Route path="/admin-tools/submissions" element={
+          <AdminPasswordGate>
+            <SubmissionsInbox
+              onBack={() => window.location.href = '/admin-tools'}
+              onOpenSubmission={(userName, folderName) => {
+                // Store the submission info and navigate back to editor
+                sessionStorage.setItem('loadProject', JSON.stringify({ user: userName, projectName: folderName }));
+                window.location.href = '/admin-tools';
+              }}
+            />
+          </AdminPasswordGate>
+        } />
+        <Route path="/notifications" element={
+          <StudentNotificationInbox
+            onBack={() => window.location.href = '/'}
+            onOpenProject={(projectName) => {
+              sessionStorage.setItem('loadProject', JSON.stringify({ user: selectedUser, projectName: projectName }));
+              window.location.href = '/';
+            }}
+            studentName={selectedUser || 'student'}
+          />
         } />
         <Route path="/myfiles" element={
           <SimpleAuthGate onUserSelect={onUserSelect}>
@@ -2353,6 +2613,8 @@ function App() {
               handleCopyCode={handleCopyCode}
               showSaveTemplateButton={false}
               handleSaveHtml={handleSaveHtml}
+              handleSubmitToTeacher={handleSubmitToTeacher}
+              handleViewNotifications={selectedUser === 'admin' ? handleAdminViewNotifications : handleViewNotifications}
               handleLoadSavedHtml={handleLoadSavedHtml}
               handleDeleteSavedHtml={handleDeleteSavedHtml}
               handleDeleteTemplate={handleDeleteTemplate}

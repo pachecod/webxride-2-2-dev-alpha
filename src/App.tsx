@@ -309,6 +309,8 @@ function AdminTools({
   showSaveTemplateButton,
   rideyEnabled,
   handleRideyToggle,
+  aframeInspectorEnabled,
+  handleAframeInspectorToggle,
   setSplitToEditor,
   setSplitToEven,
   setSplitToPreview,
@@ -2570,6 +2572,8 @@ function App() {
               handleExportLocalSite={handleExportLocalSite}
               rideyEnabled={rideyEnabled}
               handleRideyToggle={handleRideyToggle}
+              aframeInspectorEnabled={aframeInspectorEnabled}
+              handleAframeInspectorToggle={handleAframeInspectorToggle}
               setSplitToEditor={setSplitToEditor}
               setSplitToEven={setSplitToEven}
               setSplitToPreview={setSplitToPreview}

@@ -21,11 +21,9 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
   console.log('Preview - Framework detection:', {
     framework,
     hasAframeContent: files.find(f => f.id === 'index.html')?.content?.includes('a-scene'),
-    hasAframeScript: files.find(f => f.id === 'index.html')?.content?.includes('aframe'),
-    shouldShowButton: framework === Framework.AFRAME || 
-                     files.find(f => f.id === 'index.html')?.content?.includes('a-scene') || 
-                     files.find(f => f.id === 'index.html')?.content?.includes('aframe')
+    hasAframeScript: files.find(f => f.id === 'index.html')?.content?.includes('aframe')
   });
+  
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showInline, setShowInline] = useState(true);

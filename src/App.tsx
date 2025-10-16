@@ -474,7 +474,7 @@ function AdminTools({
             >
               <div className="flex-1 overflow-hidden">
                 <Preview 
-                  key={previewKey}
+                  key={`${previewKey}-${aframeInspectorEnabled}`}
                   files={project.files}
                   framework={project.framework}
                   project={project}
@@ -912,7 +912,7 @@ function MainApp({
             >
               <div className="flex-1 overflow-hidden">
                 <Preview 
-                  key={previewKey}
+                  key={`${previewKey}-${aframeInspectorEnabled}`}
                   files={project.files}
                   framework={project.framework}
                   project={project}

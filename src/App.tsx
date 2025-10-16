@@ -463,7 +463,7 @@ function AdminTools({
                 language={activeFile?.type || FileType.HTML}
                 fileName={activeFile?.name}
                 onChange={(value) => updateFile(activeFileId, value)}
-                showInspectorButton={isAframeContent()}
+                showInspectorButton={isAframeContent() && aframeInspectorEnabled}
                 onOpenInspector={handleOpenInspector}
                 rideyEnabled={rideyEnabled}
               />
@@ -703,6 +703,28 @@ function AdminTools({
                         </label>
                       </div>
                     </div>
+
+                    {/* A-Frame Inspector Settings */}
+                    <div className="bg-gray-700 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-white mb-3">A-Frame Inspector Settings</h3>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="text-gray-300 text-sm font-medium">Show A-Frame Inspector</label>
+                          <p className="text-gray-400 text-xs mt-1">
+                            Allow users to access the A-Frame inspector gear icon in the editor
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={aframeInspectorEnabled}
+                            onChange={handleAframeInspectorToggle}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
                     
                     {/* Student Management */}
                     <StudentManagement />
@@ -878,7 +900,7 @@ function MainApp({
                 language={activeFile?.type || FileType.HTML}
                 fileName={activeFile?.name}
                 onChange={(value) => updateFile(activeFileId, value)}
-                showInspectorButton={isAframeContent()}
+                showInspectorButton={isAframeContent() && aframeInspectorEnabled}
                 onOpenInspector={handleOpenInspectorMain}
                 rideyEnabled={rideyEnabled}
               />
@@ -1016,6 +1038,13 @@ function App() {
     const saved = localStorage.getItem('ridey-enabled');
     return saved === 'true';
   });
+
+  // A-Frame Inspector toggle (admin setting)
+  const [aframeInspectorEnabled, setAframeInspectorEnabled] = useState(() => {
+    // Load inspector setting from localStorage, default to false (disabled)
+    const saved = localStorage.getItem('aframe-inspector-enabled');
+    return saved === 'true';
+  });
   
   // Track the owner of the currently loaded project (for admins editing student work)
   const [projectOwner, setProjectOwner] = useState<string | null>(null);
@@ -1075,9 +1104,19 @@ function App() {
     localStorage.setItem('ridey-enabled', rideyEnabled.toString());
   }, [rideyEnabled]);
 
+  // Save A-Frame Inspector setting to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('aframe-inspector-enabled', aframeInspectorEnabled.toString());
+  }, [aframeInspectorEnabled]);
+
   // Function to handle Ridey toggle
   const handleRideyToggle = () => {
     setRideyEnabled(!rideyEnabled);
+  };
+
+  // Function to handle A-Frame Inspector toggle
+  const handleAframeInspectorToggle = () => {
+    setAframeInspectorEnabled(!aframeInspectorEnabled);
   };
 
   // Load default template when app starts if user is already selected and project is minimalTemplate
@@ -2238,7 +2277,11 @@ function App() {
 
   const onUserSelect = async (userName: string) => {
     setSelectedUser(userName);
-    localStorage.setItem('selected-user', userName);
+    if (userName) {
+      localStorage.setItem('selected-user', userName);
+    } else {
+      localStorage.removeItem('selected-user');
+    }
     
     // Only load default template if:
     // 1. No saved project exists AND current project is the minimalTemplate (welcome message)

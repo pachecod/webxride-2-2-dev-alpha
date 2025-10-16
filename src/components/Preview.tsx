@@ -149,6 +149,49 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
         // Remove any existing inspector scripts to prevent auto-opening
         htmlContent = htmlContent.replace(/<script[^>]*aframe-inspector[^>]*><\/script>/gi, '');
         
+        // If admin has disabled A-Frame inspector, remove/modify JavaScript that creates gear icons
+        if (!aframeInspectorEnabled) {
+          // Remove JavaScript that creates gear icons
+          htmlContent = htmlContent.replace(/if\s*\(\s*!document\.getElementById\s*\(\s*['"]aframe-inspector-btn['"]\s*\)\s*\)\s*{[^}]*createElement\s*\(\s*['"]button['"]\s*\)[^}]*innerHTML\s*=\s*['"]⚙️['"][^}]*}/gi, '');
+          
+          // Remove any script that contains gear icon creation
+          htmlContent = htmlContent.replace(/<script[^>]*>[\s\S]*?⚙️[\s\S]*?<\/script>/gi, '');
+          
+          // Add a script to prevent gear icon creation
+          const disableGearIconsScript = `
+            <script>
+              // Prevent gear icon creation when admin setting is disabled
+              console.log('A-Frame Inspector disabled by admin setting');
+              
+              // Override functions that might create gear icons
+              const originalCreateElement = document.createElement;
+              document.createElement = function(tagName) {
+                const element = originalCreateElement.call(this, tagName);
+                if (tagName.toLowerCase() === 'button') {
+                  // Intercept button creation to prevent gear icons
+                  const originalInnerHTML = element.innerHTML;
+                  Object.defineProperty(element, 'innerHTML', {
+                    set: function(value) {
+                      if (value && value.includes('⚙️')) {
+                        console.log('Prevented gear icon creation');
+                        return; // Don't set innerHTML if it contains gear icon
+                      }
+                      originalInnerHTML.call(this, value);
+                    },
+                    get: function() {
+                      return originalInnerHTML;
+                    }
+                  });
+                }
+                return element;
+              };
+            </script>
+          `;
+          
+          // Insert the disabling script at the beginning of the head
+          htmlContent = htmlContent.replace('<head>', `<head>${disableGearIconsScript}`);
+        }
+        
         // Enhanced 3D model handling script using utility
         const enhanced3DScript = `
           <script>

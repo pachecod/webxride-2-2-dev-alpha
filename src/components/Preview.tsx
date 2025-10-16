@@ -121,7 +121,7 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
       const has3DContent = framework === Framework.AFRAME || detect3DContent(htmlContent);
       
       setIs3DContent(has3DContent);
-      setShow3DControls(has3DContent);
+      setShow3DControls(false); // Keep 3D controls hidden by default
 
       // Add meta tags for security and CORS
       const metaTags = `

@@ -954,6 +954,31 @@ setTimeout(function() {
                 });
               </script>
               ` : ''}
+              
+              ${!aframeInspectorEnabled ? `
+              <script>
+                // Hide any existing gear icons from static HTML files when admin setting is disabled
+                const hideGearIcons = () => {
+                  // Hide gear icons added by static HTML files
+                  const existingGearIcons = document.querySelectorAll('#aframe-inspector-btn, button[title*="inspector" i], button[title*="Inspector" i]');
+                  existingGearIcons.forEach(icon => {
+                    if (icon.innerHTML.includes('⚙️') || icon.textContent.includes('⚙️')) {
+                      icon.style.display = 'none';
+                    }
+                  });
+                };
+                
+                // Hide immediately
+                hideGearIcons();
+                
+                // Hide any that might be added later by dynamic scripts
+                const observer = new MutationObserver(hideGearIcons);
+                observer.observe(document.body, { childList: true, subtree: true });
+                
+                // Also hide on window load in case scripts run after DOM is ready
+                window.addEventListener('load', hideGearIcons);
+              </script>
+              ` : ''}
             </body>
             </html>
           `;

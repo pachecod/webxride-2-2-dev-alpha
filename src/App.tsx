@@ -1394,8 +1394,8 @@ function App() {
       alert(`Template ${actionText} successfully! It will appear in the Templates tab after a moment.`);
     }
 
-    // Refresh the Tools and Templates pane by forcing re-render
-    setSidebarRefreshKey(prev => prev + 1);
+    // Refresh the entire app to ensure everything is in sync
+    window.location.reload();
   };
 
   const handleSaveHtml = async () => {
@@ -2175,19 +2175,12 @@ function App() {
     const confirmDelete = window.confirm(`Are you sure you want to delete the template "${template.name}"? This action cannot be undone.`);
     if (!confirmDelete) return;
     try {
-      console.log('=== DELETING TEMPLATE ===');
-      console.log('Template:', template);
-      console.log('Template ID:', template.id);
-      console.log('RefreshTemplates function available:', !!refreshTemplates);
-      
       const result = await deleteTemplateFromStorage(template.id);
-      console.log('Delete result:', result);
       
       if (result.success) {
-        console.log('Template deleted successfully, triggering refresh...');
         alert('Template deleted successfully!');
-        // Refresh the Tools and Templates pane by forcing Sidebar re-render
-        setSidebarRefreshKey(prev => prev + 1);
+        // Refresh the entire app to ensure everything is in sync
+        window.location.reload();
       } else {
         console.error('Delete failed:', result.error);
         alert('Failed to delete template: ' + (result.error?.message || 'Unknown error'));

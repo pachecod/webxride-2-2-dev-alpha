@@ -1464,7 +1464,7 @@ export const saveTemplateToStorage = async (template: {
   framework: string;
   description?: string;
   files: Array<{ name: string; content: string; type: string }>;
-}) => {
+}, creatorId?: string) => {
   try {
     console.log('=== SAVE TEMPLATE TO STORAGE START ===');
     console.log('Template data:', template);
@@ -1487,12 +1487,12 @@ export const saveTemplateToStorage = async (template: {
     
     console.log('Saving template to Storage:', { templateId, template });
 
-    // Create metadata file (omit creator_id and creator_email for anonymous)
+    // Create metadata file with actual creator information
     const metadata = {
       name: template.name,
       framework: template.framework,
       description: template.description || '',
-      creator_id: 'anonymous',
+      creator_id: creatorId || 'anonymous',
       creator_email: '',
       created_at: existingTemplate ? undefined : new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -2899,6 +2899,7 @@ export interface Snippet {
   id: string;
   title: string;
   code: string;
+  language: string;
   created_at: string;
 }
 
@@ -2911,10 +2912,10 @@ export async function getSnippets(): Promise<Snippet[]> {
   return data as Snippet[];
 }
 
-export async function addSnippet(title: string, code: string): Promise<Snippet> {
+export async function addSnippet(title: string, code: string, language: string = 'javascript'): Promise<Snippet> {
   const { data, error } = await supabase
     .from('snippets')
-    .insert([{ title, code }])
+    .insert([{ title, code, language }])
     .select()
     .single();
   if (error) throw error;

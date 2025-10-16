@@ -8,6 +8,7 @@ export const SnippetsManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [code, setCode] = useState('');
+  const [language, setLanguage] = useState('javascript');
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -30,12 +31,13 @@ export const SnippetsManagement: React.FC = () => {
 
   const handleAddSnippet = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !code.trim()) return;
+    if (!title.trim() || !code.trim() || !language.trim()) return;
     setAdding(true);
     try {
-      await addSnippet(title.trim(), code.trim());
+      await addSnippet(title.trim(), code.trim(), language);
       setTitle('');
       setCode('');
+      setLanguage('javascript');
       await loadSnippets();
     } catch (err: any) {
       setError(err.message || 'Failed to add snippet');
@@ -69,6 +71,33 @@ export const SnippetsManagement: React.FC = () => {
           className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white"
           disabled={adding}
         />
+        <select
+          value={language}
+          onChange={e => setLanguage(e.target.value)}
+          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white"
+          disabled={adding}
+        >
+          <option value="javascript">JavaScript</option>
+          <option value="html">HTML</option>
+          <option value="css">CSS</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+          <option value="csharp">C#</option>
+          <option value="php">PHP</option>
+          <option value="ruby">Ruby</option>
+          <option value="go">Go</option>
+          <option value="rust">Rust</option>
+          <option value="typescript">TypeScript</option>
+          <option value="sql">SQL</option>
+          <option value="json">JSON</option>
+          <option value="xml">XML</option>
+          <option value="yaml">YAML</option>
+          <option value="markdown">Markdown</option>
+          <option value="bash">Bash</option>
+          <option value="powershell">PowerShell</option>
+          <option value="other">Other</option>
+        </select>
         <textarea
           value={code}
           onChange={e => setCode(e.target.value)}
@@ -80,7 +109,7 @@ export const SnippetsManagement: React.FC = () => {
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm mt-2 disabled:opacity-50"
-          disabled={adding || !title.trim() || !code.trim()}
+          disabled={adding || !title.trim() || !code.trim() || !language.trim()}
         >
           {adding ? 'Adding...' : 'Add Snippet'}
         </button>
@@ -94,7 +123,12 @@ export const SnippetsManagement: React.FC = () => {
           {snippets.map(snippet => (
             <li key={snippet.id} className="bg-gray-700 rounded p-3 relative">
               <div className="font-semibold text-white mb-1 flex items-center justify-between">
-                <span>{snippet.title}</span>
+                <div>
+                  <span>{snippet.title}</span>
+                  <span className="ml-2 px-2 py-1 bg-blue-600 text-xs rounded text-blue-100">
+                    {snippet.language}
+                  </span>
+                </div>
                 <button
                   onClick={() => handleDeleteSnippet(snippet.id)}
                   className="ml-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-all p-1"

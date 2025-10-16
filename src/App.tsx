@@ -798,7 +798,7 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleSubmitToTeacher, handleViewNotifications, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, handleRenameTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, setSplitToEditor, setSplitToEven, setSplitToPreview, projectOwner
+  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleSubmitToTeacher, handleViewNotifications, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, handleRenameTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, aframeInspectorEnabled, handleAframeInspectorToggle, setSplitToEditor, setSplitToEven, setSplitToPreview, projectOwner
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -2667,6 +2667,8 @@ function App() {
               refreshTemplates={refreshTemplates}
               setRefreshTemplatesRef={setRefreshTemplatesRef}
               rideyEnabled={rideyEnabled}
+              aframeInspectorEnabled={aframeInspectorEnabled}
+              handleAframeInspectorToggle={handleAframeInspectorToggle}
               setSplitToEditor={setSplitToEditor}
               setSplitToEven={setSplitToEven}
               setSplitToPreview={setSplitToPreview}

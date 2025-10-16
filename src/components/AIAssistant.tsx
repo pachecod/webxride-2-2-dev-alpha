@@ -237,24 +237,32 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
 
             {/* Query Input */}
             <div className="p-4 border-b border-gray-200">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
+              <div className="flex flex-col space-y-2">
+                <textarea
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask AI to help with your code..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white resize-none"
+                  rows={3}
+                  style={{ minHeight: '80px' }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
                   disabled={loading}
                 />
-                <button
-                  onClick={() => handleSubmit()}
-                  disabled={loading || !query.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  <span>Ask</span>
-                </button>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => handleSubmit()}
+                    disabled={loading || !query.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    <span>Ask</span>
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -16,12 +16,10 @@ interface EditorProps {
   onChange: (value: string) => void;
   language: FileType;
   fileName?: string; // Add fileName prop for custom file type detection
-  onOpenInspector?: () => void;
-  showInspectorButton?: boolean;
   rideyEnabled?: boolean; // Whether the AI assistant is enabled
 }
 
-const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, onOpenInspector, showInspectorButton, rideyEnabled = false }) => {
+const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, rideyEnabled = false }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView>();
   const [copied, setCopied] = useState(false);
@@ -192,16 +190,6 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language, fileName, on
             >
               <Sparkles size={12} />
               <span>Ask Ridey</span>
-            </button>
-          )}
-          {showInspectorButton && onOpenInspector && (
-            <button
-              onClick={onOpenInspector}
-              className="flex items-center space-x-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-500 rounded text-white"
-              title="Open A-Frame Inspector"
-            >
-              <Settings size={12} />
-              <span>Inspector</span>
             </button>
           )}
         </div>

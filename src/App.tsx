@@ -465,8 +465,6 @@ function AdminTools({
                 language={activeFile?.type || FileType.HTML}
                 fileName={activeFile?.name}
                 onChange={(value) => updateFile(activeFileId, value)}
-                showInspectorButton={isAframeContent() && aframeInspectorEnabled}
-                onOpenInspector={handleOpenInspector}
                 rideyEnabled={rideyEnabled}
               />
             </div>
@@ -498,6 +496,7 @@ function AdminTools({
                       console.log('No HTML file found in project');
                     }
                   }}
+                  aframeInspectorEnabled={aframeInspectorEnabled}
                 />
               </div>
               {showPreview && (
@@ -932,6 +931,7 @@ function MainApp({
                       alert('Changes from A-Frame Inspector have been saved to the editor!');
                     }
                   }}
+                  aframeInspectorEnabled={aframeInspectorEnabled}
                 />
               </div>
               {showPreview && (

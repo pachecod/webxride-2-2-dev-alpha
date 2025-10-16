@@ -11,9 +11,10 @@ interface PreviewProps {
   onPreviewModeChange?: (showInline: boolean) => void;
   onHidePreview?: () => void;
   onInspectorSave?: (updatedHtml: string) => void;
+  aframeInspectorEnabled?: boolean;
 }
 
-const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewModeChange, onHidePreview, onInspectorSave }) => {
+const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewModeChange, onHidePreview, onInspectorSave, aframeInspectorEnabled = false }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   
   // Debug logging for framework detection
@@ -841,7 +842,7 @@ setTimeout(function() {
             </head>
             <body>
               <div class="preview-container">
-                ${isAframeContent ? `
+                ${isAframeContent && aframeInspectorEnabled ? `
                   <button id="inspector-btn" class="inspector-button open" title="Open A-Frame Inspector">
                     ⚙️
                     <div class="tooltip">A-Frame Inspector</div>

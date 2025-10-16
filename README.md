@@ -135,4 +135,4 @@ See the [LICENSE](LICENSE) file for the complete legal terms.
 
 ---
 
-**Built for the WebXR community** 
+**Built for the WebXR community** # Force Netlify rebuild - Thu Oct 16 17:52:50 EDT 2025

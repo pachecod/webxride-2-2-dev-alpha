@@ -2950,45 +2950,175 @@ export interface AdminSettings {
 }
 
 export async function getAdminSettings(): Promise<AdminSettings> {
+  // First, clean up any admin settings that were incorrectly stored in snippets
+  await supabase
+    .from('snippets')
+    .delete()
+    .in('title', ['admin_settings_ridey', 'admin_settings_inspector']);
+  
+  // Use students table to store admin settings (we know this works)
+  // Look for a special "admin" student record that stores settings
   const { data, error } = await supabase
-    .from('admin_settings')
+    .from('students')
     .select('*')
+    .eq('username', 'admin_settings')
     .single();
   
-  if (error) {
-    // If no settings exist, create default ones
-    if (error.code === 'PGRST116') {
-      return await createDefaultAdminSettings();
-    }
-    throw error;
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching admin settings:', error);
+    // Fall back to localStorage
+    console.log('Falling back to localStorage for admin settings');
+    const savedRidey = localStorage.getItem('ridey-enabled');
+    const savedInspector = localStorage.getItem('aframe-inspector-enabled');
+    return {
+      id: 'local_storage',
+      ridey_enabled: savedRidey === 'true',
+      aframe_inspector_enabled: savedInspector === 'true',
+      updated_at: new Date().toISOString()
+    };
   }
-  return data as AdminSettings;
+  
+  // If no settings exist, create default ones
+  if (!data) {
+    console.log('No admin settings found, creating default ones');
+    return await createDefaultAdminSettings();
+  }
+  
+  // Parse settings from the student record's name field (JSON)
+  try {
+    const settings = JSON.parse(data.name);
+    return {
+      id: data.id,
+      ridey_enabled: settings.ridey_enabled || false,
+      aframe_inspector_enabled: settings.aframe_inspector_enabled || false,
+      updated_at: data.updated_at || new Date().toISOString()
+    };
+  } catch (parseError) {
+    console.error('Error parsing admin settings:', parseError);
+    return await createDefaultAdminSettings();
+  }
 }
 
 export async function updateAdminSettings(settings: Partial<AdminSettings>): Promise<AdminSettings> {
-  const { data, error } = await supabase
-    .from('admin_settings')
-    .upsert([{ ...settings, updated_at: new Date().toISOString() }])
-    .select()
-    .single();
-  if (error) throw error;
-  return data as AdminSettings;
+  // Use students table to store admin settings (we know this works)
+  try {
+    // First, get current settings to merge with new ones
+    const currentSettings = await getAdminSettings();
+    const mergedSettings = {
+      ridey_enabled: settings.ridey_enabled !== undefined ? settings.ridey_enabled : currentSettings.ridey_enabled,
+      aframe_inspector_enabled: settings.aframe_inspector_enabled !== undefined ? settings.aframe_inspector_enabled : currentSettings.aframe_inspector_enabled
+    };
+    
+    // Store settings as JSON in the name field of a special student record
+    const settingsJson = JSON.stringify(mergedSettings);
+    
+    // Try to update existing record
+    const { data: updateData, error: updateError } = await supabase
+      .from('students')
+      .update({ 
+        name: settingsJson,
+        updated_at: new Date().toISOString()
+      })
+      .eq('username', 'admin_settings')
+      .select()
+      .single();
+    
+    if (updateError && updateError.code === 'PGRST116') {
+      // No rows found, insert a new record
+      const { data: insertData, error: insertError } = await supabase
+        .from('students')
+        .insert([{
+          name: settingsJson,
+          username: 'admin_settings',
+          password: 'admin_settings_placeholder',
+          class_id: null,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+      
+      if (insertError) throw insertError;
+      return {
+        id: insertData.id,
+        ridey_enabled: mergedSettings.ridey_enabled,
+        aframe_inspector_enabled: mergedSettings.aframe_inspector_enabled,
+        updated_at: insertData.updated_at || new Date().toISOString()
+      };
+    }
+    
+    if (updateError) throw updateError;
+    return {
+      id: updateData.id,
+      ridey_enabled: mergedSettings.ridey_enabled,
+      aframe_inspector_enabled: mergedSettings.aframe_inspector_enabled,
+      updated_at: updateData.updated_at || new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Failed to update admin settings in database:', error);
+    // Fall back to localStorage
+    console.log('Falling back to localStorage for admin settings');
+    if (settings.ridey_enabled !== undefined) {
+      localStorage.setItem('ridey-enabled', settings.ridey_enabled.toString());
+    }
+    if (settings.aframe_inspector_enabled !== undefined) {
+      localStorage.setItem('aframe-inspector-enabled', settings.aframe_inspector_enabled.toString());
+    }
+    
+    // Return the updated settings from localStorage
+    return {
+      id: 'local_storage',
+      ridey_enabled: settings.ridey_enabled !== undefined ? settings.ridey_enabled : (localStorage.getItem('ridey-enabled') === 'true'),
+      aframe_inspector_enabled: settings.aframe_inspector_enabled !== undefined ? settings.aframe_inspector_enabled : (localStorage.getItem('aframe-inspector-enabled') === 'true'),
+      updated_at: new Date().toISOString()
+    };
+  }
 }
 
 async function createDefaultAdminSettings(): Promise<AdminSettings> {
-  const defaultSettings = {
-    ridey_enabled: false,
-    aframe_inspector_enabled: false,
-    updated_at: new Date().toISOString()
-  };
-  
-  const { data, error } = await supabase
-    .from('admin_settings')
-    .insert([defaultSettings])
-    .select()
-    .single();
-  if (error) throw error;
-  return data as AdminSettings;
+  // Create default settings using students table
+  try {
+    const defaultSettings = {
+      ridey_enabled: false,
+      aframe_inspector_enabled: false
+    };
+    
+    const settingsJson = JSON.stringify(defaultSettings);
+    
+    const { data, error } = await supabase
+      .from('students')
+      .insert([{
+        name: settingsJson,
+        username: 'admin_settings',
+        password: 'admin_settings_placeholder',
+        class_id: null,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return {
+      id: data.id,
+      ridey_enabled: false,
+      aframe_inspector_enabled: false,
+      updated_at: data.updated_at || new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Failed to create default admin settings in database:', error);
+    // Fall back to localStorage
+    console.log('Falling back to localStorage for default admin settings');
+    localStorage.setItem('ridey-enabled', 'false');
+    localStorage.setItem('aframe-inspector-enabled', 'false');
+    
+    return {
+      id: 'local_storage',
+      ridey_enabled: false,
+      aframe_inspector_enabled: false,
+      updated_at: new Date().toISOString()
+    };
+  }
 }
 
 // ABOUT PAGE HELPERS

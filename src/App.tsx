@@ -1102,6 +1102,7 @@ function App() {
         setAdminSettingsLoaded(true);
       } catch (error) {
         console.error('Failed to load admin settings:', error);
+        console.log('Falling back to localStorage for admin settings');
         // Fallback to localStorage if database fails
         const savedRidey = localStorage.getItem('ridey-enabled');
         const savedInspector = localStorage.getItem('aframe-inspector-enabled');
@@ -1123,8 +1124,9 @@ function App() {
       await updateAdminSettings({ ridey_enabled: newValue });
     } catch (error) {
       console.error('Failed to update Ridey setting:', error);
-      // Revert on error
-      setRideyEnabled(rideyEnabled);
+      console.log('Falling back to localStorage for Ridey setting');
+      // Fallback to localStorage if database fails
+      localStorage.setItem('ridey-enabled', newValue.toString());
     }
   };
 
@@ -1137,8 +1139,9 @@ function App() {
       await updateAdminSettings({ aframe_inspector_enabled: newValue });
     } catch (error) {
       console.error('Failed to update A-Frame Inspector setting:', error);
-      // Revert on error
-      setAframeInspectorEnabled(aframeInspectorEnabled);
+      console.log('Falling back to localStorage for A-Frame Inspector setting');
+      // Fallback to localStorage if database fails
+      localStorage.setItem('aframe-inspector-enabled', newValue.toString());
     }
   };
 

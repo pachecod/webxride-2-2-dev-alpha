@@ -544,11 +544,10 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
       throw deleteError;
     }
     
-    // Insert new tags (without created_by field since column doesn't exist)
+    // Insert new tags (without created_by and file_name fields since columns don't exist)
     if (tags.length > 0) {
       const tagRecords = tags.map(tag => ({
         file_path: filePath,
-        file_name: fileName,
         tag_name: tag.toLowerCase().trim()
       }));
       

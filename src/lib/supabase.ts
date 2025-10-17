@@ -558,6 +558,13 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
       if (insertError) {
         console.error('Error inserting tags:', insertError);
         
+        // Check for specific database schema errors
+        if (insertError.code === '42703' || insertError.message?.includes('does not exist')) {
+          console.error('Database schema error: table structure is incorrect');
+          console.error('Please run the complete-file-tags-fix.sql script in your Supabase SQL Editor');
+          throw new Error('Database schema error: Please run the complete-file-tags-fix.sql script to fix the file_tags table structure');
+        }
+        
         // If it's a schema cache error, try to force refresh and retry once
         if (insertError.code === 'PGRST204') {
           console.log('Schema cache error detected, trying to refresh...');

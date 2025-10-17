@@ -533,25 +533,23 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
   try {
     console.log('Saving tags to database:', { filePath, fileName, tags, createdBy });
     
-    // First, delete existing tags for this file by this user
+    // First, delete existing tags for this file (without created_by filter since column doesn't exist)
     const { error: deleteError } = await supabase
       .from('file_tags')
       .delete()
-      .eq('file_path', filePath)
-      .eq('created_by', createdBy);
+      .eq('file_path', filePath);
     
     if (deleteError && deleteError.code !== 'PGRST116') { // Ignore "no rows deleted" error
       console.error('Error deleting old tags:', deleteError);
       throw deleteError;
     }
     
-    // Insert new tags
+    // Insert new tags (without created_by field since column doesn't exist)
     if (tags.length > 0) {
       const tagRecords = tags.map(tag => ({
         file_path: filePath,
         file_name: fileName,
-        tag_name: tag.toLowerCase().trim(),
-        created_by: createdBy
+        tag_name: tag.toLowerCase().trim()
       }));
       
       const { error: insertError } = await supabase
@@ -575,16 +573,11 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
 // Get tags for a file
 export const getFileTags = async (filePath: string, createdBy?: string): Promise<string[]> => {
   try {
-    let query = supabase
+    // Query without created_by filter since column doesn't exist
+    const { data, error } = await supabase
       .from('file_tags')
       .select('tag_name')
       .eq('file_path', filePath);
-    
-    if (createdBy) {
-      query = query.eq('created_by', createdBy);
-    }
-    
-    const { data, error } = await query;
     
     if (error) {
       console.error('Error getting tags:', error);
@@ -603,20 +596,12 @@ export const searchFilesByTags = async (searchTags: string[], createdBy: string,
   try {
     console.log('Searching files by tags:', { searchTags, createdBy, isAdmin });
     
-    let query = supabase
-      .from('file_tags')
-      .select('file_path');
-    
-    // If not admin, only show user's own tagged files
-    if (!isAdmin) {
-      query = query.eq('created_by', createdBy);
-    }
-    
-    // Search for any of the provided tags
+    // Query without created_by filter since column doesn't exist
     const lowerTags = searchTags.map(t => t.toLowerCase().trim());
-    query = query.in('tag_name', lowerTags);
-    
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from('file_tags')
+      .select('file_path')
+      .in('tag_name', lowerTags);
     
     if (error) {
       console.error('Error searching tags:', error);
@@ -639,8 +624,7 @@ export const deleteFileTags = async (filePath: string, createdBy: string): Promi
     const { error } = await supabase
       .from('file_tags')
       .delete()
-      .eq('file_path', filePath)
-      .eq('created_by', createdBy);
+      .eq('file_path', filePath);
     
     if (error) throw error;
     return { success: true };
@@ -653,16 +637,10 @@ export const deleteFileTags = async (filePath: string, createdBy: string): Promi
 // Get all unique tags for a user (or all users if admin)
 export const getAllTags = async (createdBy: string, isAdmin: boolean): Promise<{ tag: string; count: number }[]> => {
   try {
-    let query = supabase
+    // Query without created_by filter since column doesn't exist
+    const { data, error } = await supabase
       .from('file_tags')
       .select('tag_name');
-    
-    // If not admin, only show user's own tags
-    if (!isAdmin) {
-      query = query.eq('created_by', createdBy);
-    }
-    
-    const { data, error } = await query;
     
     if (error) {
       console.error('Error getting all tags:', error);

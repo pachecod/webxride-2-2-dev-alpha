@@ -531,9 +531,12 @@ export const validateFileSize = (file: File, fileType: string): { valid: boolean
 // Save tags to database
 export const saveFileTags = async (filePath: string, fileName: string, tags: string[], createdBy: string): Promise<{ success: boolean; error?: any }> => {
   try {
-    console.log('Saving tags to database:', { filePath, fileName, tags, createdBy });
+    console.log('=== SAVING TAGS TO DATABASE ===');
+    console.log('File path:', filePath);
+    console.log('Tags to save:', tags);
     
     // First, delete existing tags for this file
+    console.log('Step 1: Deleting existing tags...');
     const { error: deleteError } = await supabase
       .from('file_tags')
       .delete()
@@ -543,6 +546,7 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
       console.error('Error deleting old tags:', deleteError);
       throw deleteError;
     }
+    console.log('Step 1: Delete completed successfully');
     
     // Insert new tags using minimal table structure (id, file_path, tag_name, created_at)
     if (tags.length > 0) {
@@ -551,18 +555,24 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
         tag_name: tag.toLowerCase().trim()
       }));
       
-      const { error: insertError } = await supabase
+      console.log('Step 2: Inserting new tags...');
+      console.log('Tag records to insert:', tagRecords);
+      
+      const { data: insertData, error: insertError } = await supabase
         .from('file_tags')
-        .insert(tagRecords);
+        .insert(tagRecords)
+        .select();
       
       if (insertError) {
-        console.error('Error inserting tags:', insertError);
+        console.error('Step 2: Error inserting tags:', insertError);
+        console.error('Error code:', insertError.code);
+        console.error('Error message:', insertError.message);
         
         // Check for specific database schema errors
         if (insertError.code === '42703' || insertError.message?.includes('does not exist')) {
-          console.error('Database schema error: table structure is incorrect');
-          console.error('Please run the complete-file-tags-fix.sql script in your Supabase SQL Editor');
-          throw new Error('Database schema error: Please run the complete-file-tags-fix.sql script to fix the file_tags table structure');
+          console.error('❌ DATABASE SCHEMA ERROR: tag_name column does not exist');
+          console.error('Please run the simple-add-tag-name.sql script in your Supabase SQL Editor');
+          throw new Error('Database schema error: Please run the simple-add-tag-name.sql script to add the tag_name column');
         }
         
         // If it's a schema cache error, try to force refresh and retry once
@@ -587,18 +597,22 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
         } else {
           throw insertError;
         }
+      } else {
+        console.log('Step 2: Insert completed successfully');
+        console.log('Inserted data:', insertData);
       }
     }
     
-    console.log('Tags saved successfully to database');
+    console.log('✅ TAGS SAVED SUCCESSFULLY TO DATABASE');
     return { success: true };
   } catch (error) {
-    console.error('Error saving tags:', error);
+    console.error('❌ ERROR SAVING TAGS:', error);
     
     // If database fails, fall back to localStorage as temporary solution
-    console.log('Falling back to localStorage for tags');
+    console.log('🔄 FALLING BACK TO LOCALSTORAGE FOR TAGS');
     const tagKey = `file_tags_${filePath}`;
     localStorage.setItem(tagKey, JSON.stringify(tags));
+    console.log('Tags saved to localStorage with key:', tagKey);
     
     return { success: true }; // Return success with localStorage fallback
   }

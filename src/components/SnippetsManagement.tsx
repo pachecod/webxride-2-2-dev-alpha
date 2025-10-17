@@ -8,7 +8,7 @@ export const SnippetsManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [code, setCode] = useState('');
-  const [language, setLanguage] = useState('javascript');
+  const [language, setLanguage] = useState('html');
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export const SnippetsManagement: React.FC = () => {
       await addSnippet(title.trim(), code.trim(), language);
       setTitle('');
       setCode('');
-      setLanguage('javascript');
+      setLanguage('html');
       await loadSnippets();
     } catch (err: any) {
       setError(err.message || 'Failed to add snippet');
@@ -75,7 +75,7 @@ export const SnippetsManagement: React.FC = () => {
     setEditingId(null);
     setEditTitle('');
     setEditCode('');
-    setEditLanguage('javascript');
+    setEditLanguage('html');
   };
 
   const handleUpdateSnippet = async (id: string) => {
@@ -86,7 +86,7 @@ export const SnippetsManagement: React.FC = () => {
       setEditingId(null);
       setEditTitle('');
       setEditCode('');
-      setEditLanguage('javascript');
+      setEditLanguage('html');
       await loadSnippets();
     } catch (err: any) {
       setError(err.message || 'Failed to update snippet');

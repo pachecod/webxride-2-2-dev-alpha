@@ -1096,10 +1096,13 @@ function App() {
   useEffect(() => {
     const loadAdminSettings = async () => {
       try {
+        console.log('Loading admin settings from database...');
         const settings = await getAdminSettings();
+        console.log('Loaded admin settings:', settings);
         setRideyEnabled(settings.ridey_enabled);
         setAframeInspectorEnabled(settings.aframe_inspector_enabled);
         setAdminSettingsLoaded(true);
+        console.log('Admin settings loaded successfully');
       } catch (error) {
         console.error('Failed to load admin settings:', error);
         console.log('Falling back to localStorage for admin settings');
@@ -1118,10 +1121,13 @@ function App() {
   // Function to handle Ridey toggle
   const handleRideyToggle = async () => {
     const newValue = !rideyEnabled;
+    console.log('Toggling Ridey from', rideyEnabled, 'to', newValue);
     setRideyEnabled(newValue);
     
     try {
+      console.log('Updating Ridey setting in database...');
       await updateAdminSettings({ ridey_enabled: newValue });
+      console.log('Ridey setting updated successfully in database');
     } catch (error) {
       console.error('Failed to update Ridey setting:', error);
       console.log('Falling back to localStorage for Ridey setting');

@@ -28,6 +28,25 @@ CREATE TRIGGER update_admin_settings_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+-- Enable Row Level Security (RLS)
+ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
+
+-- Policy for authenticated users to read settings
+CREATE POLICY "Allow authenticated users to read admin settings" ON admin_settings
+FOR SELECT TO authenticated
+USING (true);
+
+-- Policy for anyone to update settings (since this database doesn't have admin roles)
+CREATE POLICY "Allow anyone to update admin settings" ON admin_settings
+FOR UPDATE TO authenticated
+USING (true)
+WITH CHECK (true);
+
+-- Policy for anyone to insert settings
+CREATE POLICY "Allow anyone to insert admin settings" ON admin_settings
+FOR INSERT TO authenticated
+WITH CHECK (true);
+
 -- Grant necessary permissions
 GRANT ALL ON admin_settings TO authenticated;
 GRANT ALL ON admin_settings TO anon;

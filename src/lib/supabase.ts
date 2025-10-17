@@ -570,29 +570,43 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
         
         // Check for specific database schema errors
         if (insertError.code === '42703' || insertError.message?.includes('does not exist')) {
-          console.error('❌ DATABASE SCHEMA ERROR: tag_name column does not exist');
-          console.error('Please run the simple-add-tag-name.sql script in your Supabase SQL Editor');
-          throw new Error('Database schema error: Please run the simple-add-tag-name.sql script to add the tag_name column');
+          console.error('❌ SCHEMA CACHE ERROR: Supabase API cannot find tag_name column');
+          console.error('The column exists in the database but Supabase cache is outdated');
+          console.error('Please run the force-schema-cache-refresh.sql script in your Supabase SQL Editor');
+          console.error('Then wait 2-3 minutes for the cache to refresh');
+          throw new Error('Schema cache error: Please run force-schema-cache-refresh.sql and wait for cache refresh');
         }
         
         // If it's a schema cache error, try to force refresh and retry once
-        if (insertError.code === 'PGRST204') {
+        if (insertError.code === 'PGRST204' || insertError.code === '42703') {
           console.log('Schema cache error detected, trying to refresh...');
           
-          // Force a schema refresh by making a simple query
-          await supabase.from('file_tags').select('id').limit(1);
+          // Try multiple approaches to force schema refresh
+          try {
+            // Method 1: Query all columns to force schema recognition
+            await supabase.from('file_tags').select('id, file_path, tag_name, created_at').limit(1);
+          } catch (e) {
+            console.log('Method 1 failed, trying method 2...');
+            // Method 2: Try a simple count query
+            await supabase.from('file_tags').select('id').limit(1);
+          }
           
-          // Wait a moment for cache to refresh
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Wait longer for cache to refresh
+          console.log('Waiting 3 seconds for schema cache to refresh...');
+          await new Promise(resolve => setTimeout(resolve, 3000));
           
           // Try the insert again
-          const { error: retryError } = await supabase
+          console.log('Retrying insert after schema refresh...');
+          const { data: retryData, error: retryError } = await supabase
             .from('file_tags')
-            .insert(tagRecords);
+            .insert(tagRecords)
+            .select();
           
           if (retryError) {
             console.error('Error on retry after schema refresh:', retryError);
             throw retryError;
+          } else {
+            console.log('✅ Retry successful! Inserted data:', retryData);
           }
         } else {
           throw insertError;

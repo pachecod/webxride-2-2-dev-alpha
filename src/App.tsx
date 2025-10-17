@@ -22,7 +22,7 @@ import { StudentFilesView } from './components/StudentFilesView';
 import { AdminFilesView } from './components/AdminFilesView';
 import { SubmissionsInbox } from './components/SubmissionsInbox';
 import { FileType, Project, File, Framework } from './types';
-import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage } from './lib/supabase';
+import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage, getAdminSettings, updateAdminSettings } from './lib/supabase';
 import { AdminPasswordGate } from './components/AdminPasswordGate';
 import { SimpleAuthGate } from './components/SimpleAuthGate';
 import { loadStartersData, loadTemplateFromPublicPath } from './lib/template-loader';
@@ -1035,18 +1035,9 @@ function App() {
   const [pendingSaveData, setPendingSaveData] = useState<{filename: string, filenameWithTimestamp: string} | null>(null);
   const [pendingSubmitData, setPendingSubmitData] = useState<{filename: string, filenameWithTimestamp: string} | null>(null);
   const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
-  const [rideyEnabled, setRideyEnabled] = useState(() => {
-    // Load Ridey setting from localStorage, default to false (disabled)
-    const saved = localStorage.getItem('ridey-enabled');
-    return saved === 'true';
-  });
-
-  // A-Frame Inspector toggle (admin setting)
-  const [aframeInspectorEnabled, setAframeInspectorEnabled] = useState(() => {
-    // Load inspector setting from localStorage, default to false (disabled)
-    const saved = localStorage.getItem('aframe-inspector-enabled');
-    return saved === 'true';
-  });
+  const [rideyEnabled, setRideyEnabled] = useState(false);
+  const [aframeInspectorEnabled, setAframeInspectorEnabled] = useState(false);
+  const [adminSettingsLoaded, setAdminSettingsLoaded] = useState(false);
   
   // Track the owner of the currently loaded project (for admins editing student work)
   const [projectOwner, setProjectOwner] = useState<string | null>(null);
@@ -1101,24 +1092,54 @@ function App() {
     }
   }, [selectedUser]);
 
-  // Save Ridey setting to localStorage whenever it changes
+  // Load admin settings from database on component mount
   useEffect(() => {
-    localStorage.setItem('ridey-enabled', rideyEnabled.toString());
-  }, [rideyEnabled]);
-
-  // Save A-Frame Inspector setting to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('aframe-inspector-enabled', aframeInspectorEnabled.toString());
-  }, [aframeInspectorEnabled]);
+    const loadAdminSettings = async () => {
+      try {
+        const settings = await getAdminSettings();
+        setRideyEnabled(settings.ridey_enabled);
+        setAframeInspectorEnabled(settings.aframe_inspector_enabled);
+        setAdminSettingsLoaded(true);
+      } catch (error) {
+        console.error('Failed to load admin settings:', error);
+        // Fallback to localStorage if database fails
+        const savedRidey = localStorage.getItem('ridey-enabled');
+        const savedInspector = localStorage.getItem('aframe-inspector-enabled');
+        setRideyEnabled(savedRidey === 'true');
+        setAframeInspectorEnabled(savedInspector === 'true');
+        setAdminSettingsLoaded(true);
+      }
+    };
+    
+    loadAdminSettings();
+  }, []);
 
   // Function to handle Ridey toggle
-  const handleRideyToggle = () => {
-    setRideyEnabled(!rideyEnabled);
+  const handleRideyToggle = async () => {
+    const newValue = !rideyEnabled;
+    setRideyEnabled(newValue);
+    
+    try {
+      await updateAdminSettings({ ridey_enabled: newValue });
+    } catch (error) {
+      console.error('Failed to update Ridey setting:', error);
+      // Revert on error
+      setRideyEnabled(rideyEnabled);
+    }
   };
 
   // Function to handle A-Frame Inspector toggle
-  const handleAframeInspectorToggle = () => {
-    setAframeInspectorEnabled(!aframeInspectorEnabled);
+  const handleAframeInspectorToggle = async () => {
+    const newValue = !aframeInspectorEnabled;
+    setAframeInspectorEnabled(newValue);
+    
+    try {
+      await updateAdminSettings({ aframe_inspector_enabled: newValue });
+    } catch (error) {
+      console.error('Failed to update A-Frame Inspector setting:', error);
+      // Revert on error
+      setAframeInspectorEnabled(aframeInspectorEnabled);
+    }
   };
 
   // Load default template when app starts if user is already selected and project is minimalTemplate
@@ -2623,7 +2644,15 @@ function App() {
         } />
         <Route path="/*" element={
           <SimpleAuthGate onUserSelect={onUserSelect}>
-            <MainApp
+            {!adminSettingsLoaded ? (
+              <div className="flex items-center justify-center h-screen bg-gray-900">
+                <div className="text-white text-center">
+                  <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p>Loading settings...</p>
+                </div>
+              </div>
+            ) : (
+              <MainApp
               project={project}
               setProject={setProject}
               activeFileId={activeFileId}
@@ -2674,6 +2703,7 @@ function App() {
               setSplitToPreview={setSplitToPreview}
               projectOwner={projectOwner}
             />
+            )}
           </SimpleAuthGate>
         } />
       </Routes>

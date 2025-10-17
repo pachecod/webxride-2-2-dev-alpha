@@ -2941,6 +2941,56 @@ export async function updateSnippet(id: string, title: string, code: string, lan
   return data as Snippet;
 }
 
+// ADMIN SETTINGS HELPERS
+export interface AdminSettings {
+  id: string;
+  ridey_enabled: boolean;
+  aframe_inspector_enabled: boolean;
+  updated_at: string;
+}
+
+export async function getAdminSettings(): Promise<AdminSettings> {
+  const { data, error } = await supabase
+    .from('admin_settings')
+    .select('*')
+    .single();
+  
+  if (error) {
+    // If no settings exist, create default ones
+    if (error.code === 'PGRST116') {
+      return await createDefaultAdminSettings();
+    }
+    throw error;
+  }
+  return data as AdminSettings;
+}
+
+export async function updateAdminSettings(settings: Partial<AdminSettings>): Promise<AdminSettings> {
+  const { data, error } = await supabase
+    .from('admin_settings')
+    .upsert([{ ...settings, updated_at: new Date().toISOString() }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data as AdminSettings;
+}
+
+async function createDefaultAdminSettings(): Promise<AdminSettings> {
+  const defaultSettings = {
+    ridey_enabled: false,
+    aframe_inspector_enabled: false,
+    updated_at: new Date().toISOString()
+  };
+  
+  const { data, error } = await supabase
+    .from('admin_settings')
+    .insert([defaultSettings])
+    .select()
+    .single();
+  if (error) throw error;
+  return data as AdminSettings;
+}
+
 // ABOUT PAGE HELPERS
 export interface AboutPage {
   id: string;

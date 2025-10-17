@@ -2930,6 +2930,17 @@ export async function deleteSnippet(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function updateSnippet(id: string, title: string, code: string, language: string): Promise<Snippet> {
+  const { data, error } = await supabase
+    .from('snippets')
+    .update({ title, code, language })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Snippet;
+}
+
 // ABOUT PAGE HELPERS
 export interface AboutPage {
   id: string;

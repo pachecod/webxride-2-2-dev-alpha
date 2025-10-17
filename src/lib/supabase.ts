@@ -570,11 +570,11 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
         
         // Check for specific database schema errors
         if (insertError.code === '42703' || insertError.message?.includes('does not exist')) {
-          console.error('❌ SCHEMA CACHE ERROR: Supabase API cannot find tag_name column');
-          console.error('The column exists in the database but Supabase cache is outdated');
-          console.error('Please run the force-schema-cache-refresh.sql script in your Supabase SQL Editor');
-          console.error('Then wait 2-3 minutes for the cache to refresh');
-          throw new Error('Schema cache error: Please run force-schema-cache-refresh.sql and wait for cache refresh');
+          console.error('❌ PERSISTENT SCHEMA CACHE ERROR');
+          console.error('The tag_name column exists but Supabase cache is completely stuck');
+          console.error('Please run the nuclear-option-fix.sql script to completely recreate the table');
+          console.error('This will clear all cache references and fix the issue permanently');
+          throw new Error('Persistent schema cache error: Please run nuclear-option-fix.sql to recreate the table');
         }
         
         // If it's a schema cache error, try to force refresh and retry once

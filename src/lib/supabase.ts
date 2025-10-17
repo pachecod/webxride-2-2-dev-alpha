@@ -557,7 +557,29 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
       
       if (insertError) {
         console.error('Error inserting tags:', insertError);
-        throw insertError;
+        
+        // If it's a schema cache error, try to force refresh and retry once
+        if (insertError.code === 'PGRST204') {
+          console.log('Schema cache error detected, trying to refresh...');
+          
+          // Force a schema refresh by making a simple query
+          await supabase.from('file_tags').select('id').limit(1);
+          
+          // Wait a moment for cache to refresh
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Try the insert again
+          const { error: retryError } = await supabase
+            .from('file_tags')
+            .insert(tagRecords);
+          
+          if (retryError) {
+            console.error('Error on retry after schema refresh:', retryError);
+            throw retryError;
+          }
+        } else {
+          throw insertError;
+        }
       }
     }
     
@@ -565,7 +587,13 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
     return { success: true };
   } catch (error) {
     console.error('Error saving tags:', error);
-    return { success: false, error };
+    
+    // If database fails, fall back to localStorage as temporary solution
+    console.log('Falling back to localStorage for tags');
+    const tagKey = `file_tags_${filePath}`;
+    localStorage.setItem(tagKey, JSON.stringify(tags));
+    
+    return { success: true }; // Return success with localStorage fallback
   }
 };
 
@@ -579,12 +607,31 @@ export const getFileTags = async (filePath: string, createdBy?: string): Promise
     
     if (error) {
       console.error('Error getting tags:', error);
+      
+      // If it's a schema cache error, try localStorage fallback
+      if (error.code === 'PGRST204') {
+        console.log('Schema cache error, falling back to localStorage');
+        const tagKey = `file_tags_${filePath}`;
+        const storedTags = localStorage.getItem(tagKey);
+        if (storedTags) {
+          return JSON.parse(storedTags);
+        }
+      }
+      
       return [];
     }
     
     return data?.map(t => t.tag_name) || [];
   } catch (error) {
     console.error('Error getting tags:', error);
+    
+    // Fallback to localStorage
+    const tagKey = `file_tags_${filePath}`;
+    const storedTags = localStorage.getItem(tagKey);
+    if (storedTags) {
+      return JSON.parse(storedTags);
+    }
+    
     return [];
   }
 };

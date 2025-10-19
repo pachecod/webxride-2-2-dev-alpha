@@ -531,14 +531,14 @@ export const validateFileSize = (file: File, fileType: string): { valid: boolean
 // Save tags to database
 export const saveFileTags = async (filePath: string, fileName: string, tags: string[], createdBy: string): Promise<{ success: boolean; error?: any }> => {
   try {
-    console.log('=== SAVING TAGS TO DATABASE ===');
+    console.log('=== SAVING TAGS TO NEW FILETAGS TABLE ===');
     console.log('File path:', filePath);
     console.log('Tags to save:', tags);
     
     // First, delete existing tags for this file
     console.log('Step 1: Deleting existing tags...');
     const { error: deleteError } = await supabase
-      .from('file_tags')
+      .from('filetags')
       .delete()
       .eq('file_path', filePath);
     
@@ -548,7 +548,7 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
     }
     console.log('Step 1: Delete completed successfully');
     
-    // Insert new tags using minimal table structure (id, file_path, tag_name, created_at)
+    // Insert new tags using the new filetags table
     if (tags.length > 0) {
       const tagRecords = tags.map(tag => ({
         file_path: filePath,
@@ -559,7 +559,7 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
       console.log('Tag records to insert:', tagRecords);
       
       const { data: insertData, error: insertError } = await supabase
-        .from('file_tags')
+        .from('filetags')
         .insert(tagRecords)
         .select();
       
@@ -567,57 +567,14 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
         console.error('Step 2: Error inserting tags:', insertError);
         console.error('Error code:', insertError.code);
         console.error('Error message:', insertError.message);
-        
-        // Check for specific database schema errors
-        if (insertError.code === '42703' || insertError.message?.includes('does not exist')) {
-          console.error('❌ PERSISTENT SCHEMA CACHE ERROR');
-          console.error('The tag_name column exists but Supabase cache is completely stuck');
-          console.error('Please run the nuclear-option-fix.sql script to completely recreate the table');
-          console.error('This will clear all cache references and fix the issue permanently');
-          throw new Error('Persistent schema cache error: Please run nuclear-option-fix.sql to recreate the table');
-        }
-        
-        // If it's a schema cache error, try to force refresh and retry once
-        if (insertError.code === 'PGRST204' || insertError.code === '42703') {
-          console.log('Schema cache error detected, trying to refresh...');
-          
-          // Try multiple approaches to force schema refresh
-          try {
-            // Method 1: Query all columns to force schema recognition
-            await supabase.from('file_tags').select('id, file_path, tag_name, created_at').limit(1);
-          } catch (e) {
-            console.log('Method 1 failed, trying method 2...');
-            // Method 2: Try a simple count query
-            await supabase.from('file_tags').select('id').limit(1);
-          }
-          
-          // Wait longer for cache to refresh
-          console.log('Waiting 3 seconds for schema cache to refresh...');
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          
-          // Try the insert again
-          console.log('Retrying insert after schema refresh...');
-          const { data: retryData, error: retryError } = await supabase
-            .from('file_tags')
-            .insert(tagRecords)
-            .select();
-          
-          if (retryError) {
-            console.error('Error on retry after schema refresh:', retryError);
-            throw retryError;
-          } else {
-            console.log('✅ Retry successful! Inserted data:', retryData);
-          }
-        } else {
-          throw insertError;
-        }
+        throw insertError;
       } else {
         console.log('Step 2: Insert completed successfully');
         console.log('Inserted data:', insertData);
       }
     }
     
-    console.log('✅ TAGS SAVED SUCCESSFULLY TO DATABASE');
+    console.log('✅ TAGS SAVED SUCCESSFULLY TO NEW FILETAGS TABLE');
     return { success: true };
   } catch (error) {
     console.error('❌ ERROR SAVING TAGS:', error);
@@ -636,7 +593,7 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
 export const getFileTags = async (filePath: string, createdBy?: string): Promise<string[]> => {
   try {
     const { data, error } = await supabase
-      .from('file_tags')
+      .from('filetags')
       .select('tag_name')
       .eq('file_path', filePath);
     
@@ -678,7 +635,7 @@ export const searchFilesByTags = async (searchTags: string[], createdBy: string,
     
     const lowerTags = searchTags.map(t => t.toLowerCase().trim());
     const { data, error } = await supabase
-      .from('file_tags')
+      .from('filetags')
       .select('file_path')
       .in('tag_name', lowerTags);
     
@@ -701,7 +658,7 @@ export const searchFilesByTags = async (searchTags: string[], createdBy: string,
 export const deleteFileTags = async (filePath: string, createdBy: string): Promise<{ success: boolean; error?: any }> => {
   try {
     const { error } = await supabase
-      .from('file_tags')
+      .from('filetags')
       .delete()
       .eq('file_path', filePath);
     
@@ -717,7 +674,7 @@ export const deleteFileTags = async (filePath: string, createdBy: string): Promi
 export const getAllTags = async (createdBy: string, isAdmin: boolean): Promise<{ tag: string; count: number }[]> => {
   try {
     const { data, error } = await supabase
-      .from('file_tags')
+      .from('filetags')
       .select('tag_name');
     
     if (error) {

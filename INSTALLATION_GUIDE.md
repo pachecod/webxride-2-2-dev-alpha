@@ -71,40 +71,47 @@ VITE_TEACHER_CODE=your_teacher_code_here
 
 ### 3.2 Run Database Setup Scripts
 
-**Order matters!** Run these scripts in your Supabase SQL Editor:
+**For a fresh installation**, use the comprehensive setup script:
 
-#### A. Basic Database Setup
+#### Option 1: Complete Fresh Installation (Recommended)
 ```sql
--- Copy and paste the contents of: scripts/setup-dev-database.sql
--- This creates: students table, templates table, and basic structure
+-- Copy and paste the entire contents of: scripts/setup-fresh-installation.sql
+-- This includes ALL tables, policies, and default data for a complete setup
 ```
 
-#### B. Storage Policies Setup
+#### Option 2: Development Setup
 ```sql
--- Copy and paste the contents of: scripts/setup-storage-policies.sql
--- This sets up proper file access policies for all folders
+-- Copy and paste the entire contents of: scripts/setup-dev-database.sql
+-- This includes all tables and policies with test data
 ```
 
-#### C. WebXRide 2.0 Features (Required for full functionality)
+#### Option 3: Manual Setup (Alternative)
+If you prefer to run individual scripts, you can also use:
+
 ```sql
--- 1. Classes table (organize students by class)
+-- Basic setup
+-- Copy and paste: scripts/setup-dev-database.sql
+
+-- Additional features (if needed)
 -- Copy and paste: scripts/setup-classes-database.sql
-
--- 2. Snippets table (code snippet library)
 -- Copy and paste: scripts/setup-snippets.sql
-
--- 3. About page table (customizable about page)
 -- Copy and paste: scripts/setup-about-page.sql
-
--- 4. Default templates table (default template selection)
 -- Copy and paste: scripts/setup-default-templates.sql
-```
-
-#### D. WebXRide 2.1 Features - File Tagging (Required)
-```sql
--- File tags table (tag-based file organization and search)
 -- Copy and paste: scripts/setup-file-tags.sql
 ```
+
+### What These Scripts Include:
+
+✅ **Storage Setup** - File upload/download policies  
+✅ **Students Table** - User management with passwords and admin roles  
+✅ **Templates Table** - Template storage and management  
+✅ **Snippets Table** - Code snippets with language support  
+✅ **File Tags Table** - File tagging system for organization  
+✅ **RLS Policies** - Row Level Security for all tables  
+✅ **Indexes** - Performance optimizations  
+✅ **Triggers** - Automatic timestamp updates  
+✅ **Default Data** - Admin user and sample snippets  
+✅ **Testing** - Verification that everything works
 
 #### E. Seed Default Data (Optional)
 ```bash
@@ -118,17 +125,18 @@ npm run seed-templates
 
 ### 3.3 Verify Setup
 
-After running the scripts, you should see these tables:
+After running the setup script, you should see these tables:
 - ✅ Storage bucket `files` created
 - ✅ Storage policies configured
-- ✅ `students` table with default users
+- ✅ `students` table with default users (including admin)
 - ✅ `templates` table ready
-- ✅ `classes` table ready
-- ✅ `snippets` table ready
-- ✅ `about_page` table ready
-- ✅ `default_templates` table ready
-- ✅ `file_tags` table ready ⭐NEW in 2.1
+- ✅ `snippets` table with default snippets
+- ✅ `file_tags` table ready for tagging system
 - ✅ All RLS policies active
+- ✅ Indexes created for performance
+- ✅ Triggers set up for automatic timestamps
+
+The setup script will also run verification tests to ensure everything is working correctly.
 
 ---
 

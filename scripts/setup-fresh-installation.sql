@@ -1,8 +1,7 @@
--- Complete Development Database Setup Script for WebXRide
--- Run this in your development Supabase project's SQL Editor
--- This script sets up all necessary tables and policies for the WebXRide application
+-- Complete Database Setup Script for Fresh WebXRide Installation
+-- Run this in your Supabase project's SQL Editor for a fresh installation
 
-SELECT 'Starting WebXRide development database setup...' as status;
+SELECT 'Starting fresh WebXRide database setup...' as status;
 
 -- =============================================================================
 -- 1. STORAGE SETUP
@@ -13,7 +12,7 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('files', 'files', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Drop existing policies (if any)
+-- Drop existing storage policies (if any)
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can delete" ON storage.objects;
@@ -253,8 +252,28 @@ SELECT 'Default snippets created' as status WHERE EXISTS (
   SELECT 1 FROM snippets WHERE title = 'Paragraph'
 );
 
+-- Show final table structures
+SELECT 'Students table structure:' as info;
+SELECT 
+  column_name, 
+  data_type, 
+  is_nullable, 
+  column_default
+FROM information_schema.columns 
+WHERE table_name = 'students' 
+ORDER BY ordinal_position;
+
+SELECT 'File tags table structure:' as info;
+SELECT 
+  column_name, 
+  data_type, 
+  is_nullable, 
+  column_default
+FROM information_schema.columns 
+WHERE table_name = 'file_tags' 
+ORDER BY ordinal_position;
+
 -- Force PostgREST to reload its schema cache
 NOTIFY pgrst, 'reload schema';
 
-SELECT '🎉 WebXRide development database setup complete! All tables and policies are ready.' as status;
-
+SELECT '🎉 Fresh WebXRide installation setup complete! All tables and policies are ready.' as status;

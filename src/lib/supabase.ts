@@ -528,64 +528,40 @@ export const validateFileSize = (file: File, fileType: string): { valid: boolean
   return { valid: true };
 };
 
-// Save tags to database
+// Save tags to database - using same approach as snippets
 export const saveFileTags = async (filePath: string, fileName: string, tags: string[], createdBy: string): Promise<{ success: boolean; error?: any }> => {
   try {
-    console.log('=== SAVING TAGS TO NEW FILETAGS TABLE ===');
-    console.log('File path:', filePath);
-    console.log('Tags to save:', tags);
+    console.log('=== SAVING TAGS USING file_tags TABLE ===');
+    console.log('Parameters:', { filePath, fileName, tags, createdBy });
     
     // First, delete existing tags for this file
-    console.log('Step 1: Deleting existing tags...');
     const { error: deleteError } = await supabase
-      .from('filetags')
+      .from('file_tags')
       .delete()
       .eq('file_path', filePath);
     
-    if (deleteError && deleteError.code !== 'PGRST116') { // Ignore "no rows deleted" error
-      console.error('Error deleting old tags:', deleteError);
-      throw deleteError;
-    }
-    console.log('Step 1: Delete completed successfully');
+    if (deleteError) throw deleteError;
     
-    // Insert new tags using the new filetags table
+    // Insert new tags if any
     if (tags.length > 0) {
       const tagRecords = tags.map(tag => ({
         file_path: filePath,
-        tag_name: tag.toLowerCase().trim()
+        tag: tag.toLowerCase().trim()
       }));
       
-      console.log('Step 2: Inserting new tags...');
-      console.log('Tag records to insert:', tagRecords);
-      
-      const { data: insertData, error: insertError } = await supabase
-        .from('filetags')
+      const { data, error } = await supabase
+        .from('file_tags')
         .insert(tagRecords)
         .select();
       
-      if (insertError) {
-        console.error('Step 2: Error inserting tags:', insertError);
-        console.error('Error code:', insertError.code);
-        console.error('Error message:', insertError.message);
-        throw insertError;
-      } else {
-        console.log('Step 2: Insert completed successfully');
-        console.log('Inserted data:', insertData);
-      }
+      if (error) throw error;
+      console.log('✅ Tags saved successfully:', data);
     }
     
-    console.log('✅ TAGS SAVED SUCCESSFULLY TO NEW FILETAGS TABLE');
     return { success: true };
   } catch (error) {
-    console.error('❌ ERROR SAVING TAGS:', error);
-    
-    // If database fails, fall back to localStorage as temporary solution
-    console.log('🔄 FALLING BACK TO LOCALSTORAGE FOR TAGS');
-    const tagKey = `file_tags_${filePath}`;
-    localStorage.setItem(tagKey, JSON.stringify(tags));
-    console.log('Tags saved to localStorage with key:', tagKey);
-    
-    return { success: true }; // Return success with localStorage fallback
+    console.error('❌ Error saving tags:', error);
+    return { success: false, error };
   }
 };
 
@@ -593,37 +569,18 @@ export const saveFileTags = async (filePath: string, fileName: string, tags: str
 export const getFileTags = async (filePath: string, createdBy?: string): Promise<string[]> => {
   try {
     const { data, error } = await supabase
-      .from('filetags')
-      .select('tag_name')
+      .from('file_tags')
+      .select('tag')
       .eq('file_path', filePath);
     
     if (error) {
       console.error('Error getting tags:', error);
-      
-      // If it's a schema cache error, try localStorage fallback
-      if (error.code === 'PGRST204') {
-        console.log('Schema cache error, falling back to localStorage');
-        const tagKey = `file_tags_${filePath}`;
-        const storedTags = localStorage.getItem(tagKey);
-        if (storedTags) {
-          return JSON.parse(storedTags);
-        }
-      }
-      
       return [];
     }
     
-    return data?.map(t => t.tag_name) || [];
+    return data?.map(t => t.tag) || [];
   } catch (error) {
-    console.error('Error getting tags:', error);
-    
-    // Fallback to localStorage
-    const tagKey = `file_tags_${filePath}`;
-    const storedTags = localStorage.getItem(tagKey);
-    if (storedTags) {
-      return JSON.parse(storedTags);
-    }
-    
+    console.error('Error in getFileTags:', error);
     return [];
   }
 };
@@ -635,9 +592,9 @@ export const searchFilesByTags = async (searchTags: string[], createdBy: string,
     
     const lowerTags = searchTags.map(t => t.toLowerCase().trim());
     const { data, error } = await supabase
-      .from('filetags')
+      .from('file_tags')
       .select('file_path')
-      .in('tag_name', lowerTags);
+      .in('tag', lowerTags);
     
     if (error) {
       console.error('Error searching tags:', error);
@@ -658,7 +615,7 @@ export const searchFilesByTags = async (searchTags: string[], createdBy: string,
 export const deleteFileTags = async (filePath: string, createdBy: string): Promise<{ success: boolean; error?: any }> => {
   try {
     const { error } = await supabase
-      .from('filetags')
+      .from('file_tags')
       .delete()
       .eq('file_path', filePath);
     
@@ -674,8 +631,8 @@ export const deleteFileTags = async (filePath: string, createdBy: string): Promi
 export const getAllTags = async (createdBy: string, isAdmin: boolean): Promise<{ tag: string; count: number }[]> => {
   try {
     const { data, error } = await supabase
-      .from('filetags')
-      .select('tag_name');
+      .from('file_tags')
+      .select('tag');
     
     if (error) {
       console.error('Error getting all tags:', error);
@@ -685,7 +642,7 @@ export const getAllTags = async (createdBy: string, isAdmin: boolean): Promise<{
     // Count occurrences of each tag
     const tagCounts: { [key: string]: number } = {};
     data?.forEach(item => {
-      tagCounts[item.tag_name] = (tagCounts[item.tag_name] || 0) + 1;
+      tagCounts[item.tag] = (tagCounts[item.tag] || 0) + 1;
     });
     
     // Convert to array and sort by count (descending)

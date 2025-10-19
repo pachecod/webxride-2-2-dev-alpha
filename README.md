@@ -44,6 +44,10 @@ npm install
 cp env.example .env
 # Edit .env with your Supabase credentials
 
+# Database setup (run in Supabase SQL Editor)
+# Use scripts/setup-dev-database.sql for development
+# Use scripts/setup-fresh-installation.sql for production
+
 # Start development
 npm run dev
 ```

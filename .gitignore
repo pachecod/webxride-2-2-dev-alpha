@@ -95,3 +95,10 @@ test-openai-direct.html
 
 # Local configuration
 .vscode/settings.json
+# Prevent env leaks
+.env
+.env.*
+*.env
+*.env.*
+*.local
+*.local.*

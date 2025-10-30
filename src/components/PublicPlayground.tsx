@@ -87,8 +87,10 @@ export const PublicPlayground: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-neutral-900 text-white">
-      <div className="px-4 py-2 bg-gray-800 border-b border-gray-700 text-sm">
+      <div className="px-4 py-2 bg-gray-800 border-b border-gray-700 text-sm flex items-center gap-4">
         <a href="/" className="text-blue-300 hover:text-blue-200 underline">← Return to WebXRide</a>
+        <span className="text-gray-500">|</span>
+        <a href="/about" className="text-blue-300 hover:text-blue-200 underline" target="_blank" rel="noopener noreferrer">About</a>
       </div>
       <Header
         projectName={`Playground: ${project.name}`}

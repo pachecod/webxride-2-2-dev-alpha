@@ -77,6 +77,7 @@ export const PublicGallery: React.FC = () => {
       <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
         <div className="flex items-center gap-4">
           <a href="/" className="text-blue-300 hover:text-blue-200 underline text-sm">← Return to WebXRide</a>
+          <a href="/about" target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline text-sm">About</a>
           <div className="h-6 w-px bg-gray-600" />
           <h1 className="text-xl font-semibold">Public Templates</h1>
         </div>

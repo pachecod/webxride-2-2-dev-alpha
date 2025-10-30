@@ -5,7 +5,7 @@ import { setDefaultTemplate, findTemplateByName } from '../lib/supabase';
 interface SaveTemplateDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (templateName: string, setAsDefault: boolean) => void;
+  onSave: (templateName: string, setAsDefault: boolean, makePublic: boolean) => void;
   currentTemplateName: string;
   selectedUser: string | null;
   isAdmin?: boolean;
@@ -21,6 +21,7 @@ export const SaveTemplateDialog: React.FC<SaveTemplateDialogProps> = ({
 }) => {
   const [templateName, setTemplateName] = useState(currentTemplateName);
   const [setAsDefault, setSetAsDefault] = useState(false);
+  const [makePublic, setMakePublic] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [existingTemplate, setExistingTemplate] = useState<any>(null);
   const [isChecking, setIsChecking] = useState(false);
@@ -59,7 +60,7 @@ export const SaveTemplateDialog: React.FC<SaveTemplateDialogProps> = ({
     setIsSaving(true);
     try {
       // Call the parent save function
-      await onSave(templateName, setAsDefault);
+      await onSave(templateName, setAsDefault, makePublic);
       onClose();
     } catch (error) {
       console.error('Error saving template:', error);
@@ -71,6 +72,7 @@ export const SaveTemplateDialog: React.FC<SaveTemplateDialogProps> = ({
   const handleClose = () => {
     setTemplateName(currentTemplateName);
     setSetAsDefault(false);
+    setMakePublic(false);
     setExistingTemplate(null);
     onClose();
   };
@@ -136,6 +138,21 @@ export const SaveTemplateDialog: React.FC<SaveTemplateDialogProps> = ({
               <label htmlFor="setAsDefault" className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                 <Star size={16} className="text-yellow-400" />
                 <span>Set as default template for new users</span>
+              </label>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="flex items-center gap-3 p-3 bg-gray-700 rounded border border-gray-600">
+              <input
+                id="makePublic"
+                type="checkbox"
+                checked={makePublic}
+                onChange={(e) => setMakePublic(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="makePublic" className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <span>Make available in Public Playground</span>
               </label>
             </div>
           )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { PublicPlayground } from './components/PublicPlayground';
 import { Home, Play, Save, Settings, Maximize2, Minimize2, X, ExternalLink, Edit3, ChevronDown, ChevronRight, Users, Eye } from 'lucide-react';
 import JSZip from 'jszip';
 import Editor from './components/Editor';
@@ -20,6 +21,8 @@ import { AboutPageEditor } from './components/AboutPageEditor';
 import { AboutPageManagement } from './components/AboutPageManagement';
 import { StudentFilesView } from './components/StudentFilesView';
 import { AdminFilesView } from './components/AdminFilesView';
+import { AdminPublicTemplates } from './components/AdminPublicTemplates';
+import { PublicGallery } from './components/PublicGallery';
 import { SubmissionsInbox } from './components/SubmissionsInbox';
 import { FileType, Project, File, Framework } from './types';
 import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage, getAdminSettings, updateAdminSettings } from './lib/supabase';
@@ -588,6 +591,12 @@ function AdminTools({
                   className="px-3 py-2 rounded text-sm transition-colors flex-shrink-0 bg-green-600 text-white hover:bg-green-700"
                 >
                   📁 File Management
+                </button>
+                <button
+                  onClick={() => window.location.href = '/admin-tools/public-templates'}
+                  className="px-3 py-2 rounded text-sm transition-colors flex-shrink-0 bg-teal-600 text-white hover:bg-teal-700"
+                >
+                  🌐 Public Templates
                 </button>
                 <button
                   onClick={() => { setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
@@ -1409,7 +1418,7 @@ function App() {
     setShowSaveTemplateDialog(true);
   };
 
-  const handleSaveTemplateWithOptions = async (templateName: string, setAsDefault: boolean) => {
+  const handleSaveTemplateWithOptions = async (templateName: string, setAsDefault: boolean, makePublic: boolean) => {
     const { framework, files } = project;
     console.log('Saving template with project:', project);
     console.log('Files to save:', files);
@@ -1439,7 +1448,8 @@ function App() {
       name: templateName,
       framework,
       description: '',
-      files: templateFiles
+      files: templateFiles,
+      isPublic: !!makePublic
     });
 
     if (error) {
@@ -2539,6 +2549,12 @@ function App() {
       )}
       
       <Routes>
+        {import.meta.env.VITE_ENABLE_PUBLIC_PLAYGROUND === 'true' && (
+          <Route path="/play/:templateId" element={<PublicPlayground />} />
+        )}
+        {import.meta.env.VITE_ENABLE_PUBLIC_PLAYGROUND === 'true' && (
+          <Route path="/playground" element={<PublicGallery />} />
+        )}
         <Route path="/about" element={
           <AboutPageComponent 
             isAdmin={selectedUser === 'admin'}
@@ -2610,6 +2626,11 @@ function App() {
               setSplitToPreview={setSplitToPreview}
               projectOwner={projectOwner}
             />
+          </AdminPasswordGate>
+        } />
+        <Route path="/admin-tools/public-templates" element={
+          <AdminPasswordGate>
+            <AdminPublicTemplates />
           </AdminPasswordGate>
         } />
         <Route path="/admin-tools/myfiles" element={

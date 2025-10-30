@@ -1406,6 +1406,41 @@ export const loadTemplateFromStorage = async (templateId: string) => {
   }
 };
 
+// Toggle public playground availability by updating metadata.json
+export const setTemplatePublicFlag = async (templateId: string, makePublic: boolean) => {
+  try {
+    // Read existing metadata.json
+    let metadata: any = {};
+    try {
+      const { data: metadataFile } = await supabase.storage
+        .from('templates')
+        .download(`${templateId}/metadata.json`);
+      if (metadataFile) {
+        metadata = JSON.parse(await metadataFile.text());
+      }
+    } catch (e) {
+      // If missing, start fresh
+      metadata = {};
+    }
+
+    metadata.public_playground = makePublic === true;
+    metadata.updated_at = new Date().toISOString();
+
+    const { error } = await supabase.storage
+      .from('templates')
+      .upload(`${templateId}/metadata.json`, JSON.stringify(metadata, null, 2), {
+        contentType: 'application/json',
+        upsert: true
+      });
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting template public flag:', error);
+    return { success: false, error };
+  }
+};
+
 // Check if a template exists by name
 export const findTemplateByName = async (templateName: string) => {
   try {
@@ -1434,6 +1469,7 @@ export const saveTemplateToStorage = async (template: {
   framework: string;
   description?: string;
   files: Array<{ name: string; content: string; type: string }>;
+  isPublic?: boolean;
 }, creatorId?: string) => {
   try {
     console.log('=== SAVE TEMPLATE TO STORAGE START ===');
@@ -1465,7 +1501,8 @@ export const saveTemplateToStorage = async (template: {
       creator_id: creatorId || 'anonymous',
       creator_email: '',
       created_at: existingTemplate ? undefined : new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      public_playground: template.isPublic === true
     };
 
     // Upload metadata.json with upsert to overwrite existing
@@ -2779,6 +2816,59 @@ export const getTemplatesWithOrder = async () => {
   }
 };
 
+// === Database-backed Templates ===
+export const getTemplatesFromDB = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('templates')
+      .select('id, name, framework, files, public_playground');
+    if (error) return { data: [], error };
+    // Sort client-side by name to keep deterministic order if no order_index exists
+    const sorted = (data || []).slice().sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
+    return { data: sorted, error: null };
+  } catch (error) {
+    return { data: [], error } as any;
+  }
+};
+
+export const setTemplatePublicFlagDB = async (templateId: string, makePublic: boolean) => {
+  try {
+    const { error } = await supabase
+      .from('templates')
+      .update({ public_playground: makePublic, updated_at: new Date().toISOString() })
+      .eq('id', templateId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    return { success: false, error };
+  }
+};
+
+export const loadTemplateFromDB = async (templateId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('templates')
+      .select('id, name, framework, files')
+      .eq('id', templateId)
+      .single();
+    if (error) throw error;
+    // files stored as array of {name, content, type}
+    const project = {
+      id: data.id,
+      name: data.name,
+      framework: data.framework || 'html',
+      files: (data.files || []).map((f: any) => ({
+        id: f.name,
+        name: f.name,
+        type: f.type || (f.name.endsWith('.css') ? 'css' : f.name.endsWith('.js') ? 'js' : 'html'),
+        content: f.content || ''
+      }))
+    };
+    return { data: project, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
 // Default Template Functions
 export const getDefaultTemplate = async () => {
   try {

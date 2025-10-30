@@ -52,6 +52,28 @@ cp env.example .env
 npm run dev
 ```
 
+## Public Playground (Feature-flagged)
+
+- Enable anonymous, local-only editing of templates via a public route.
+- No upload/save/submit; only local edits and export as ZIP.
+
+Enable:
+
+```bash
+# .env
+VITE_ENABLE_PUBLIC_PLAYGROUND=true
+```
+
+Usage:
+
+- Visit `/play/{templateId}` which loads from `public/templates/{templateId}/index.html` by default.
+- Edits persist to `localStorage` only and can be exported via "Export Local Site".
+
+Rollback:
+
+- Set `VITE_ENABLE_PUBLIC_PLAYGROUND=false` (or remove it) and rebuild. No other changes required.
+
+
 ## Key Features
 
 - **File Management** - Organized by type with smart categorization

@@ -121,6 +121,15 @@ export function SignInPage() {
           </button>
         </form>
 
+        {import.meta.env.VITE_ENABLE_PUBLIC_PLAYGROUND === 'true' && (
+          <div className="mt-4 p-3 bg-gray-700 rounded border border-gray-600 text-center">
+            <span className="text-sm text-gray-200">Don't have an account?</span>{' '}
+            <a href="/playground" className="text-blue-300 hover:text-blue-200 underline text-sm">
+              Try public templates in the Playground
+            </a>
+          </div>
+        )}
+
         <div className="mt-6 text-center">
           <button
             onClick={() => setShowSignUp(true)}

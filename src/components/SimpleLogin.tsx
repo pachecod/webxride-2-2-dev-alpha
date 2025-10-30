@@ -130,6 +130,12 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
             <p className="text-sm text-gray-400">
               Don't have a password? Contact your teacher.
             </p>
+            {import.meta.env.VITE_ENABLE_PUBLIC_PLAYGROUND === 'true' && (
+              <p className="text-sm text-gray-300 mt-3">
+                Don't have an account?{' '}
+                <a href="/playground" className="text-blue-300 hover:text-blue-200 underline">Try public templates in the Playground</a>
+              </p>
+            )}
           </div>
         </div>
 

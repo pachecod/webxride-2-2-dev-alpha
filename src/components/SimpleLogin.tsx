@@ -152,7 +152,7 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           <div className="w-full max-w-md mx-auto lg:mx-0">
             <div className="bg-gray-800 rounded-lg shadow-2xl p-8 border border-gray-700 min-h-[420px]">
               <h2 className="text-2xl font-semibold text-white mb-6 text-center">
-                Student Login
+                Login
               </h2>
 
               {error && (
@@ -228,7 +228,7 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
               {/* Help Text */}
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-400">
-                  Don't have a password? Contact your teacher.
+                  Don't have a password? Contact the administrator of this instance.
                 </p>
                 {import.meta.env.VITE_ENABLE_PUBLIC_PLAYGROUND === 'true' && (
                   <p className="text-sm text-gray-300 mt-3">

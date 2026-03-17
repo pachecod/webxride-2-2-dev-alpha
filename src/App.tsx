@@ -337,6 +337,7 @@ function AdminTools({
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
   const [showImpersonation, setShowImpersonation] = useState(false);
   const [showPasswordReport, setShowPasswordReport] = useState(false);
+  const [mainFooterHtml, setMainFooterHtml] = useState<string>('');
   
   // Impersonation state - local to AdminTools, doesn't affect students
   const [impersonatedUser, setImpersonatedUser] = useState<string | null>(null);
@@ -365,6 +366,27 @@ function AdminTools({
   // Callback to set the refresh function from Sidebar
   const setRefreshFunction = (fn: () => void) => {
     setRefreshTemplatesRef(() => fn);
+  };
+
+  // Load footer HTML for main page from admin settings when AdminTools mounts
+  useEffect(() => {
+    const loadFooter = async () => {
+      try {
+        const settings = await getAdminSettings();
+        setMainFooterHtml(settings.main_footer_html || '');
+      } catch (error) {
+        console.error('Failed to load main footer HTML for admin settings:', error);
+      }
+    };
+    loadFooter();
+  }, []);
+
+  const handleFooterHtmlSave = async () => {
+    try {
+      await updateAdminSettings({ main_footer_html: mainFooterHtml });
+    } catch (error) {
+      console.error('Failed to update main footer HTML:', error);
+    }
   };
 
   const handleNewTemplate = () => {
@@ -743,6 +765,21 @@ function AdminTools({
                         </label>
                       </div>
                     </div>
+
+                    {/* Main Page Footer HTML */}
+                    <div className="bg-gray-700 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-white mb-3">Main Page Footer</h3>
+                      <p className="text-gray-400 text-xs mb-2">
+                        Optional HTML footer shown on the public login page. You can include links, disclaimers, or contact information.
+                      </p>
+                      <textarea
+                        className="w-full min-h-[80px] px-3 py-2 rounded border border-gray-600 bg-gray-800 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter HTML to show in the footer on the main page"
+                        value={mainFooterHtml}
+                        onChange={(e) => setMainFooterHtml(e.target.value)}
+                        onBlur={handleFooterHtmlSave}
+                      />
+                    </div>
                     
                     {/* Student Management */}
                     <StudentManagement />
@@ -1112,6 +1149,7 @@ function App() {
   const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
   const [rideyEnabled, setRideyEnabled] = useState(false);
   const [aframeInspectorEnabled, setAframeInspectorEnabled] = useState(false);
+  const [mainFooterHtml, setMainFooterHtml] = useState<string>('');
   const [adminSettingsLoaded, setAdminSettingsLoaded] = useState(false);
   
   // Track the owner of the currently loaded project (for admins editing student work)
@@ -1272,6 +1310,7 @@ function App() {
         console.log('Loaded admin settings:', settings);
         setRideyEnabled(settings.ridey_enabled);
         setAframeInspectorEnabled(settings.aframe_inspector_enabled);
+        setMainFooterHtml(settings.main_footer_html || '');
         setAdminSettingsLoaded(true);
         console.log('Admin settings loaded successfully');
       } catch (error) {
@@ -1319,6 +1358,15 @@ function App() {
       console.log('Falling back to localStorage for A-Frame Inspector setting');
       // Fallback to localStorage if database fails
       localStorage.setItem('aframe-inspector-enabled', newValue.toString());
+    }
+  };
+  
+  const handleFooterHtmlChange = async (value: string) => {
+    setMainFooterHtml(value);
+    try {
+      await updateAdminSettings({ main_footer_html: value });
+    } catch (error) {
+      console.error('Failed to update main footer HTML:', error);
     }
   };
 

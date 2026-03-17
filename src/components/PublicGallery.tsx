@@ -22,8 +22,27 @@ export const PublicGallery: React.FC = () => {
         const { data: orderedTemplates } = await getTemplatesWithOrder();
 
         const result: PublicTemplate[] = [];
-        for (const tmpl of orderedTemplates || []) {
-          const id = (tmpl as any).id;
+        let sourceTemplates: string[] = [];
+
+        if (orderedTemplates && orderedTemplates.length > 0) {
+          // Use ordered template IDs when available
+          sourceTemplates = (orderedTemplates as any[]).map(t => t.id).filter(Boolean);
+        } else {
+          // Fallback: list top-level folders directly (matches SimpleLogin behavior)
+          const { data: folders } = await supabase.storage
+            .from('templates')
+            .list('', { limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } });
+          const topLevel = (folders || []).filter((folder: any) => {
+            const hasSlash = folder.name.includes('/');
+            const isNotMetadataFile = !folder.name.endsWith('metadata.json');
+            const isNotTemplateOrder = folder.name !== 'template-order.json';
+            const isNotSystemFile = !folder.name.startsWith('.');
+            return !hasSlash && isNotMetadataFile && isNotTemplateOrder && isNotSystemFile;
+          });
+          sourceTemplates = topLevel.map((f: any) => f.name);
+        }
+
+        for (const id of sourceTemplates) {
           if (!id) continue;
 
           let meta: any = null;
@@ -90,24 +109,14 @@ export const PublicGallery: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map(t => (
-              <div key={t.id} className="bg-gray-800 border border-gray-700 rounded overflow-hidden flex flex-col">
-                {t.thumbnailUrl && (
-                  <div className="h-32 w-full bg-gray-900 border-b border-gray-700 overflow-hidden">
-                    <img
-                      src={t.thumbnailUrl}
-                      alt={t.name}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                )}
-                <div className="p-4 flex flex-col flex-1">
-                  <div className="font-semibold text-white mb-1 truncate">{t.name}</div>
-                  <div className="text-xs text-gray-400 mb-3 truncate">{t.id}</div>
-                  {t.description && (
-                    <div className="text-sm text-gray-300 line-clamp-3 mb-4">{t.description}</div>
-                  )}
-                  <div className="mt-auto">
+              <div key={t.id} className="bg-gray-800 border border-gray-700 rounded overflow-hidden p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-white mb-1 truncate">{t.name}</div>
+                    <div className="text-xs text-gray-400 mb-3 truncate">{t.id}</div>
+                    {t.description && (
+                      <div className="text-sm text-gray-300 line-clamp-3 mb-4">{t.description}</div>
+                    )}
                     <a
                       href={`/play/${t.id}?source=storage`}
                       className="inline-block px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
@@ -116,6 +125,16 @@ export const PublicGallery: React.FC = () => {
                       Open in Playground
                     </a>
                   </div>
+                  {t.thumbnailUrl && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={t.thumbnailUrl}
+                        alt={t.name}
+                        className="w-[100px] h-auto object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

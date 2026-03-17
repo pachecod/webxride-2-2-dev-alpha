@@ -3163,6 +3163,7 @@ export interface AdminSettings {
   id: string;
   ridey_enabled: boolean;
   aframe_inspector_enabled: boolean;
+  main_footer_html?: string;
   updated_at: string;
 }
 
@@ -3191,6 +3192,7 @@ export async function getAdminSettings(): Promise<AdminSettings> {
       id: 'local_storage',
       ridey_enabled: savedRidey === 'true',
       aframe_inspector_enabled: savedInspector === 'true',
+      main_footer_html: '',
       updated_at: new Date().toISOString()
     };
   }
@@ -3208,6 +3210,7 @@ export async function getAdminSettings(): Promise<AdminSettings> {
       id: data.id,
       ridey_enabled: settings.ridey_enabled || false,
       aframe_inspector_enabled: settings.aframe_inspector_enabled || false,
+      main_footer_html: settings.main_footer_html || '',
       updated_at: data.updated_at || new Date().toISOString()
     };
   } catch (parseError) {
@@ -3223,7 +3226,8 @@ export async function updateAdminSettings(settings: Partial<AdminSettings>): Pro
     const currentSettings = await getAdminSettings();
     const mergedSettings = {
       ridey_enabled: settings.ridey_enabled !== undefined ? settings.ridey_enabled : currentSettings.ridey_enabled,
-      aframe_inspector_enabled: settings.aframe_inspector_enabled !== undefined ? settings.aframe_inspector_enabled : currentSettings.aframe_inspector_enabled
+      aframe_inspector_enabled: settings.aframe_inspector_enabled !== undefined ? settings.aframe_inspector_enabled : currentSettings.aframe_inspector_enabled,
+      main_footer_html: settings.main_footer_html !== undefined ? settings.main_footer_html : (currentSettings.main_footer_html || '')
     };
     
     // Store settings as JSON in the name field of a special student record
@@ -3297,7 +3301,8 @@ async function createDefaultAdminSettings(): Promise<AdminSettings> {
   try {
     const defaultSettings = {
       ridey_enabled: false,
-      aframe_inspector_enabled: false
+      aframe_inspector_enabled: false,
+      main_footer_html: ''
     };
     
     const settingsJson = JSON.stringify(defaultSettings);
@@ -3320,6 +3325,7 @@ async function createDefaultAdminSettings(): Promise<AdminSettings> {
       id: data.id,
       ridey_enabled: false,
       aframe_inspector_enabled: false,
+      main_footer_html: '',
       updated_at: data.updated_at || new Date().toISOString()
     };
   } catch (error) {
@@ -3333,6 +3339,7 @@ async function createDefaultAdminSettings(): Promise<AdminSettings> {
       id: 'local_storage',
       ridey_enabled: false,
       aframe_inspector_enabled: false,
+      main_footer_html: '',
       updated_at: new Date().toISOString()
     };
   }

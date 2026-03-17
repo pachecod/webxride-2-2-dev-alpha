@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogIn, User, Lock } from 'lucide-react';
 import webxrideLogo from '../assets/webxride-logo.png';
-import { supabase } from '../lib/supabase';
+import { getAdminSettings, supabase } from '../lib/supabase';
 
 interface SimpleLoginProps {
   onLogin: (username: string, password: string) => Promise<void>;
@@ -22,6 +22,7 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
   const [templates, setTemplates] = useState<PublicTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
+  const [footerHtml, setFooterHtml] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +136,19 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
     loadTemplates();
   }, []);
 
+  // Load editable footer HTML from admin settings
+  useEffect(() => {
+    const loadFooter = async () => {
+      try {
+        const settings = await getAdminSettings();
+        setFooterHtml(settings.main_footer_html || '');
+      } catch (error) {
+        console.error('Failed to load footer HTML from admin settings:', error);
+      }
+    };
+    loadFooter();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl">
@@ -147,6 +161,16 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           />
           <h1 className="text-4xl font-bold text-white mb-2">WebXRide</h1>
           <p className="text-gray-300">WebXR Development Platform</p>
+          <div className="mt-3 text-sm">
+            <a
+              href="/about"
+              className="text-blue-300 hover:text-blue-200 underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              About WebXRide
+            </a>
+          </div>
         </div>
 
         {/* Second row: login + public templates side by side */}
@@ -245,6 +269,12 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
             {/* Footer */}
             <div className="mt-6 text-center text-sm text-gray-400">
               <p>Built for the WebXR community</p>
+          {footerHtml && (
+            <div
+              className="mt-3 text-xs text-gray-300 space-y-1"
+              dangerouslySetInnerHTML={{ __html: footerHtml }}
+            />
+          )}
             </div>
           </div>
 

@@ -1442,6 +1442,44 @@ export const setTemplatePublicFlag = async (templateId: string, makePublic: bool
   }
 };
 
+// Update or clear a template's thumbnail URL in metadata.json
+export const setTemplateThumbnailUrl = async (templateId: string, thumbnailUrl: string | null) => {
+  try {
+    // Read existing metadata.json
+    let metadata: any = {};
+    try {
+      const { data: metadataFile } = await supabase.storage
+        .from('templates')
+        .download(`${templateId}/metadata.json`);
+      if (metadataFile) {
+        metadata = JSON.parse(await metadataFile.text());
+      }
+    } catch (e) {
+      metadata = {};
+    }
+
+    if (thumbnailUrl && thumbnailUrl.trim()) {
+      metadata.thumbnail_url = thumbnailUrl.trim();
+    } else {
+      delete metadata.thumbnail_url;
+    }
+    metadata.updated_at = new Date().toISOString();
+
+    const { error } = await supabase.storage
+      .from('templates')
+      .upload(`${templateId}/metadata.json`, JSON.stringify(metadata, null, 2), {
+        contentType: 'application/json',
+        upsert: true,
+      });
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting template thumbnail URL:', error);
+    return { success: false, error };
+  }
+};
+
 // Check if a template exists by name
 export const findTemplateByName = async (templateName: string) => {
   try {

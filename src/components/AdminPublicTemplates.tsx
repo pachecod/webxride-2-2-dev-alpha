@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { getTemplatesWithOrder, getTemplatesFromDB, setTemplatePublicFlag, setTemplatePublicFlagDB, supabase } from '../lib/supabase';
+import { getTemplatesWithOrder, getTemplatesFromDB, setTemplatePublicFlag, setTemplatePublicFlagDB, setTemplateThumbnailUrl, supabase } from '../lib/supabase';
 
 interface TemplateItem {
   id: string;
@@ -8,12 +8,14 @@ interface TemplateItem {
   framework: string;
   description?: string;
   public_playground?: boolean;
+  thumbnail_url?: string;
 }
 
 export const AdminPublicTemplates: React.FC = () => {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [savingThumbnail, setSavingThumbnail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
@@ -46,6 +48,7 @@ export const AdminPublicTemplates: React.FC = () => {
         let name = t.name || id;
         let framework = t.framework || 'html';
         let publicFlag = (t.public_playground === true);
+        let thumbnailUrl: string | undefined = undefined;
         if (source === 'storage') {
           try {
             const { data: metaFile } = await supabase.storage
@@ -56,11 +59,14 @@ export const AdminPublicTemplates: React.FC = () => {
               name = meta.name || name;
               framework = meta.framework || framework;
               publicFlag = meta.public_playground === true;
+              if (meta.thumbnail_url && typeof meta.thumbnail_url === 'string') {
+                thumbnailUrl = meta.thumbnail_url;
+              }
             }
           } catch {}
         }
 
-        result.push({ id, name, framework, public_playground: publicFlag });
+        result.push({ id, name, framework, public_playground: publicFlag, thumbnail_url: thumbnailUrl });
       }
 
       setTemplates(result);
@@ -88,6 +94,23 @@ export const AdminPublicTemplates: React.FC = () => {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(null);
+    }
+  };
+
+  const handleThumbnailChange = async (templateId: string, url: string) => {
+    setSavingThumbnail(templateId);
+    setError(null);
+    try {
+      const trimmed = url.trim();
+      const res = await setTemplateThumbnailUrl(templateId, trimmed || null);
+      if (!res.success) throw res.error || new Error('Failed to save thumbnail URL');
+      setTemplates(prev =>
+        prev.map(t => (t.id === templateId ? { ...t, thumbnail_url: trimmed || undefined } : t)),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSavingThumbnail(null);
     }
   };
 
@@ -121,21 +144,38 @@ export const AdminPublicTemplates: React.FC = () => {
               <div className="text-gray-400">No templates found.</div>
             )}
             {templates.map(t => (
-              <div key={t.id} className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded px-4 py-3">
-                <div>
-                  <div className="text-white font-medium">{t.name}</div>
-                  <div className="text-xs text-gray-400">{t.id}</div>
+              <div key={t.id} className="bg-gray-800 border border-gray-700 rounded px-4 py-3 space-y-2">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-white font-medium">{t.name}</div>
+                    <div className="text-xs text-gray-400">{t.id}</div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-200">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4"
+                      checked={!!t.public_playground}
+                      onChange={(e) => handleToggle(t.id, e.target.checked)}
+                      disabled={saving === t.id}
+                    />
+                    {saving === t.id ? 'Saving...' : 'Make available in Public Playground'}
+                  </label>
                 </div>
-                <label className="flex items-center gap-2 text-sm text-gray-200">
+                <div className="mt-1">
+                  <label className="block text-xs text-gray-300 mb-1">
+                    Thumbnail URL (optional)
+                  </label>
                   <input
-                    type="checkbox"
-                    className="w-4 h-4"
-                    checked={!!t.public_playground}
-                    onChange={(e) => handleToggle(t.id, e.target.checked)}
-                    disabled={saving === t.id}
+                    type="url"
+                    className="w-full px-2 py-1 rounded border border-gray-600 bg-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://example.com/thumbnail.jpg"
+                    defaultValue={t.thumbnail_url || ''}
+                    onBlur={e => handleThumbnailChange(t.id, e.target.value)}
                   />
-                  {saving === t.id ? 'Saving...' : 'Make available in Public Playground'}
-                </label>
+                  {savingThumbnail === t.id && (
+                    <div className="mt-1 text-[10px] text-gray-400">Saving thumbnail…</div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

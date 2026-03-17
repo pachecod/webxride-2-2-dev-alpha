@@ -11,6 +11,7 @@ interface PublicTemplate {
   id: string;
   name: string;
   description?: string;
+  thumbnailUrl?: string;
 }
 
 export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
@@ -65,7 +66,7 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           return !hasSlash && isNotMetadataFile && isNotTemplateOrder && isNotSystemFile;
         });
 
-        type RawTemplate = { id: string; name: string; description?: string; createdAt?: number };
+        type RawTemplate = { id: string; name: string; description?: string; thumbnailUrl?: string; createdAt?: number };
         const collected: RawTemplate[] = [];
 
         for (const folder of topLevel) {
@@ -107,6 +108,7 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
               id: folder.name,
               name: meta.name || folder.name,
               description: meta.description || '',
+              thumbnailUrl: typeof meta.thumbnail_url === 'string' ? meta.thumbnail_url : undefined,
               createdAt,
             });
           }
@@ -118,6 +120,7 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           id: t.id,
           name: t.name,
           description: t.description,
+          thumbnailUrl: t.thumbnailUrl,
         }));
 
         setTemplates(topFour);
@@ -272,25 +275,39 @@ export const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
                   {templates.map((t) => (
                     <div
                       key={t.id}
-                      className="bg-gray-800 rounded-md border border-gray-700 p-3 text-sm"
+                      className="bg-gray-800 rounded-md border border-gray-700 text-sm overflow-hidden p-3"
                     >
-                      <div className="font-semibold text-white mb-1 truncate">
-                        {t.name}
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-white mb-1 truncate">
+                            {t.name}
+                          </div>
+                          <div className="text-[11px] text-gray-500 mb-2 truncate">
+                            {t.id}
+                          </div>
+                          {t.description && (
+                            <p className="text-xs text-gray-300 mb-2 line-clamp-2">
+                              {t.description}
+                            </p>
+                          )}
+                          <a
+                            href={`/play/${t.id}?source=storage`}
+                            className="inline-block mt-1 text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            Open in Playground
+                          </a>
+                        </div>
+                        {t.thumbnailUrl && (
+                          <div className="flex-shrink-0">
+                            <img
+                              src={t.thumbnailUrl}
+                              alt={t.name}
+                              className="w-[100px] h-auto object-contain"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
                       </div>
-                      <div className="text-[11px] text-gray-500 mb-2 truncate">
-                        {t.id}
-                      </div>
-                      {t.description && (
-                        <p className="text-xs text-gray-300 mb-2 line-clamp-2">
-                          {t.description}
-                        </p>
-                      )}
-                      <a
-                        href={`/play/${t.id}?source=storage`}
-                        className="inline-block mt-1 text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        Open in Playground
-                      </a>
                     </div>
                   ))}
                 </div>

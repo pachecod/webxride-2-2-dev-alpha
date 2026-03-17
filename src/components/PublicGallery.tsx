@@ -5,6 +5,7 @@ interface PublicTemplate {
   id: string;
   name: string;
   description?: string;
+  thumbnailUrl?: string;
 }
 
 export const PublicGallery: React.FC = () => {
@@ -51,7 +52,8 @@ export const PublicGallery: React.FC = () => {
             result.push({
               id,
               name: meta.name || id,
-              description: meta.description || ''
+              description: meta.description || '',
+              thumbnailUrl: typeof meta.thumbnail_url === 'string' ? meta.thumbnail_url : undefined,
             });
           }
         }
@@ -76,7 +78,7 @@ export const PublicGallery: React.FC = () => {
           <h1 className="text-xl font-semibold">Public Templates</h1>
         </div>
       </div>
-      <div className="p-6 max-w-6xl mx-auto">
+          <div className="p-6 max-w-6xl mx-auto">
         <p className="text-sm text-gray-300 mb-4">Browse templates shared publicly. Click to open in the playground and experiment locally.</p>
         {error && (
           <div className="mb-4 p-3 bg-red-900/40 border border-red-700 text-red-200 rounded">{error}</div>
@@ -88,20 +90,32 @@ export const PublicGallery: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map(t => (
-              <div key={t.id} className="bg-gray-800 border border-gray-700 rounded p-4 flex flex-col">
-                <div className="font-semibold text-white mb-1 truncate">{t.name}</div>
-                <div className="text-xs text-gray-400 mb-3 truncate">{t.id}</div>
-                {t.description && (
-                  <div className="text-sm text-gray-300 line-clamp-3 mb-4">{t.description}</div>
+              <div key={t.id} className="bg-gray-800 border border-gray-700 rounded overflow-hidden flex flex-col">
+                {t.thumbnailUrl && (
+                  <div className="h-32 w-full bg-gray-900 border-b border-gray-700 overflow-hidden">
+                    <img
+                      src={t.thumbnailUrl}
+                      alt={t.name}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
                 )}
-                <div className="mt-auto">
-                  <a
-                    href={`/play/${t.id}?source=storage`}
-                    className="inline-block px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
-                    title="Open in Public Playground"
-                  >
-                    Open in Playground
-                  </a>
+                <div className="p-4 flex flex-col flex-1">
+                  <div className="font-semibold text-white mb-1 truncate">{t.name}</div>
+                  <div className="text-xs text-gray-400 mb-3 truncate">{t.id}</div>
+                  {t.description && (
+                    <div className="text-sm text-gray-300 line-clamp-3 mb-4">{t.description}</div>
+                  )}
+                  <div className="mt-auto">
+                    <a
+                      href={`/play/${t.id}?source=storage`}
+                      className="inline-block px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
+                      title="Open in Public Playground"
+                    >
+                      Open in Playground
+                    </a>
+                  </div>
                 </div>
               </div>
             ))}

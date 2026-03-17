@@ -27,6 +27,7 @@ import { SubmissionsInbox } from './components/SubmissionsInbox';
 import { FileType, Project, File, Framework } from './types';
 import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage, getAdminSettings, updateAdminSettings, listAllUsersHtml, listUserHtmlByName, clearStudentNotifications, clearAdminNotifications } from './lib/supabase';
 import { SimpleAuthGate } from './components/SimpleAuthGate';
+import { AdminPasswordGate } from './components/AdminPasswordGate';
 import { loadStartersData, loadTemplateFromPublicPath } from './lib/template-loader';
 import { createAFrameInspectorHTML } from './lib/aframe-inspector-utils';
 import { SnippetsManagement } from './components/SnippetsManagement';
@@ -2836,7 +2837,8 @@ function App() {
           />
         } />
         <Route path="/admin-tools" element={
-          <AdminTools
+          <AdminPasswordGate>
+            <AdminTools
               project={project}
               setProject={setProject}
               activeFileId={activeFileId}
@@ -2892,27 +2894,34 @@ function App() {
               projectOwner={projectOwner}
               adminPendingSubmissionsCount={adminPendingSubmissionsCount}
             />
+          </AdminPasswordGate>
         } />
         <Route path="/admin-tools/public-templates" element={
+          <AdminPasswordGate>
             <AdminPublicTemplates />
+          </AdminPasswordGate>
         } />
         <Route path="/admin-tools/myfiles" element={
-          <AdminFilesView
-            selectedUser={selectedUser}
-            onBack={() => window.location.href = '/admin-tools'}
-            onUserSelect={onUserSelect}
-          />
+          <AdminPasswordGate>
+            <AdminFilesView
+              selectedUser={selectedUser}
+              onBack={() => window.location.href = '/admin-tools'}
+              onUserSelect={onUserSelect}
+            />
+          </AdminPasswordGate>
         } />
         <Route path="/admin-tools/submissions" element={
-          <SubmissionsInbox
-            onBack={() => window.location.href = '/admin-tools'}
-            onOpenSubmission={(userName, folderName) => {
-              // Store the submission info and navigate back to editor
-              sessionStorage.setItem('loadProject', JSON.stringify({ user: userName, projectName: folderName }));
-              window.location.href = '/admin-tools';
-            }}
-            onClearAll={handleClearAdminNotifications}
-          />
+          <AdminPasswordGate>
+            <SubmissionsInbox
+              onBack={() => window.location.href = '/admin-tools'}
+              onOpenSubmission={(userName, folderName) => {
+                // Store the submission info and navigate back to editor
+                sessionStorage.setItem('loadProject', JSON.stringify({ user: userName, projectName: folderName }));
+                window.location.href = '/admin-tools';
+              }}
+              onClearAll={handleClearAdminNotifications}
+            />
+          </AdminPasswordGate>
         } />
         <Route path="/notifications" element={
           <StudentNotificationInbox

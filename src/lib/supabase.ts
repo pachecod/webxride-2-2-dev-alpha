@@ -1345,10 +1345,11 @@ export const loadTemplateFromStorage = async (templateId: string) => {
             
             // Determine file type based on extension
             const extension = file.name.split('.').pop()?.toLowerCase();
-            let type = 'html';
+            let type: 'html' | 'css' | 'js' | 'custom' = 'html';
             if (extension === 'css') type = 'css';
             else if (extension === 'js') type = 'js';
             else if (extension === 'html') type = 'html';
+            else type = 'custom';
             
             return {
               id: file.name,

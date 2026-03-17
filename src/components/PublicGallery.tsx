@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { getTemplatesWithOrder, supabase } from '../lib/supabase';
 
 interface PublicTemplate {
   id: string;
@@ -17,26 +17,20 @@ export const PublicGallery: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const { data: folders } = await supabase.storage
-          .from('templates')
-          .list('', { limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } });
-
-        const topLevel = (folders || []).filter((folder: any) => {
-          const hasSlash = folder.name.includes('/');
-          const isNotMetadataFile = !folder.name.endsWith('metadata.json');
-          const isNotTemplateOrder = folder.name !== 'template-order.json';
-          const isNotSystemFile = !folder.name.startsWith('.');
-          return !hasSlash && isNotMetadataFile && isNotTemplateOrder && isNotSystemFile;
-        });
+        // Reuse the same ordered list the admin view uses (Storage-backed templates with template-order.json)
+        const { data: orderedTemplates } = await getTemplatesWithOrder();
 
         const result: PublicTemplate[] = [];
-        for (const folder of topLevel) {
+        for (const tmpl of orderedTemplates || []) {
+          const id = (tmpl as any).id;
+          if (!id) continue;
+
           let meta: any = null;
           // First try a cache-busting signed URL (avoids stale CDN cache)
           try {
             const { data: signed } = await supabase.storage
               .from('templates')
-              .createSignedUrl(`${folder.name}/metadata.json`, 60);
+              .createSignedUrl(`${id}/metadata.json`, 60);
             if (signed?.signedUrl) {
               const res = await fetch(signed.signedUrl, { cache: 'no-store' });
               if (res.ok) meta = await res.json();
@@ -48,15 +42,15 @@ export const PublicGallery: React.FC = () => {
             try {
               const { data: metaFile } = await supabase.storage
                 .from('templates')
-                .download(`${folder.name}/metadata.json`);
+                .download(`${id}/metadata.json`);
               if (metaFile) meta = JSON.parse(await metaFile.text());
             } catch {}
           }
 
           if (meta && meta.public_playground === true) {
             result.push({
-              id: folder.name,
-              name: meta.name || folder.name,
+              id,
+              name: meta.name || id,
               description: meta.description || ''
             });
           }

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Inbox, MessageSquare, Calendar, User, Code, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, Inbox, MessageSquare, Calendar, User, Code, Eye, Loader2, FileText } from 'lucide-react';
 import { listAllUsersHtml } from '../lib/supabase';
 
 interface SubmissionsInboxProps {
   onBack: () => void;
   onOpenSubmission: (userName: string, folderName: string) => void;
+  onClearAll?: () => void;
 }
 
 interface Submission {
@@ -18,7 +19,8 @@ interface Submission {
 
 export const SubmissionsInbox: React.FC<SubmissionsInboxProps> = ({
   onBack,
-  onOpenSubmission
+  onOpenSubmission,
+  onClearAll
 }) => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,39 +98,49 @@ export const SubmissionsInbox: React.FC<SubmissionsInboxProps> = ({
             </div>
           </div>
           
-          {/* Filter Controls */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">Filter:</span>
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                filter === 'all' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              All ({submissions.length})
-            </button>
-            <button
-              onClick={() => setFilter('with-comments')}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                filter === 'with-comments' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              With Notes ({submissions.filter(s => s.studentComment).length})
-            </button>
-            <button
-              onClick={() => setFilter('no-comments')}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                filter === 'no-comments' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              Without Notes ({submissions.filter(s => !s.studentComment).length})
-            </button>
+          {/* Filter Controls + Clear */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Filter:</span>
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1 text-sm rounded transition-colors ${
+                  filter === 'all' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                All ({submissions.length})
+              </button>
+              <button
+                onClick={() => setFilter('with-comments')}
+                className={`px-3 py-1 text-sm rounded transition-colors ${
+                  filter === 'with-comments' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                With Notes ({submissions.filter(s => s.studentComment).length})
+              </button>
+              <button
+                onClick={() => setFilter('no-comments')}
+                className={`px-3 py-1 text-sm rounded transition-colors ${
+                  filter === 'no-comments' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                Without Notes ({submissions.filter(s => !s.studentComment).length})
+              </button>
+            </div>
+            {onClearAll && submissions.length > 0 && (
+              <button
+                onClick={onClearAll}
+                className="ml-4 px-3 py-1.5 text-xs rounded border border-gray-500 bg-gray-800 text-gray-100 hover:bg-gray-700 transition-colors"
+              >
+                Clear All Notifications
+              </button>
+            )}
           </div>
         </div>
       </div>

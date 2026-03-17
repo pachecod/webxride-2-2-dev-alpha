@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { File, FileType, Framework, Project } from '../types';
 import { ExternalLink, Maximize2, Minimize2, Settings, X, RotateCcw, ZoomIn, ZoomOut, Eye, Hand, MousePointer } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -30,11 +30,23 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
   const [externalWindow, setExternalWindow] = useState<Window | null>(null);
   const checkWindowInterval = useRef<number>();
   const [reloadKey, setReloadKey] = useState(0);
+  const previewUrlRef = useRef<string | null>(null);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [linkLoading, setLinkLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  
+  // Create a unique key for the iframe based on files and content to force complete reset when switching templates
+  // Include a hash of file contents to ensure iframe reloads when content changes
+  const iframeKey = useMemo(() => {
+    const contentHash = files
+      .filter(f => f.content)
+      .map(f => `${f.id}:${f.content.substring(0, 100)}`)
+      .join('|');
+    const fileIds = files.map(f => `${f.id}-${f.name}`).join('|');
+    return `${fileIds}-${contentHash.substring(0, 200)}-${reloadKey}`;
+  }, [files, reloadKey]);
   
   // New state for 3D model preview enhancements
   const [is3DContent, setIs3DContent] = useState(false);
@@ -92,29 +104,124 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
 
   useEffect(() => {
     if (!iframeRef.current && showInline) return;
+    if (!files || files.length === 0) return;
 
     const loadPreview = async () => {
       try {
-        const htmlFile = files.find(f => f.id === 'index.html' || f.name === 'index.html');
-        const cssFile = files.find(f => f.id === 'styles.css' || f.id === 'style.css' || f.name === 'style.css' || f.name === 'styles.css');
-        const jsFile = files.find(f => f.id === 'script.js' || f.name === 'script.js');
+        // Wait for files to have content - check if HTML file has content
+        let htmlFile = files.find(f => f.id === 'index.html' || f.name === 'index.html' || f.name.endsWith('/index.html'));
+        
+        // If no HTML file yet, wait a bit for files to populate
+        if (!htmlFile) {
+          console.log('Preview - No HTML file found yet, waiting for files to populate...');
+          let attempts = 0;
+          while (attempts < 20 && !htmlFile) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+            htmlFile = files.find(f => f.id === 'index.html' || f.name === 'index.html' || f.name.endsWith('/index.html'));
+          }
+        }
+        
+        // Now find CSS file
+        const cssFile = files.find(f => {
+          const id = f.id.toLowerCase();
+          const name = f.name.toLowerCase();
+          return id === 'styles.css' || id === 'style.css' || 
+                 name === 'styles.css' || name === 'style.css' ||
+                 name.endsWith('/styles.css') || name.endsWith('/style.css');
+        });
+        
+        // If CSS file exists but has no content, wait for it to load (poll up to 2000ms to match App.tsx)
+        let finalCssFile = cssFile;
+        if (cssFile && (!cssFile.content || cssFile.content.trim().length === 0)) {
+          console.log('Preview - CSS file found but empty, waiting for content...');
+          let attempts = 0;
+          const maxAttempts = 40; // 40 attempts * 50ms = 2000ms max wait (matching App.tsx)
+          
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+            
+            // Re-check the files array - we need to get the latest reference
+            // The files prop might have updated, but we're still in the closure
+            // So we'll check again when the effect re-runs
+            const updatedCssFile = files.find(f => {
+              const id = f.id.toLowerCase();
+              const name = f.name.toLowerCase();
+              return (id === 'styles.css' || id === 'style.css' || 
+                      name === 'styles.css' || name === 'style.css' ||
+                      name.endsWith('/styles.css') || name.endsWith('/style.css')) &&
+                     f.content && f.content.trim().length > 0;
+            });
+            
+            if (updatedCssFile && updatedCssFile.content && updatedCssFile.content.trim().length > 0) {
+              finalCssFile = updatedCssFile;
+              console.log('Preview - CSS content loaded after', attempts * 50, 'ms');
+              break;
+            }
+          }
+          
+          if (attempts >= maxAttempts && (!finalCssFile?.content || finalCssFile.content.trim().length === 0)) {
+            console.warn('Preview - CSS file still empty after waiting, proceeding without CSS');
+            finalCssFile = null; // Treat as no CSS file
+          }
+        }
+        
+        // Also wait for HTML file to have content if it doesn't
+        if (!htmlFile || !htmlFile.content || htmlFile.content.trim().length === 0) {
+          console.log('Preview - HTML file found but empty, waiting for content...');
+          let attempts = 0;
+          const maxAttempts = 40; // 40 attempts * 50ms = 2000ms max wait
+          
+          while (attempts < maxAttempts && (!htmlFile || !htmlFile.content || htmlFile.content.trim().length === 0)) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+            
+            // Re-check for HTML file with content
+            const updatedHtmlFile = files.find(f => 
+              (f.id === 'index.html' || f.name === 'index.html' || f.name.endsWith('/index.html')) &&
+              f.content && f.content.trim().length > 0
+            );
+            
+            if (updatedHtmlFile && updatedHtmlFile.content && updatedHtmlFile.content.trim().length > 0) {
+              htmlFile = updatedHtmlFile;
+              console.log('Preview - HTML content loaded after', attempts * 50, 'ms');
+              break;
+            }
+          }
+          
+          // If still no HTML content after waiting, we can't proceed
+          if (!htmlFile || !htmlFile.content || htmlFile.content.trim().length === 0) {
+            console.error('Preview - HTML file still empty after waiting, cannot proceed');
+            setError('HTML file is empty or not loaded yet. Please try again.');
+            return;
+          }
+        }
+        
+        // Use the final CSS file (with content if it was loaded)
+        const cssFileWithContent = finalCssFile;
+        const jsFile = files.find(f => f.id === 'script.js' || f.name === 'script.js' || f.name.endsWith('/script.js'));
         const customFiles = files.filter(f => f.type === FileType.CUSTOM);
 
-      console.log('Preview - All available files:', files.map(f => ({ id: f.id, name: f.name, type: f.type })));
+      console.log('Preview - All available files:', files.map(f => ({ id: f.id, name: f.name, type: f.type, hasContent: !!f.content })));
       console.log('Preview - Files found:', {
-        htmlFile: htmlFile ? 'Found' : 'Not found',
-        cssFile: cssFile ? 'Found' : 'Not found', 
-        jsFile: jsFile ? 'Found' : 'Not found',
+        htmlFile: htmlFile ? `Found: ${htmlFile.name} (${htmlFile.content?.length || 0} chars)` : 'Not found',
+        cssFile: cssFileWithContent ? `Found: ${cssFileWithContent.name} (${cssFileWithContent.content?.length || 0} chars)` : 'Not found', 
+        jsFile: jsFile ? `Found: ${jsFile.name}` : 'Not found',
         customFiles: customFiles.map(f => f.name),
         jsContent: jsFile?.content?.substring(0, 100) + '...' || 'No content'
       });
 
-      if (!htmlFile) {
-        setError('No HTML file found');
+      if (!htmlFile || !htmlFile.content || htmlFile.content.trim().length === 0) {
+        setError('No HTML file found or HTML file is empty');
         return;
       }
 
+      // Get HTML content AFTER all polling is complete to ensure we have the latest content
       let htmlContent = htmlFile.content;
+      
+      // Store original HTML to extract template's own style tags if needed
+      const originalHtmlContent = htmlContent;
       
       // Check if this is 3D content using utility function
       const has3DContent = framework === Framework.AFRAME || detect3DContent(htmlContent);
@@ -369,17 +476,10 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
           html, body {
             margin: 0 !important;
             padding: 0 !important;
-            background: transparent !important;
-            color: inherit !important;
+            /* Remove forced background and color - let template CSS control it */
             font-family: inherit !important;
             font-size: inherit !important;
             line-height: inherit !important;
-          }
-          
-          /* Ensure body background is white by default for 2D content */
-          body {
-            background: #ffffff !important;
-            color: #333333 !important;
           }
           
           /* Reset any inherited dark theme styles */
@@ -387,82 +487,149 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
             box-sizing: border-box;
           }
           
-          /* Ensure proper text colors */
-          h1, h2, h3, h4, h5, h6, p, span, div, li, a {
-            color: inherit !important;
-          }
+          /* Remove color inheritance - let template CSS control all colors directly */
         </style>
       `;
       
-      // Handle CSS - either from project files or external references
+      // Handle CSS - prioritize project files, then extract from template HTML
       let cssContent = '';
       
-      // First, try to get CSS from project files
-      if (cssFile && cssFile.content.trim()) {
-        cssContent = cssFile.content;
+      // First priority: CSS from project files (this is the main source)
+      // Use cssFileWithContent which was determined after waiting for content
+      if (cssFileWithContent && cssFileWithContent.content && cssFileWithContent.content.trim()) {
+        cssContent = cssFileWithContent.content;
         console.log('Preview - Using CSS from project files:', {
-          hasCssFile: !!cssFile,
-          cssContentLength: cssContent.length,
-          cssContentPreview: cssContent.substring(0, 100) + '...'
+          hasCssFile: !!cssFileWithContent,
+          cssFileName: cssFileWithContent.name,
+          cssContentLength: cssFileWithContent.content.length,
+          cssContentPreview: cssFileWithContent.content.substring(0, 100) + '...'
         });
       } else {
-        // If no CSS file in project, try to load external CSS references
+        // If no CSS file in project, try to extract from template HTML
+        // Extract any inline <style> tags from the template HTML
+        const styleTagMatches = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+        if (styleTagMatches) {
+          for (const styleTag of styleTagMatches) {
+            const contentMatch = styleTag.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+            if (contentMatch && contentMatch[1]) {
+              cssContent += contentMatch[1] + '\n';
+              console.log('Preview - Extracted inline CSS from template:', contentMatch[1].substring(0, 100) + '...');
+            }
+          }
+        }
+        
+        // Extract CSS from external <link> tags in the template HTML (as fallback)
         const cssLinks = htmlContent.match(/<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi);
         if (cssLinks && cssLinks.length > 0) {
-          console.log('Preview - Found external CSS links:', cssLinks);
+          console.log('Preview - Found CSS links in template HTML (will try to fetch):', cssLinks);
           
           // Try to fetch the CSS content for each link
           for (const link of cssLinks) {
             const hrefMatch = link.match(/href=["']([^"']+)["']/);
             if (hrefMatch) {
               const cssUrl = hrefMatch[1];
-              console.log('Preview - Attempting to load external CSS:', cssUrl);
+              console.log('Preview - Attempting to load CSS from template link:', cssUrl);
               
               try {
-                // For absolute paths, try to fetch the CSS
-                if (cssUrl.startsWith('/')) {
-                  const fullUrl = `${window.location.origin}${cssUrl}`;
-                  const response = await fetch(fullUrl);
-                  if (response.ok) {
-                    const externalCss = await response.text();
-                    cssContent += externalCss + '\n';
-                    console.log('Preview - Successfully loaded external CSS:', cssUrl, 'Length:', externalCss.length);
+                // Try relative paths first (relative to the template)
+                let fullUrl = cssUrl;
+                if (!cssUrl.startsWith('http') && !cssUrl.startsWith('//')) {
+                  if (cssUrl.startsWith('/')) {
+                    fullUrl = `${window.location.origin}${cssUrl}`;
                   } else {
-                    console.warn('Preview - Failed to load external CSS:', cssUrl, 'Status:', response.status);
+                    // Relative path - try to construct full URL based on template location
+                    fullUrl = `${window.location.origin}${cssUrl}`;
                   }
                 }
+                
+                const response = await fetch(fullUrl);
+                if (response.ok) {
+                  const externalCss = await response.text();
+                  cssContent += externalCss + '\n';
+                  console.log('Preview - Successfully loaded CSS from template link:', cssUrl, 'Length:', externalCss.length);
+                } else {
+                  console.warn('Preview - Failed to load CSS from template link:', cssUrl, 'Status:', response.status);
+                }
               } catch (error) {
-                console.warn('Preview - Error loading external CSS:', cssUrl, error);
+                console.warn('Preview - Error loading CSS from template link:', cssUrl, error);
               }
             }
           }
         }
       }
       
-      // Inject CSS if we have any content
+      // Now remove all existing style tags and CSS link tags to prevent CSS from previous templates from lingering
+      // We've already extracted their content above
+      htmlContent = htmlContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      htmlContent = htmlContent.replace(/<link[^>]*rel=["']stylesheet["'][^>]*href=["'][^"']*\.css["'][^>]*>/gi, '');
+      
+      // Always inject default light styles first to prevent dark theme inheritance
+      // This ensures templates without CSS or with CSS that doesn't set background/color display correctly
+      const defaultLightStyles = `
+        <style>
+          /* Default light styles - prevents dark theme inheritance from editor */
+          /* These are applied first, then template CSS can override them */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+            font-size: 16px !important;
+            line-height: 1.5 !important;
+          }
+          
+          /* Reset all elements to prevent dark theme inheritance */
+          *:not(script):not(style) {
+            box-sizing: border-box !important;
+          }
+          
+          /* Ensure text elements have readable colors by default */
+          h1, h2, h3, h4, h5, h6, p, div, span, li, td, th {
+            color: inherit !important;
+          }
+          
+          /* Links should be visible by default */
+          a {
+            color: #0066cc !important;
+          }
+          
+          a:hover {
+            color: #0052a3 !important;
+          }
+        </style>`;
+      
+      // Inject CSS if we have any content (template CSS will override defaults)
       if (cssContent.trim()) {
         console.log('Preview - Injecting CSS:', {
           cssContentLength: cssContent.length,
-          cssContentPreview: cssContent.substring(0, 100) + '...'
+          cssContentPreview: cssContent.substring(0, 100) + '...',
+          cssSource: cssFile ? 'project file' : 'template HTML'
         });
         
         const styleTag = `<style>${cssContent}</style>`;
         
-        // Remove any existing link tags that reference CSS files
-        htmlContent = htmlContent.replace(/<link[^>]*rel=["']stylesheet["'][^>]*href=["'][^"']*\.css["'][^>]*>/gi, '');
-        
-        // Add the CSS reset and style tag to the head
+        // Add the CSS reset, default light styles, and template CSS to the head
+        // Template CSS comes after defaults so it can override them
         if (htmlContent.includes('<head>')) {
-          htmlContent = htmlContent.replace('<head>', `<head>${cssReset}${styleTag}`);
+          htmlContent = htmlContent.replace('<head>', `<head>${cssReset}${defaultLightStyles}${styleTag}`);
         } else if (htmlContent.includes('<body>')) {
-          htmlContent = htmlContent.replace('<body', `<head>${cssReset}${styleTag}</head><body`);
+          htmlContent = htmlContent.replace('<body', `<head>${cssReset}${defaultLightStyles}${styleTag}</head><body`);
+        }
+        
+        // Verify CSS was injected
+        if (!htmlContent.includes(cssContent.substring(0, 50))) {
+          console.error('Preview - WARNING: CSS injection may have failed! CSS not found in HTML');
+        } else {
+          console.log('Preview - CSS successfully injected into HTML');
         }
       } else {
-        // Even if no CSS file, add the reset to ensure clean styling
+        console.log('Preview - No CSS content to inject, adding default light styles only');
+        // When there's no CSS, add default light styles to prevent dark theme inheritance
         if (htmlContent.includes('<head>')) {
-          htmlContent = htmlContent.replace('<head>', `<head>${cssReset}`);
+          htmlContent = htmlContent.replace('<head>', `<head>${cssReset}${defaultLightStyles}`);
         } else if (htmlContent.includes('<body>')) {
-          htmlContent = htmlContent.replace('<body', `<head>${cssReset}</head><body`);
+          htmlContent = htmlContent.replace('<body', `<head>${cssReset}${defaultLightStyles}</head><body`);
         }
       }
       
@@ -644,10 +811,27 @@ setTimeout(function() {
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       
+      // Revoke previous blob URL to prevent memory leaks
+      if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+      
+      previewUrlRef.current = url;
       setPreviewUrl(url);
 
       if (showInline && iframeRef.current) {
-        iframeRef.current.src = url;
+        // Clear the iframe completely before loading new content
+        // This ensures no CSS from previous templates persists
+        iframeRef.current.src = 'about:blank';
+        
+        // Use a small delay before setting new URL to ensure iframe is fully cleared
+        // This prevents CSS from previous templates from lingering
+        setTimeout(() => {
+          if (iframeRef.current) {
+            iframeRef.current.src = url;
+            console.log('Preview - Iframe src set to blob URL');
+          }
+        }, 50);
         
         // Add event listener to check if iframe loaded
         iframeRef.current.onload = () => {
@@ -787,6 +971,13 @@ setTimeout(function() {
     };
 
     loadPreview();
+    
+    // Cleanup: revoke blob URL when component unmounts
+    return () => {
+      if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
   }, [files, framework, showInline, reloadKey]);
 
   const togglePreviewMode = () => {
@@ -889,7 +1080,7 @@ setTimeout(function() {
                     <div class="tooltip">A-Frame Inspector</div>
                   </button>
                 ` : ''}
-                <iframe src="${previewUrl}" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-presentation allow-downloads"></iframe>
+                <iframe src="${previewUrl}" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-downloads"></iframe>
               </div>
               
               ${isAframeContent ? `
@@ -1526,9 +1717,10 @@ setTimeout(function() {
       {showInline ? (
         <div className="flex-1 relative">
           <iframe
+            key={iframeKey}
             ref={iframeRef}
-            className="w-full h-full bg-white"
-            sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-presentation allow-downloads allow-pointer-lock"
+            className="w-full h-full"
+            sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-downloads allow-pointer-lock"
             title="Preview"
           />
           {/* A-Frame Inspector Buttons */}

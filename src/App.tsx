@@ -25,7 +25,7 @@ import { AdminPublicTemplates } from './components/AdminPublicTemplates';
 import { PublicGallery } from './components/PublicGallery';
 import { SubmissionsInbox } from './components/SubmissionsInbox';
 import { FileType, Project, File, Framework } from './types';
-import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage, getAdminSettings, updateAdminSettings } from './lib/supabase';
+import { supabase, getProject, saveTemplateToStorage, saveUserHtmlByName, loadUserHtmlByName, deleteUserHtmlByName, setDefaultTemplate, getDefaultTemplate, loadTemplateFromStorage, findTemplateByName, updateUserHtmlByName, deleteTemplateFromStorage, renameTemplateInStorage, getAdminSettings, updateAdminSettings, listAllUsersHtml, listUserHtmlByName, clearStudentNotifications, clearAdminNotifications } from './lib/supabase';
 import { AdminPasswordGate } from './components/AdminPasswordGate';
 import { SimpleAuthGate } from './components/SimpleAuthGate';
 import { loadStartersData, loadTemplateFromPublicPath } from './lib/template-loader';
@@ -273,6 +273,7 @@ function AdminTools({
   setActiveFileId, 
   previewKey, 
   setPreviewKey, 
+  templateLoadKey,
   splitPosition, 
   setSplitPosition, 
   showPreview, 
@@ -317,7 +318,8 @@ function AdminTools({
   setSplitToEditor,
   setSplitToEven,
   setSplitToPreview,
-  projectOwner
+  projectOwner,
+  adminPendingSubmissionsCount
 }: any) {
   const [refreshTemplatesRef, setRefreshTemplatesRef] = useState<(() => void) | null>(null);
   
@@ -415,6 +417,10 @@ function AdminTools({
         onSaveHtml={handleSaveHtml}
         onSubmitToTeacher={handleSubmitToTeacher}
         projectOwner={projectOwner}
+        adminPendingSubmissionsCount={adminPendingSubmissionsCount}
+        onViewNotifications={() => {
+          window.location.href = '/admin-tools/submissions';
+        }}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -440,6 +446,7 @@ function AdminTools({
         />
         <main className="flex-1 flex flex-col overflow-hidden">
           <FileTabs 
+            key={`filetabs-${templateLoadKey}-${project.name}`}
             files={project.files}
             activeFileId={activeFileId}
             onChangeFile={handleChangeFile}
@@ -464,6 +471,7 @@ function AdminTools({
                 )}
               </div>
               <Editor 
+                key={`editor-${templateLoadKey}-${activeFileId}`}
                 value={activeFile?.content || ''}
                 language={activeFile?.type || FileType.HTML}
                 fileName={activeFile?.name}
@@ -807,7 +815,59 @@ function AdminTools({
 }
 
 function MainApp({
-  project, setProject, activeFileId, setActiveFileId, previewKey, setPreviewKey, splitPosition, setSplitPosition, showPreview, setShowPreview, isPreviewExternal, setIsPreviewExternal, user, saveProject, loadProject, templates, setTemplates, updateFile, handleChangeFile, refreshPreview, loadTemplate, handleSaveProject, handleLoadProject, handleLoadHtmlDraft, activeFile, togglePreview, handleCopyCode, showSaveTemplateButton, handleSaveTemplate, handleSaveHtml, handleSubmitToTeacher, handleViewNotifications, handleLoadSavedHtml, handleDeleteSavedHtml, handleDeleteTemplate, handleRenameTemplate, selectedUser, onUserSelect, isAdmin, handleAddFile, handleExportLocalSite, refreshTemplates, setRefreshTemplatesRef, rideyEnabled, aframeInspectorEnabled, handleAframeInspectorToggle, setSplitToEditor, setSplitToEven, setSplitToPreview, projectOwner
+  project,
+  setProject,
+  activeFileId,
+  setActiveFileId,
+  previewKey,
+  setPreviewKey,
+  templateLoadKey,
+  splitPosition,
+  setSplitPosition,
+  showPreview,
+  setShowPreview,
+  isPreviewExternal,
+  setIsPreviewExternal,
+  user,
+  saveProject,
+  loadProject,
+  templates,
+  setTemplates,
+  updateFile,
+  handleChangeFile,
+  refreshPreview,
+  loadTemplate,
+  handleSaveProject,
+  handleLoadProject,
+  handleLoadHtmlDraft,
+  activeFile,
+  togglePreview,
+  handleCopyCode,
+  showSaveTemplateButton,
+  handleSaveTemplate,
+  handleSaveHtml,
+  handleSubmitToTeacher,
+  handleViewNotifications,
+  handleLoadSavedHtml,
+  handleDeleteSavedHtml,
+  handleDeleteTemplate,
+  handleRenameTemplate,
+  selectedUser,
+  onUserSelect,
+  isAdmin,
+  handleAddFile,
+  handleExportLocalSite,
+  refreshTemplates,
+  setRefreshTemplatesRef,
+  rideyEnabled,
+  aframeInspectorEnabled,
+  handleAframeInspectorToggle,
+  setSplitToEditor,
+  setSplitToEven,
+  setSplitToPreview,
+  projectOwner,
+  adminPendingSubmissionsCount,
+  studentNotificationsCount,
 }: any) {
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
 
@@ -859,6 +919,8 @@ function MainApp({
         onExportLocalSite={handleExportLocalSite}
         projectOwner={projectOwner}
         onViewNotifications={handleViewNotifications}
+        adminPendingSubmissionsCount={isAdmin ? adminPendingSubmissionsCount : 0}
+        studentNotificationsCount={!isAdmin ? studentNotificationsCount : 0}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -883,6 +945,7 @@ function MainApp({
         />
         <main className="flex-1 flex flex-col overflow-hidden">
           <FileTabs 
+            key={`filetabs-${templateLoadKey}-${project.name}`}
             files={project.files}
             activeFileId={activeFileId}
             onChangeFile={handleChangeFile}
@@ -907,6 +970,7 @@ function MainApp({
                 </div>
               )}
               <Editor 
+                key={`editor-${templateLoadKey}-${activeFileId}`}
                 value={activeFile?.content || ''}
                 language={activeFile?.type || FileType.HTML}
                 fileName={activeFile?.name}
@@ -1028,6 +1092,7 @@ function App() {
   });
   const [activeFileId, setActiveFileId] = useState<string>('index.html');
   const [previewKey, setPreviewKey] = useState<number>(0);
+  const [templateLoadKey, setTemplateLoadKey] = useState<number>(0); // Key to force reload of Editor/FileTabs when template changes
   const [splitPosition, setSplitPosition] = useState<number>(50);
   const [showPreview, setShowPreview] = useState(true);
   const [isPreviewExternal, setIsPreviewExternal] = useState(false);
@@ -1051,37 +1116,121 @@ function App() {
   
   // Track the owner of the currently loaded project (for admins editing student work)
   const [projectOwner, setProjectOwner] = useState<string | null>(null);
-  
+
   // Track admin comment from loaded project metadata
   const [projectMetadata, setProjectMetadata] = useState<{adminComment?: string; commentDate?: string} | null>(null);
 
-  // Check if there's a project to load from the file management view (admin only)
+  // Track pending submissions count for admin notifications badge
+  const [adminPendingSubmissionsCount, setAdminPendingSubmissionsCount] = useState<number>(0);
+  // Track notifications count for current student
+  const [studentNotificationsCount, setStudentNotificationsCount] = useState<number>(0);
+  // Track the original submission folder when admin is editing student work
+  const [currentStudentSubmissionFolder, setCurrentStudentSubmissionFolder] = useState<string | null>(null);
+
+  // Helper to load pending submissions count for admin
+    const refreshAdminPendingSubmissionsCount = async () => {
+    try {
+      if (selectedUser !== 'admin') {
+        setAdminPendingSubmissionsCount(0);
+        return;
+      }
+
+      const allFiles = await listAllUsersHtml();
+
+      const pending = allFiles.filter(
+        (file: any) =>
+          file.isSubmitted === true &&
+          !file.adminComment &&
+          !file.adminNotificationsCleared
+      );
+
+      console.log('Admin pending submissions (no feedback yet):', {
+        total: allFiles.length,
+        pendingCount: pending.length,
+        pending
+      });
+
+      setAdminPendingSubmissionsCount(pending.length);
+    } catch (error) {
+      console.error('Error loading pending submissions count:', error);
+    }
+  };
+
+  // Load pending submissions count for admin
+  useEffect(() => {
+    refreshAdminPendingSubmissionsCount();
+  }, [selectedUser]);
+
+  // Load notifications count for student
+  useEffect(() => {
+    const refreshStudentNotificationsCount = async () => {
+      try {
+        if (!selectedUser || selectedUser === 'admin') {
+          setStudentNotificationsCount(0);
+          return;
+        }
+
+        const projects = await listUserHtmlByName(selectedUser);
+
+        // Same criteria as StudentNotificationInbox
+        const notificationProjects = projects.filter((p: any) =>
+          p.metadata &&
+          !p.metadata.notificationsClearedForStudent &&
+          (p.metadata.adminComment || p.metadata.isSubmitted)
+        );
+
+        setStudentNotificationsCount(notificationProjects.length);
+      } catch (error) {
+        console.error('Error loading student notifications count:', error);
+        setStudentNotificationsCount(0);
+      }
+    };
+
+    refreshStudentNotificationsCount();
+  }, [selectedUser]);
+
+  // Check if there's a project to load from the file management view or notifications
   React.useEffect(() => {
-    // Only run this effect if we have a selectedUser and we're on the admin-tools route
     if (!selectedUser) return;
     
     const loadProjectData = sessionStorage.getItem('loadProject');
-    if (loadProjectData && selectedUser === 'admin' && window.location.pathname === '/admin-tools') {
-      sessionStorage.removeItem('loadProject'); // Clear it immediately
-      try {
-        const { user, projectName } = JSON.parse(loadProjectData);
-        console.log('Loading project from session storage:', { user, projectName });
-        // Load the project using the correct user
+    if (!loadProjectData) {
+      // For students, ensure projectOwner is null and clear any stale submission info
+      if (selectedUser !== 'admin') {
+        setProjectOwner(null);
+        setCurrentStudentSubmissionFolder(null);
+      }
+      return;
+    }
+
+    try {
+      const { user, projectName } = JSON.parse(loadProjectData);
+      console.log('Loading project from session storage:', { user, projectName, pathname: window.location.pathname, selectedUser });
+
+      // Admin: load into /admin-tools editor
+      if (selectedUser === 'admin' && window.location.pathname === '/admin-tools') {
+        sessionStorage.removeItem('loadProject');
         handleLoadSavedHtmlForUser(projectName, user);
-        // Track who owns this project so we can save back to them
         setProjectOwner(user);
-      } catch (error) {
-        console.error('Error loading project from session storage:', error);
-        // Clear the session storage data if there's an error
-        sessionStorage.removeItem('loadProject');
+        setCurrentStudentSubmissionFolder(projectName);
+        return;
       }
-    } else if (selectedUser && selectedUser !== 'admin') {
-      // For students, ensure projectOwner is null and clear any session storage
-      setProjectOwner(null);
-      if (sessionStorage.getItem('loadProject')) {
-        console.log('Clearing session storage for student user');
+
+      // Student: load into main editor on "/"
+      if (selectedUser !== 'admin' && window.location.pathname === '/') {
         sessionStorage.removeItem('loadProject');
+        // For students, always load into their own account
+        handleLoadSavedHtmlForUser(projectName, selectedUser);
+        setProjectOwner(null);
+        setCurrentStudentSubmissionFolder(null);
+        return;
       }
+
+      // Any other case: just clear the flag
+      sessionStorage.removeItem('loadProject');
+    } catch (error) {
+      console.error('Error loading project from session storage:', error);
+      sessionStorage.removeItem('loadProject');
     }
   }, [selectedUser]);
 
@@ -1090,6 +1239,18 @@ function App() {
     if (refreshTemplatesRef) {
       refreshTemplatesRef();
     }
+  };
+
+  const handleClearStudentNotifications = async () => {
+    if (!selectedUser || selectedUser === 'admin') return;
+    await clearStudentNotifications(selectedUser);
+    setStudentNotificationsCount(0);
+  };
+
+  const handleClearAdminNotifications = async () => {
+    if (selectedUser !== 'admin') return;
+    await clearAdminNotifications();
+    await refreshAdminPendingSubmissionsCount();
   };
 
 
@@ -1194,13 +1355,9 @@ function App() {
     setPreviewKey(prev => prev + 1);
   };
 
-  const loadTemplate = (templateProject: Project) => {
+  const loadTemplate = async (templateProject: Project) => {
     console.log('loadTemplate called with:', templateProject);
     console.log('Template files:', templateProject.files);
-    
-    // Clear projectOwner and metadata when loading a template (starting fresh)
-    setProjectOwner(null);
-    setProjectMetadata(null);
     
     // Defensive: ensure files is an array and has index.html
     if (!Array.isArray(templateProject.files) || templateProject.files.length === 0) {
@@ -1213,9 +1370,33 @@ function App() {
       return;
     }
     
+    // Immediately update the project name to prevent showing "Basic HTML Project" during loading
+    // This ensures the Header shows the correct template name right away
+    // We'll update the full project (with files) once content is loaded
+    const tempProject = {
+      ...templateProject,
+      name: templateProject.name || 'Untitled Project',
+      // Keep the existing files structure, but we'll update them with content later
+      files: templateProject.files.map(f => ({
+        ...f,
+        content: f.content || '' // Preserve existing content if any
+      }))
+    };
+    
+    // Update project state immediately with name and structure, even if files don't have content yet
+    // This prevents the Header from showing "Basic HTML Project"
+    setProject(tempProject);
+    console.log('Updated project name immediately to:', tempProject.name);
+    
     // Ensure every file has id, name, and content
+    // Wait for files to have content before proceeding (fixes Editor showing empty CSS tab)
     const mappedFiles: File[] = [];
-    for (const f of templateProject.files) {
+    const filesToCheck = [...templateProject.files]; // Copy array to avoid mutation
+    
+    // First pass: map files and check which ones need content
+    const filesNeedingContent: Array<{file: any, index: number}> = [];
+    for (let i = 0; i < filesToCheck.length; i++) {
+      const f = filesToCheck[i];
       const id = f.id || f.name;
       const name = f.name || f.id;
       const content = f.content || '';
@@ -1226,7 +1407,13 @@ function App() {
         continue;
       }
       
-      mappedFiles.push({ ...f, id, name, content });
+      // Check if file exists but has no content
+      if (!content || content.trim().length === 0) {
+        filesNeedingContent.push({ file: f, index: mappedFiles.length });
+        mappedFiles.push({ ...f, id, name, content: '' });
+      } else {
+        mappedFiles.push({ ...f, id, name, content });
+      }
     }
     
     if (mappedFiles.length === 0) {
@@ -1234,9 +1421,60 @@ function App() {
       return;
     }
     
-    console.log('Mapped files for project:', mappedFiles);
-    console.log('First file content:', mappedFiles[0]?.content);
-    console.log('First file id:', mappedFiles[0]?.id);
+    // If there are files needing content, wait for them (with timeout)
+    if (filesNeedingContent.length > 0) {
+      console.log('Waiting for', filesNeedingContent.length, 'files to have content...');
+      let attempts = 0;
+      const maxAttempts = 40; // 40 * 50ms = 2 seconds max wait
+      
+      while (attempts < maxAttempts && filesNeedingContent.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        attempts++;
+        
+        // Re-check files that need content - also check the original templateProject.files in case it was updated
+        // Check both the original array and any newly loaded content
+        for (let i = filesNeedingContent.length - 1; i >= 0; i--) {
+          const { file, index } = filesNeedingContent[i];
+          
+          // First check the mappedFiles array (in case we already updated it)
+          // Then check the original templateProject.files array
+          let updatedFile = templateProject.files.find(f => 
+            (f.id || f.name) === (file.id || file.name) && 
+            f.content && f.content.trim().length > 0
+          );
+          
+          // Also check if we already have the content in mappedFiles (shouldn't happen, but defensive)
+          if (!updatedFile && mappedFiles[index]?.content && mappedFiles[index].content.trim().length > 0) {
+            updatedFile = mappedFiles[index];
+          }
+          
+          if (updatedFile && updatedFile.content && updatedFile.content.trim().length > 0) {
+            // Update the mapped file with content
+            const id = updatedFile.id || updatedFile.name;
+            const name = updatedFile.name || updatedFile.id;
+            mappedFiles[index] = { ...updatedFile, id, name, content: updatedFile.content };
+            filesNeedingContent.splice(i, 1); // Remove from waiting list
+            console.log('File', name, 'now has content after', attempts * 50, 'ms');
+          }
+        }
+      }
+      
+      if (filesNeedingContent.length > 0) {
+        console.warn('Some files still empty after waiting:', filesNeedingContent.map(f => f.file.name || f.file.id));
+      }
+    }
+    
+    // Final verification: Ensure all files that should have content actually do
+    const filesWithContent = mappedFiles.filter(f => f.content && f.content.trim().length > 0);
+    console.log('Mapped files for project:', mappedFiles.map(f => ({ name: f.name, hasContent: !!f.content, contentLength: f.content?.length || 0 })));
+    console.log('Files with content:', filesWithContent.map(f => f.name));
+    
+    if (filesWithContent.length === 0) {
+      console.error('ERROR: No files have content after waiting!');
+      console.error('Files status:', mappedFiles.map(f => ({ name: f.name, content: f.content ? f.content.substring(0, 50) + '...' : 'EMPTY' })));
+      alert('Failed to load template content. Please try clicking the template again.');
+      return;
+    }
     
     const fixedProject = { 
       ...templateProject, 
@@ -1244,22 +1482,45 @@ function App() {
       name: templateProject.name || 'Untitled Project'
     };
     
-    console.log('Setting project to:', fixedProject);
+    console.log('Setting project state - Project name:', fixedProject.name, 'Files count:', fixedProject.files.length);
+    console.log('All files content status:', fixedProject.files.map(f => ({ name: f.name, hasContent: !!f.content, length: f.content?.length || 0 })));
     
-    // Use a timeout to ensure state updates happen in the correct order
-    setTimeout(() => {
-      setProject(fixedProject);
-      
-      // Prioritize index.html as the active file, fallback to first file
-      const indexHtmlFile = mappedFiles.find(f => f.id === 'index.html' || f.name === 'index.html');
-      const activeFileId = indexHtmlFile?.id || mappedFiles[0]?.id || 'index.html';
-      console.log('Setting activeFileId to:', activeFileId, 'from file:', indexHtmlFile?.name || mappedFiles[0]?.name);
-      setActiveFileId(activeFileId);
-      
-      localStorage.setItem('current-project', JSON.stringify(fixedProject));
-      setPreviewKey(prev => prev + 1);
-      console.log('Template loaded successfully');
-    }, 0);
+    // Update all state together to ensure consistency
+    // Prioritize index.html as the active file, fallback to first file with content
+    const indexHtmlFile = filesWithContent.find(f => f.id === 'index.html' || f.name === 'index.html');
+    const activeFileId = indexHtmlFile?.id || filesWithContent[0]?.id || 'index.html';
+    
+    // Update localStorage first to persist the change
+    localStorage.setItem('current-project', JSON.stringify(fixedProject));
+    
+    // Force React to recognize this as a new object by creating a completely new reference
+    // This ensures React detects the state change and triggers a re-render
+    const newProject = {
+      ...fixedProject,
+      files: [...fixedProject.files.map(f => ({ ...f }))] // Deep copy files array
+    };
+    
+    console.log('Setting project state - Ensuring new object reference...');
+    console.log('New project name:', newProject.name);
+    console.log('New project files count:', newProject.files.length);
+    
+    // Batch ALL state updates together to prevent intermediate renders with stale data
+    // React 18 will batch these updates automatically, but we update them all at once
+    // to ensure the Header and other components don't see stale state
+    
+    // Force complete reload of Editor, FileTabs, and Preview by incrementing templateLoadKey
+    // This ensures all tabs (HTML, CSS, JS) are properly reloaded every single time
+    setTemplateLoadKey(prev => prev + 1);
+    
+    setProject(newProject);
+    setActiveFileId(activeFileId);
+    setPreviewKey(prev => prev + 1);
+    // Clear projectOwner and metadata AFTER setting the new project
+    // This way, the Header sees the new project name immediately
+    setProjectOwner(null);
+    setProjectMetadata(null);
+    
+    console.log('Template loaded successfully - Project name:', newProject.name, 'Active file:', activeFileId, 'Template load key incremented');
   };
 
   const handleSaveProject = async () => {
@@ -1533,7 +1794,7 @@ function App() {
   };
 
   // Perform the actual save operation
-  const performSave = async (userName: string, filenameWithTimestamp: string, adminComment?: string, submissionData?: {studentComment?: string; isSubmitted?: boolean}) => {
+  const performSave = async (userName: string, filenameWithTimestamp: string, adminComment?: string, submissionData?: {studentComment?: string; isSubmitted?: boolean; originalFolderName?: string}) => {
     if (!project) return;
     
     console.log('Saving HTML to cloud for user:', userName, adminComment ? '(with admin comment)' : '', submissionData?.isSubmitted ? '(submitted)' : '');
@@ -1570,12 +1831,18 @@ function App() {
         const success = await performSave('admin', filenameWithTimestamp);
         if (success) {
           alert(`HTML saved to admin account as "${filenameWithTimestamp}"!`);
+          await refreshAdminPendingSubmissionsCount();
           window.location.reload();
         }
       } else {
         // Save to both: update student's original AND save to admin
         // First, save/update the student's original WITH the comment
-        const studentSuccess = await performSave(projectOwner, filenameWithTimestamp, comment);
+        const studentSuccess = await performSave(
+          projectOwner,
+          filenameWithTimestamp,
+          comment,
+          currentStudentSubmissionFolder ? { originalFolderName: currentStudentSubmissionFolder } : undefined
+        );
         
         // Then, save a copy to admin's account (without comment)
         const adminSuccess = await performSave('admin', filenameWithTimestamp);
@@ -1583,6 +1850,7 @@ function App() {
         if (studentSuccess && adminSuccess) {
           const commentMsg = comment ? ' (with feedback)' : '';
           alert(`HTML saved to both ${projectOwner}'s and admin's accounts as "${filenameWithTimestamp}"${commentMsg}!`);
+          await refreshAdminPendingSubmissionsCount();
           window.location.reload();
         } else if (studentSuccess) {
           alert(`HTML saved to ${projectOwner}'s account, but failed to save to admin account.`);
@@ -2579,6 +2847,7 @@ function App() {
               setActiveFileId={setActiveFileId}
               previewKey={previewKey}
               setPreviewKey={setPreviewKey}
+              templateLoadKey={templateLoadKey}
               splitPosition={splitPosition}
               setSplitPosition={setSplitPosition}
               showPreview={showPreview}
@@ -2625,6 +2894,7 @@ function App() {
               setSplitToEven={setSplitToEven}
               setSplitToPreview={setSplitToPreview}
               projectOwner={projectOwner}
+              adminPendingSubmissionsCount={adminPendingSubmissionsCount}
             />
           </AdminPasswordGate>
         } />
@@ -2651,6 +2921,7 @@ function App() {
                 sessionStorage.setItem('loadProject', JSON.stringify({ user: userName, projectName: folderName }));
                 window.location.href = '/admin-tools';
               }}
+              onClearAll={handleClearAdminNotifications}
             />
           </AdminPasswordGate>
         } />
@@ -2661,6 +2932,7 @@ function App() {
               sessionStorage.setItem('loadProject', JSON.stringify({ user: selectedUser, projectName: projectName }));
               window.location.href = '/';
             }}
+            onClearAll={handleClearStudentNotifications}
             studentName={selectedUser || 'student'}
           />
         } />
@@ -2690,6 +2962,7 @@ function App() {
               setActiveFileId={setActiveFileId}
               previewKey={previewKey}
               setPreviewKey={setPreviewKey}
+              templateLoadKey={templateLoadKey}
               splitPosition={splitPosition}
               setSplitPosition={setSplitPosition}
               showPreview={showPreview}
@@ -2733,6 +3006,8 @@ function App() {
               setSplitToEven={setSplitToEven}
               setSplitToPreview={setSplitToPreview}
               projectOwner={projectOwner}
+              adminPendingSubmissionsCount={adminPendingSubmissionsCount}
+              studentNotificationsCount={studentNotificationsCount}
             />
             )}
           </SimpleAuthGate>

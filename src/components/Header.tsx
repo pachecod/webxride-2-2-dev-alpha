@@ -35,6 +35,8 @@ interface HeaderProps {
   onExportLocalSite?: () => void;
   projectOwner?: string | null;
   onViewNotifications?: () => void;
+  adminPendingSubmissionsCount?: number;
+  studentNotificationsCount?: number;
 }
 
 
@@ -104,7 +106,9 @@ export const Header: React.FC<HeaderProps> = ({
   onSubmitToTeacher,
   onExportLocalSite,
   projectOwner,
-  onViewNotifications
+  onViewNotifications,
+  adminPendingSubmissionsCount,
+  studentNotificationsCount
 }) => {
 
   const showDevelopmentBanner = isDevelopmentDeployment();
@@ -203,7 +207,12 @@ export const Header: React.FC<HeaderProps> = ({
                   title="View notifications"
                 >
                   <Bell size={12} />
-                  Notifications
+                  <span>Notifications</span>
+                  {typeof studentNotificationsCount === 'number' && studentNotificationsCount > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-red-500 text-white min-w-[1.25rem]">
+                      {studentNotificationsCount}
+                    </span>
+                  )}
                 </button>
               )}
               <button
@@ -230,7 +239,12 @@ export const Header: React.FC<HeaderProps> = ({
                   title="View notifications"
                 >
                   <Bell size={12} />
-                  Notifications
+                  <span>Notifications</span>
+                  {typeof studentNotificationsCount === 'number' && studentNotificationsCount > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-red-500 text-white min-w-[1.25rem]">
+                      {studentNotificationsCount}
+                    </span>
+                  )}
                 </button>
               )}
               <button
@@ -263,7 +277,12 @@ export const Header: React.FC<HeaderProps> = ({
                   title="View notifications"
                 >
                   <Bell size={12} />
-                  Notifications
+                  <span>Notifications</span>
+                  {typeof studentNotificationsCount === 'number' && studentNotificationsCount > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-red-500 text-white min-w-[1.25rem]">
+                      {studentNotificationsCount}
+                    </span>
+                  )}
                 </button>
               )}
             </div>
@@ -316,7 +335,12 @@ export const Header: React.FC<HeaderProps> = ({
                   title="View student submissions"
                 >
                   <Bell size={16} />
-                  Notifications
+                  <span>Notifications</span>
+                  {typeof adminPendingSubmissionsCount === 'number' && adminPendingSubmissionsCount > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-500 text-white min-w-[1.5rem]">
+                      {adminPendingSubmissionsCount}
+                    </span>
+                  )}
                 </button>
               )}
             </>

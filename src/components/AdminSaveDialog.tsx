@@ -16,7 +16,7 @@ export const AdminSaveDialog: React.FC<AdminSaveDialogProps> = ({
   studentName,
   adminName
 }) => {
-  const [selectedOption, setSelectedOption] = useState<'admin-only' | 'both'>('admin-only');
+  const [selectedOption, setSelectedOption] = useState<'admin-only' | 'both'>('both');
   const [comment, setComment] = useState('');
 
   if (!isOpen) return null;
@@ -26,7 +26,7 @@ export const AdminSaveDialog: React.FC<AdminSaveDialogProps> = ({
     onClose();
     // Reset for next time
     setComment('');
-    setSelectedOption('admin-only');
+    setSelectedOption('both');
   };
 
   return (

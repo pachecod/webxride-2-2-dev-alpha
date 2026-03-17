@@ -5,6 +5,7 @@ import { listUserHtmlByName } from '../lib/supabase';
 interface StudentNotificationInboxProps {
   onBack: () => void;
   onOpenProject: (projectName: string) => void;
+  onClearAll: () => void;
   studentName: string;
 }
 
@@ -25,6 +26,7 @@ interface NotificationProject {
 export const StudentNotificationInbox: React.FC<StudentNotificationInboxProps> = ({ 
   onBack, 
   onOpenProject, 
+  onClearAll,
   studentName 
 }) => {
   const [notifications, setNotifications] = useState<NotificationProject[]>([]);
@@ -39,10 +41,14 @@ export const StudentNotificationInbox: React.FC<StudentNotificationInboxProps> =
       try {
         const userProjects = await listUserHtmlByName(studentName);
         
-        // Filter projects that have admin feedback or are submitted
-        const notificationProjects = userProjects.filter(p => 
-          (p.metadata && p.metadata.adminComment) || (p.metadata && p.metadata.isSubmitted)
-        ).sort((a, b) => {
+        // Filter projects that have admin feedback or are submitted and haven't been cleared
+        const notificationProjects = userProjects
+          .filter(p => 
+            p.metadata &&
+            !p.metadata.notificationsClearedForStudent &&
+            ((p.metadata.adminComment) || (p.metadata.isSubmitted))
+          )
+          .sort((a, b) => {
           // Sort by most recent activity (admin comment date or submission date)
           const dateA = (a.metadata && a.metadata.commentDate) ? new Date(a.metadata.commentDate).getTime() : 
                        (a.metadata && a.metadata.submittedDate) ? new Date(a.metadata.submittedDate).getTime() : 0;
@@ -131,17 +137,31 @@ export const StudentNotificationInbox: React.FC<StudentNotificationInboxProps> =
           </div>
         )}
 
-        <div className="flex items-center gap-4 mb-6">
-          <span className="text-gray-300">Filter:</span>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as 'all' | 'with-feedback' | 'submitted')}
-            className="bg-gray-700 border border-gray-600 text-white text-sm rounded-md px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">All Notifications</option>
-            <option value="with-feedback">With Teacher Feedback</option>
-            <option value="submitted">Submitted Work</option>
-          </select>
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <span className="text-gray-300">Filter:</span>
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as 'all' | 'with-feedback' | 'submitted')}
+              className="bg-gray-700 border border-gray-600 text-white text-sm rounded-md px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Notifications</option>
+              <option value="with-feedback">With Teacher Feedback</option>
+              <option value="submitted">Submitted Work</option>
+            </select>
+          </div>
+          {notifications.length > 0 && (
+            <button
+              onClick={async () => {
+                await onClearAll();
+                // Optimistically clear notifications in the UI
+                setNotifications([]);
+              }}
+              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-xs text-gray-100 rounded-md border border-gray-500 transition-colors"
+            >
+              Clear All Notifications
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -211,13 +231,24 @@ export const StudentNotificationInbox: React.FC<StudentNotificationInboxProps> =
                     </div>
                   )}
 
-                  <button
-                    onClick={() => onOpenProject(notification.name)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2"
-                  >
-                    <FileText size={16} />
-                    Open Project
-                  </button>
+                  <div className="flex flex-wrap gap-3">
+                    {notification.metadata?.originalFolderName && (
+                      <button
+                        onClick={() => onOpenProject(notification.metadata!.originalFolderName!)}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                      >
+                        <FileText size={16} />
+                        Open Original
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onOpenProject(notification.name)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                      <FileText size={16} />
+                      {notification.metadata?.originalFolderName ? "Open Teacher's Save" : "Open Project"}
+                    </button>
+                  </div>
                 </div>
               );
             })}

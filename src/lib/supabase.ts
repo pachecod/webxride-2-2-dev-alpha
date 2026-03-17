@@ -1585,7 +1585,7 @@ export const saveUserHtmlByName = async (
   files: Array<{name: string, content: string, type?: string}>, 
   projectName: string, 
   adminComment?: string,
-  submissionData?: {studentComment?: string; isSubmitted?: boolean}
+  submissionData?: {studentComment?: string; isSubmitted?: boolean; originalFolderName?: string}
 ) => {
   try {
     // Convert username to kebab-case
@@ -1638,12 +1638,17 @@ export const saveUserHtmlByName = async (
       metadata.commentDate = new Date().toISOString();
     }
     
-    // Add submission data if provided
-    if (submissionData?.isSubmitted) {
-      metadata.isSubmitted = true;
-      metadata.submittedDate = new Date().toISOString();
+    // Add submission-related metadata if provided
+    if (submissionData) {
+      if (submissionData.isSubmitted) {
+        metadata.isSubmitted = true;
+        metadata.submittedDate = new Date().toISOString();
+      }
       if (submissionData.studentComment) {
         metadata.studentComment = submissionData.studentComment;
+      }
+      if (submissionData.originalFolderName) {
+        metadata.originalFolderName = submissionData.originalFolderName;
       }
     }
 
@@ -1693,6 +1698,119 @@ export const saveUserHtmlByName = async (
   } catch (error) {
     console.error('Error saving user HTML by name:', error);
     return { data: null, error };
+  }
+};
+
+// Clear notifications for a specific student (mark as cleared in metadata only)
+export const clearStudentNotifications = async (userName: string) => {
+  try {
+    const projects = await listUserHtmlByName(userName);
+    const bucketName = 'files';
+    const userHtmlPath = 'user-html';
+
+    const updatePromises = projects.map(async (project: any) => {
+      if (!project.metadata) return;
+
+      // Only touch projects that currently appear as notifications
+      if (!project.metadata.adminComment && !project.metadata.isSubmitted) return;
+
+      const folderName = project.name;
+
+      // Start from the existing metadata.json contents
+      const { data: existingMetadataFile } = await supabase.storage
+        .from(bucketName)
+        .download(`${userHtmlPath}/${folderName}/metadata.json`);
+
+      let metadataJson: any = project.metadata;
+      if (existingMetadataFile) {
+        try {
+          const text = await existingMetadataFile.text();
+          metadataJson = JSON.parse(text);
+        } catch (e) {
+          // fall back to project.metadata
+        }
+      }
+
+      const updatedMetadata = {
+        ...metadataJson,
+        notificationsClearedForStudent: true,
+      };
+
+      // Upload updated metadata.json
+      const { error } = await supabase.storage
+        .from(bucketName)
+        .upload(
+          `${userHtmlPath}/${folderName}/metadata.json`,
+          JSON.stringify(updatedMetadata, null, 2),
+          {
+            contentType: 'application/json',
+            upsert: true,
+          }
+        );
+
+      if (error) {
+        console.error('Error clearing student notification for', folderName, error);
+      }
+    });
+
+    await Promise.all(updatePromises);
+  } catch (error) {
+    console.error('Error clearing student notifications:', error);
+  }
+};
+
+// Clear admin notifications (mark as seen without deleting submissions)
+export const clearAdminNotifications = async () => {
+  try {
+    const allFiles = await listAllUsersHtml();
+    const bucketName = 'files';
+    const userHtmlPath = 'user-html';
+
+    const updatePromises = allFiles.map(async (project: any) => {
+      // Only mark submitted items that currently count as pending (no adminComment)
+      if (!project.isSubmitted || project.adminComment) return;
+
+      const folderName = project.name;
+
+      // Load existing metadata.json so we keep its exact structure
+      const { data: existingMetadataFile } = await supabase.storage
+        .from(bucketName)
+        .download(`${userHtmlPath}/${folderName}/metadata.json`);
+
+      let metadataJson: any = project;
+      if (existingMetadataFile) {
+        try {
+          const text = await existingMetadataFile.text();
+          metadataJson = JSON.parse(text);
+        } catch (e) {
+          // fall back to flattened project
+        }
+      }
+
+      const updatedMetadata = {
+        ...metadataJson,
+        adminNotificationsCleared: true,
+      };
+
+      const { error } = await supabase.storage
+        .from(bucketName)
+        .upload(
+          `${userHtmlPath}/${folderName}/metadata.json`,
+          JSON.stringify(updatedMetadata, null, 2),
+          {
+            contentType: 'application/json',
+            upsert: true,
+          }
+        );
+
+      if (error) {
+        console.error('Error clearing admin notification for', folderName, error);
+      }
+    });
+
+    await Promise.all(updatePromises);
+  } catch (error) {
+    console.error('Error clearing admin notifications:', error);
   }
 };
 

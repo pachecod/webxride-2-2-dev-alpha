@@ -302,6 +302,20 @@ const Sidebar: React.FC<SidebarProps> = ({
       
       if (templateData) {
         console.log('Template data loaded successfully:', templateData);
+        console.log('Files content check:', templateData.files.map(f => ({ 
+          name: f.name, 
+          hasContent: !!f.content, 
+          contentLength: f.content?.length || 0 
+        })));
+        
+        // Verify all files have content before proceeding
+        const filesWithContent = templateData.files.filter(f => f.content && f.content.trim().length > 0);
+        if (filesWithContent.length === 0) {
+          console.error('ERROR: Template loaded but no files have content!');
+          alert('Template loaded but files are empty. Please try again.');
+          return;
+        }
+        
         // Convert the template to match the Project interface
         const projectTemplate: Project = {
           name: templateData.name,
@@ -311,7 +325,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             type: file.type as any // Convert string type to FileType
           }))
         };
-        console.log('Project template created:', projectTemplate);
+        
+        console.log('Project template created - Name:', projectTemplate.name, 'Files:', projectTemplate.files.length);
+        console.log('Files verification:', projectTemplate.files.map(f => ({ 
+          name: f.name, 
+          hasContent: !!f.content, 
+          contentLength: f.content?.length || 0 
+        })));
+        
         onLoadTemplate(projectTemplate);
       } else {
         console.error('No template data returned');

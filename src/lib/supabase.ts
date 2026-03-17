@@ -3422,3 +3422,149 @@ export async function updateAboutPage(title: string, content: string, cssContent
     throw error;
   }
 }
+
+// TERMS OF USE PAGE HELPERS
+export async function getTermsPage(): Promise<AboutPage | null> {
+  try {
+    const { data, error } = await supabase
+      .from('terms_page')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
+
+    return data as AboutPage;
+  } catch (error) {
+    console.error('Error getting terms of use page:', error);
+    return null;
+  }
+}
+
+export async function updateTermsPage(title: string, content: string, cssContent: string, updatedBy: string): Promise<AboutPage> {
+  try {
+    const { data: existing, error: existingError } = await supabase
+      .from('terms_page')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingError && existingError.code !== 'PGRST116') throw existingError;
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('terms_page')
+        .update({
+          title,
+          content,
+          css_content: cssContent,
+          updated_by: updatedBy,
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as AboutPage;
+    } else {
+      const { data, error } = await supabase
+        .from('terms_page')
+        .insert([
+          {
+            title,
+            content,
+            css_content: cssContent,
+            updated_by: updatedBy,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as AboutPage;
+    }
+  } catch (error) {
+    console.error('Error updating terms of use page:', error);
+    throw error;
+  }
+}
+
+// PRIVACY POLICY PAGE HELPERS
+export async function getPrivacyPolicyPage(): Promise<AboutPage | null> {
+  try {
+    const { data, error } = await supabase
+      .from('privacy_policy_page')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
+
+    return data as AboutPage;
+  } catch (error) {
+    console.error('Error getting privacy policy page:', error);
+    return null;
+  }
+}
+
+export async function updatePrivacyPolicyPage(title: string, content: string, cssContent: string, updatedBy: string): Promise<AboutPage> {
+  try {
+    const { data: existing, error: existingError } = await supabase
+      .from('privacy_policy_page')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingError && existingError.code !== 'PGRST116') throw existingError;
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('privacy_policy_page')
+        .update({
+          title,
+          content,
+          css_content: cssContent,
+          updated_by: updatedBy,
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as AboutPage;
+    } else {
+      const { data, error } = await supabase
+        .from('privacy_policy_page')
+        .insert([
+          {
+            title,
+            content,
+            css_content: cssContent,
+            updated_by: updatedBy,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as AboutPage;
+    }
+  } catch (error) {
+    console.error('Error updating privacy policy page:', error);
+    throw error;
+  }
+}

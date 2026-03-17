@@ -19,6 +19,12 @@ import { StudentNotificationInbox } from './components/StudentNotificationInbox'
 import { AboutPageComponent } from './components/AboutPage';
 import { AboutPageEditor } from './components/AboutPageEditor';
 import { AboutPageManagement } from './components/AboutPageManagement';
+import { TermsPageComponent } from './components/TermsPage';
+import { TermsPageEditor } from './components/TermsPageEditor';
+import { TermsPageManagement } from './components/TermsPageManagement';
+import { PrivacyPolicyPageComponent } from './components/PrivacyPolicyPage';
+import { PrivacyPolicyEditor } from './components/PrivacyPolicyEditor';
+import { PrivacyPolicyManagement } from './components/PrivacyPolicyManagement';
 import { StudentFilesView } from './components/StudentFilesView';
 import { AdminFilesView } from './components/AdminFilesView';
 import { AdminPublicTemplates } from './components/AdminPublicTemplates';
@@ -333,6 +339,8 @@ function AdminTools({
   const [showClassManagement, setShowClassManagement] = useState(false);
   const [showSnippets, setShowSnippets] = useState(false);
   const [showAboutPage, setShowAboutPage] = useState(false);
+  const [showTermsPage, setShowTermsPage] = useState(false);
+  const [showPrivacyPage, setShowPrivacyPage] = useState(false);
   const [showBlockedExtensions, setShowBlockedExtensions] = useState(false);
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
   const [showImpersonation, setShowImpersonation] = useState(false);
@@ -629,9 +637,9 @@ function AdminTools({
                   🌐 Public Templates
                 </button>
                 <button
-                  onClick={() => { setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
+                  onClick={() => { setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowTermsPage(false); setShowPrivacyPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
-                    !showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions && !showPasswordReport
+                    !showClassManagement && !showSnippets && !showAboutPage && !showTermsPage && !showPrivacyPage && !showBlockedExtensions && !showPasswordReport
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
@@ -639,7 +647,7 @@ function AdminTools({
                   Manage Settings
                 </button>
                 <button
-                  onClick={() => { setShowClassManagement(true); setShowSnippets(false); setShowAboutPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
+                  onClick={() => { setShowClassManagement(true); setShowSnippets(false); setShowAboutPage(false); setShowTermsPage(false); setShowPrivacyPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showClassManagement
                       ? 'bg-blue-600 text-white'
@@ -649,7 +657,7 @@ function AdminTools({
                   Classes
                 </button>
                 <button
-                  onClick={() => { setShowSnippets(true); setShowClassManagement(false); setShowAboutPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
+                  onClick={() => { setShowSnippets(true); setShowClassManagement(false); setShowAboutPage(false); setShowTermsPage(false); setShowPrivacyPage(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showSnippets
                       ? 'bg-blue-600 text-white'
@@ -659,7 +667,7 @@ function AdminTools({
                   Snippets
                 </button>
                 <button
-                  onClick={() => { setShowAboutPage(true); setShowClassManagement(false); setShowSnippets(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
+                  onClick={() => { setShowAboutPage(true); setShowTermsPage(false); setShowPrivacyPage(false); setShowClassManagement(false); setShowSnippets(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showAboutPage
                       ? 'bg-blue-600 text-white'
@@ -669,7 +677,27 @@ function AdminTools({
                   About Page
                 </button>
                 <button
-                  onClick={() => { setShowBlockedExtensions(true); setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowPasswordReport(false); }}
+                  onClick={() => { setShowTermsPage(true); setShowAboutPage(false); setShowPrivacyPage(false); setShowClassManagement(false); setShowSnippets(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
+                  className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
+                    showTermsPage
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Terms of Use
+                </button>
+                <button
+                  onClick={() => { setShowPrivacyPage(true); setShowAboutPage(false); setShowTermsPage(false); setShowClassManagement(false); setShowSnippets(false); setShowBlockedExtensions(false); setShowPasswordReport(false); }}
+                  className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
+                    showPrivacyPage
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Privacy Policy
+                </button>
+                <button
+                  onClick={() => { setShowBlockedExtensions(true); setShowClassManagement(false); setShowSnippets(false); setShowAboutPage(false); setShowTermsPage(false); setShowPrivacyPage(false); setShowPasswordReport(false); }}
                   className={`px-3 py-2 rounded text-sm transition-colors flex-shrink-0 ${
                     showBlockedExtensions
                       ? 'bg-blue-600 text-white'
@@ -693,7 +721,7 @@ function AdminTools({
               
               <div className="space-y-6">
                 {/* Student Management */}
-                {!showClassManagement && !showSnippets && !showAboutPage && !showBlockedExtensions && !showPasswordReport && (
+                {!showClassManagement && !showSnippets && !showAboutPage && !showTermsPage && !showPrivacyPage && !showBlockedExtensions && !showPasswordReport && (
                   <div className="space-y-6">
                     {/* View as Student - Collapsible Section */}
                     <div className="bg-gray-700 rounded-lg p-4">
@@ -799,6 +827,12 @@ function AdminTools({
                 
                 {/* About Page Management */}
                 {showAboutPage && <AboutPageManagement />}
+
+                {/* Terms of Use Management */}
+                {showTermsPage && <TermsPageManagement />}
+
+                {/* Privacy Policy Management */}
+                {showPrivacyPage && <PrivacyPolicyManagement />}
                 
                 {/* Blocked Extensions Management */}
                 {showBlockedExtensions && <BlockedExtensionsManagement />}
@@ -2881,6 +2915,32 @@ function App() {
           <AboutPageEditor
             onBack={() => window.location.href = '/about'}
             onSave={() => window.location.href = '/about'}
+            currentUser={selectedUser || 'admin'}
+          />
+        } />
+        <Route path="/terms" element={
+          <TermsPageComponent
+            isAdmin={selectedUser === 'admin'}
+            onEdit={() => window.location.href = '/terms/edit'}
+          />
+        } />
+        <Route path="/terms/edit" element={
+          <TermsPageEditor
+            onBack={() => window.location.href = '/terms'}
+            onSave={() => window.location.href = '/terms'}
+            currentUser={selectedUser || 'admin'}
+          />
+        } />
+        <Route path="/privacy-policy" element={
+          <PrivacyPolicyPageComponent
+            isAdmin={selectedUser === 'admin'}
+            onEdit={() => window.location.href = '/privacy-policy/edit'}
+          />
+        } />
+        <Route path="/privacy-policy/edit" element={
+          <PrivacyPolicyEditor
+            onBack={() => window.location.href = '/privacy-policy'}
+            onSave={() => window.location.href = '/privacy-policy'}
             currentUser={selectedUser || 'admin'}
           />
         } />

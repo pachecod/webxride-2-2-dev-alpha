@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getAboutPage, AboutPage } from '../lib/supabase';
 import { ArrowLeft, Edit, Loader2 } from 'lucide-react';
 
@@ -11,6 +11,8 @@ export const AboutPageComponent: React.FC<AboutPageProps> = ({ onEdit, isAdmin =
   const [aboutPage, setAboutPage] = useState<AboutPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [iframeHeight, setIframeHeight] = useState<number>(600);
 
   useEffect(() => {
     loadAboutPage();
@@ -31,7 +33,31 @@ export const AboutPageComponent: React.FC<AboutPageProps> = ({ onEdit, isAdmin =
   };
 
   const handleBack = () => {
-    window.history.back();
+    window.location.href = '/';
+  };
+
+  const handleIframeLoad = () => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) return;
+      const body = doc.body;
+      const html = doc.documentElement;
+      const height = Math.max(
+        body?.scrollHeight || 0,
+        body?.offsetHeight || 0,
+        html?.clientHeight || 0,
+        html?.scrollHeight || 0,
+        html?.offsetHeight || 0
+      );
+      if (height > 0) {
+        // Add a little padding
+        setIframeHeight(height + 24);
+      }
+    } catch (e) {
+      console.error('Failed to auto-size about page iframe:', e);
+    }
   };
 
   if (loading) {
@@ -110,6 +136,7 @@ export const AboutPageComponent: React.FC<AboutPageProps> = ({ onEdit, isAdmin =
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <iframe
+            ref={iframeRef}
             srcDoc={`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,6 +144,10 @@ export const AboutPageComponent: React.FC<AboutPageProps> = ({ onEdit, isAdmin =
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${aboutPage.title}</title>
   <style>
+    body { margin: 0; padding: 24px; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; background: #ffffff; }
+    h1, h2, h3, h4, h5, h6 { color: #111827; }
+    p, li { color: #111827; line-height: 1.6; }
+    a { color: #2563eb; }
     ${aboutPage.css_content || ''}
   </style>
 </head>
@@ -124,7 +155,8 @@ export const AboutPageComponent: React.FC<AboutPageProps> = ({ onEdit, isAdmin =
   ${aboutPage.content}
 </body>
 </html>`}
-            className="w-full min-h-96 border-0"
+            style={{ width: '100%', border: '0', height: `${iframeHeight}px` }}
+            onLoad={handleIframeLoad}
             title="About Page"
           />
         </div>

@@ -2458,6 +2458,42 @@ function App() {
     return htmlContent;
   };
 
+  // Ensure exported HTML links to the main CSS file if present
+  const ensureCssLinkedInHtml = (htmlContent: string, cssFileName: string): string => {
+    if (!htmlContent || !cssFileName) return htmlContent;
+
+    const linkRegex = new RegExp(
+      `<link[^>]+rel=["']stylesheet["'][^>]+href=["']${cssFileName}["']`,
+      'i'
+    );
+
+    if (linkRegex.test(htmlContent)) {
+      return htmlContent;
+    }
+
+    const linkTag = `\n  <link rel="stylesheet" href="${cssFileName}">`;
+
+    if (htmlContent.includes('</head>')) {
+      return htmlContent.replace('</head>', `${linkTag}\n</head>`);
+    }
+
+    if (htmlContent.includes('<head>')) {
+      return htmlContent.replace('<head>', `<head>${linkTag}`);
+    }
+
+    if (/<html[^>]*>/i.test(htmlContent)) {
+      return htmlContent.replace(/<html[^>]*>/i, (match) => `${match}\n<head>${linkTag}\n</head>`);
+    }
+
+    // Fallback: prepend a minimal head if document is very bare
+    return `<!doctype html>
+<html>
+<head>${linkTag}
+</head>
+${htmlContent}
+`;
+  };
+
   const handleExportLocalSite = async () => {
     if (!project || !project.files || project.files.length === 0) {
       alert('No project to export. Please create some content first.');
@@ -2466,7 +2502,26 @@ function App() {
 
     try {
       const zip = new JSZip();
-      
+
+      // Prepare files for export, auto-linking CSS from style.css/styles.css if needed
+      let filesToExport = project.files;
+      const indexFile = project.files.find(
+        (f) => f.name.toLowerCase() === 'index.html' || f.id.toLowerCase() === 'index.html'
+      );
+      const cssFile = project.files.find((f) => {
+        const name = f.name.toLowerCase();
+        return name === 'style.css' || name === 'styles.css';
+      });
+
+      if (indexFile && cssFile && indexFile.content) {
+        const updatedIndexContent = ensureCssLinkedInHtml(indexFile.content, cssFile.name);
+        if (updatedIndexContent !== indexFile.content) {
+          filesToExport = project.files.map((file) =>
+            file === indexFile ? { ...file, content: updatedIndexContent } : file
+          );
+        }
+      }
+
       // Create a folder for the project
       const projectFolder = zip.folder(project.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()) || zip;
       
@@ -2511,7 +2566,7 @@ function App() {
       };
       
       // Scan all files for external assets
-      for (const file of project.files) {
+      for (const file of filesToExport) {
         if (file.content && file.content.trim()) {
           const urls = extractUrls(file.content);
           urls.forEach(url => externalAssets.add(url));
@@ -2519,7 +2574,7 @@ function App() {
       }
       
       // Add each file to the zip with VR enhancements for HTML files
-      for (const file of project.files) {
+      for (const file of filesToExport) {
         if (file.content && file.content.trim()) {
           let content = file.content;
           

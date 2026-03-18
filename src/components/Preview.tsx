@@ -572,11 +572,12 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
           html, body {
             margin: 0 !important;
             padding: 0 !important;
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
-            font-size: 16px !important;
-            line-height: 1.5 !important;
+            /* No !important here so template CSS can override */
+            background-color: #ffffff;
+            color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
           }
           
           /* Reset all elements to prevent dark theme inheritance */
@@ -585,17 +586,18 @@ const Preview: React.FC<PreviewProps> = ({ files, framework, project, onPreviewM
           }
           
           /* Ensure text elements have readable colors by default */
+          /* No !important so template CSS can override colors */
           h1, h2, h3, h4, h5, h6, p, div, span, li, td, th {
-            color: inherit !important;
+            color: inherit;
           }
           
           /* Links should be visible by default */
           a {
-            color: #0066cc !important;
+            color: #0066cc;
           }
           
           a:hover {
-            color: #0052a3 !important;
+            color: #0052a3;
           }
         </style>`;
       

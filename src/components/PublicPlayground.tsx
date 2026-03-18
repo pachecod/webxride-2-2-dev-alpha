@@ -66,10 +66,66 @@ export const PublicPlayground: React.FC<PublicPlaygroundProps> = ({ rideyEnabled
 
   const handleExportLocalSite = async () => {
     if (!project) return;
+
     const zip = new JSZip();
-    project.files.forEach(file => {
+
+    // Auto-link CSS in exported HTML if style.css/styles.css exists
+    let filesToExport = project.files;
+    const indexFile = project.files.find(
+      (f) => f.name.toLowerCase() === 'index.html' || f.id.toLowerCase() === 'index.html'
+    );
+    const cssFile = project.files.find((f) => {
+      const name = f.name.toLowerCase();
+      return name === 'style.css' || name === 'styles.css';
+    });
+
+    const ensureCssLinkedInHtml = (htmlContent: string, cssFileName: string): string => {
+      if (!htmlContent || !cssFileName) return htmlContent;
+
+      const linkRegex = new RegExp(
+        `<link[^>]+rel=["']stylesheet["'][^>]+href=["']${cssFileName}["']`,
+        'i'
+      );
+
+      if (linkRegex.test(htmlContent)) {
+        return htmlContent;
+      }
+
+      const linkTag = `\n  <link rel="stylesheet" href="${cssFileName}">`;
+
+      if (htmlContent.includes('</head>')) {
+        return htmlContent.replace('</head>', `${linkTag}\n</head>`);
+      }
+
+      if (htmlContent.includes('<head>')) {
+        return htmlContent.replace('<head>', `<head>${linkTag}`);
+      }
+
+      if (/<html[^>]*>/i.test(htmlContent)) {
+        return htmlContent.replace(/<html[^>]*>/i, (match) => `${match}\n<head>${linkTag}\n</head>`);
+      }
+
+      return `<!doctype html>
+<html>
+<head>${linkTag}
+</head>
+${htmlContent}
+`;
+    };
+
+    if (indexFile && cssFile && indexFile.content) {
+      const updatedIndexContent = ensureCssLinkedInHtml(indexFile.content, cssFile.name);
+      if (updatedIndexContent !== indexFile.content) {
+        filesToExport = project.files.map((file) =>
+          file === indexFile ? { ...file, content: updatedIndexContent } : file
+        );
+      }
+    }
+
+    filesToExport.forEach((file) => {
       zip.file(file.name, file.content);
     });
+
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

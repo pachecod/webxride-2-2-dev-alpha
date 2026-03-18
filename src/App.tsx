@@ -2900,7 +2900,7 @@ function App() {
       
       <Routes>
         {import.meta.env.VITE_ENABLE_PUBLIC_PLAYGROUND === 'true' && (
-          <Route path="/play/:templateId" element={<PublicPlayground />} />
+          <Route path="/play/:templateId" element={<PublicPlayground rideyEnabled={rideyEnabled} />} />
         )}
         {import.meta.env.VITE_ENABLE_PUBLIC_PLAYGROUND === 'true' && (
           <Route path="/playground" element={<PublicGallery />} />

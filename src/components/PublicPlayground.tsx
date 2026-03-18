@@ -9,7 +9,11 @@ import { loadTemplateFromPublicPath } from '../lib/template-loader';
 import { loadTemplateFromStorage, loadTemplateFromDB } from '../lib/supabase';
 import JSZip from 'jszip';
 
-export const PublicPlayground: React.FC = () => {
+type PublicPlaygroundProps = {
+  rideyEnabled?: boolean;
+};
+
+export const PublicPlayground: React.FC<PublicPlaygroundProps> = ({ rideyEnabled = false }) => {
   const { templateId } = useParams();
   const [searchParams] = useSearchParams();
   const [project, setProject] = useState<Project | null>(null);
@@ -110,7 +114,7 @@ export const PublicPlayground: React.FC = () => {
             value={activeFile.content}
             language={activeFile.type}
             fileName={activeFile.name}
-              rideyEnabled={import.meta.env.VITE_PLAYGROUND_ENABLE_RIDEY === 'true'}
+              rideyEnabled={rideyEnabled}
             onChange={(newValue) => {
               setProject(prev => {
                 if (!prev) return prev;

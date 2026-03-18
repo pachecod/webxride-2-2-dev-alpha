@@ -1,12 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { getTemplatesWithOrder, supabase } from '../lib/supabase';
-
-interface PublicTemplate {
-  id: string;
-  name: string;
-  description?: string;
-  thumbnailUrl?: string;
-}
+import { fetchPublicTemplates, type PublicTemplate } from '../lib/publicTemplates';
+import { MarketingShell, MarketingSection } from './marketing/MarketingShell';
+import { MarketingNav } from './marketing/MarketingNav';
+import { MarketingFooter } from './marketing/MarketingFooter';
 
 export const PublicGallery: React.FC = () => {
   const [templates, setTemplates] = useState<PublicTemplate[]>([]);
@@ -18,65 +14,7 @@ export const PublicGallery: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        // Reuse the same ordered list the admin view uses (Storage-backed templates with template-order.json)
-        const { data: orderedTemplates } = await getTemplatesWithOrder();
-
-        const result: PublicTemplate[] = [];
-        let sourceTemplates: string[] = [];
-
-        if (orderedTemplates && orderedTemplates.length > 0) {
-          // Use ordered template IDs when available
-          sourceTemplates = (orderedTemplates as any[]).map(t => t.id).filter(Boolean);
-        } else {
-          // Fallback: list top-level folders directly (matches SimpleLogin behavior)
-          const { data: folders } = await supabase.storage
-            .from('templates')
-            .list('', { limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } });
-          const topLevel = (folders || []).filter((folder: any) => {
-            const hasSlash = folder.name.includes('/');
-            const isNotMetadataFile = !folder.name.endsWith('metadata.json');
-            const isNotTemplateOrder = folder.name !== 'template-order.json';
-            const isNotSystemFile = !folder.name.startsWith('.');
-            return !hasSlash && isNotMetadataFile && isNotTemplateOrder && isNotSystemFile;
-          });
-          sourceTemplates = topLevel.map((f: any) => f.name);
-        }
-
-        for (const id of sourceTemplates) {
-          if (!id) continue;
-
-          let meta: any = null;
-          // First try a cache-busting signed URL (avoids stale CDN cache)
-          try {
-            const { data: signed } = await supabase.storage
-              .from('templates')
-              .createSignedUrl(`${id}/metadata.json`, 60);
-            if (signed?.signedUrl) {
-              const res = await fetch(signed.signedUrl, { cache: 'no-store' });
-              if (res.ok) meta = await res.json();
-            }
-          } catch {}
-
-          // Fallback to direct download
-          if (!meta) {
-            try {
-              const { data: metaFile } = await supabase.storage
-                .from('templates')
-                .download(`${id}/metadata.json`);
-              if (metaFile) meta = JSON.parse(await metaFile.text());
-            } catch {}
-          }
-
-          if (meta && meta.public_playground === true) {
-            result.push({
-              id,
-              name: meta.name || id,
-              description: meta.description || '',
-              thumbnailUrl: typeof meta.thumbnail_url === 'string' ? meta.thumbnail_url : undefined,
-            });
-          }
-        }
-
+        const result = await fetchPublicTemplates({ limit: 1000, orderBy: 'adminOrder' });
         setTemplates(result);
       } catch (e) {
         setError('Failed to load public templates');
@@ -88,60 +26,67 @@ export const PublicGallery: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <div className="flex items-center gap-4">
-          <a href="/" className="text-blue-300 hover:text-blue-200 underline text-sm">← Return to WebXRide</a>
-          <a href="/about" target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline text-sm">About</a>
-          <div className="h-6 w-px bg-gray-600" />
-          <h1 className="text-xl font-semibold">Public Templates</h1>
-        </div>
-      </div>
-          <div className="p-6 max-w-6xl mx-auto">
-        <p className="text-sm text-gray-300 mb-4">Browse templates shared publicly. Click to open in the playground and experiment locally.</p>
-        {error && (
-          <div className="mb-4 p-3 bg-red-900/40 border border-red-700 text-red-200 rounded">{error}</div>
-        )}
-        {loading ? (
-          <div className="text-gray-400">Loading...</div>
-        ) : templates.length === 0 ? (
-          <div className="text-gray-400">No public templates available yet.</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map(t => (
-              <div key={t.id} className="bg-gray-800 border border-gray-700 rounded overflow-hidden p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-white mb-1 truncate">{t.name}</div>
-                    <div className="text-xs text-gray-400 mb-3 truncate">{t.id}</div>
-                    {t.description && (
-                      <div className="text-sm text-gray-300 line-clamp-3 mb-4">{t.description}</div>
-                    )}
-                    <a
-                      href={`/play/${t.id}?source=storage`}
-                      className="inline-block px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
-                      title="Open in Public Playground"
-                    >
-                      Open in Playground
-                    </a>
-                  </div>
-                  {t.thumbnailUrl && (
-                    <div className="flex-shrink-0">
-                      <img
-                        src={t.thumbnailUrl}
-                        alt={t.name}
-                        className="w-[100px] h-auto object-contain"
-                        loading="lazy"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+    <MarketingShell>
+      <MarketingNav active="templates" />
+
+      <main className="relative z-10">
+        <div className="marketing-hero">
+          <div className="marketing-eyebrow">Public Templates</div>
+          <h1 className="marketing-title">
+            Try starters in the <span className="brand">Public Playground</span>
+          </h1>
+          <p className="marketing-subtitle">
+            Browse templates shared publicly. Click any template to open it in the playground and experiment locally.
+          </p>
+          <div className="marketing-ctas">
+            <a href="/" className="marketing-cta marketing-cta-ghost">
+              ← Back to sign in
+            </a>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+
+        <MarketingSection id="templates">
+          <div className="marketing-section-head">
+            <span className="marketing-section-title">Templates</span>
+            <a className="marketing-section-link" href="/about">
+              About →
+            </a>
+          </div>
+
+          {error ? (
+            <div className="marketing-form-card" role="alert">
+              <div className="marketing-help" style={{ textAlign: 'left' }}>
+                {error}
+              </div>
+            </div>
+          ) : null}
+
+          {loading ? (
+            <div className="marketing-help">Loading…</div>
+          ) : templates.length === 0 ? (
+            <div className="marketing-help">No public templates available yet.</div>
+          ) : (
+            <div className="marketing-tgrid">
+              {templates.map(t => (
+                <a key={t.id} href={`/play/${t.id}?source=storage`} className="marketing-tcard" title={t.name}>
+                  <div className={['marketing-tthumb', t.thumbnailUrl ? 'has-image' : undefined].filter(Boolean).join(' ')}>
+                    {t.thumbnailUrl ? <img src={t.thumbnailUrl} alt={t.name} loading="lazy" /> : <span>💻</span>}
+                  </div>
+                  <div className="marketing-tbody">
+                    <div className="marketing-ttitle">{t.name}</div>
+                    <div className="marketing-tid">{t.id}</div>
+                    {t.description ? <div className="marketing-tdesc">{t.description}</div> : null}
+                    <span className="marketing-topen">Open in Playground</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </MarketingSection>
+      </main>
+
+      <MarketingFooter />
+    </MarketingShell>
   );
 };
 

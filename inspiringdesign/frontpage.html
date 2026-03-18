@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebXRide — WebXR Development Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #141414;
+      --bg-2:       #1a1a1a;
+      --surface:    #202020;
+      --card:       #1e1e1e;
+      --border:     rgba(255,255,255,0.09);
+      --border-2:   rgba(255,255,255,0.14);
+      --green:      #4ade80;
+      --green-dim:  #22c55e;
+      --green-glow: rgba(74, 222, 128, 0.18);
+      --orange:     #f97316;
+      --purple:     #a855f7;
+      --text:       #d4d4d4;
+      --muted:      #737373;
+      --white:      #f5f5f5;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 52px;
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+    .nav-logo { width: 30px; height: 30px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .nav-name { font-size: 1.05rem; font-weight: 700; color: var(--green); letter-spacing: -0.01em; }
+
+    .nav-links { display: flex; list-style: none; }
+    .nav-links a { display: block; padding: 0.35rem 0.8rem; font-size: 0.83rem; font-weight: 500; color: var(--muted); text-decoration: none; border-radius: 5px; transition: color 0.15s, background 0.15s; }
+    .nav-links a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+    .nav-links a.active { color: var(--white); font-weight: 600; }
+
+    .nav-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+    .btn-ghost { padding: 0.35rem 0.9rem; font-size: 0.82rem; font-weight: 600; color: var(--text); background: transparent; border: 1px solid var(--border-2); border-radius: 6px; cursor: pointer; transition: all 0.15s; text-decoration: none; font-family: inherit; }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.28); color: var(--white); }
+
+    .btn-green { padding: 0.35rem 1rem; font-size: 0.82rem; font-weight: 700; color: #0a0a0a; background: var(--green); border: none; border-radius: 6px; cursor: pointer; transition: all 0.15s; text-decoration: none; font-family: inherit; }
+    .btn-green:hover { background: #86efac; box-shadow: 0 0 16px var(--green-glow); }
+
+    main { position: relative; z-index: 1; }
+
+    /* HERO */
+    .hero { padding: 4.5rem 1.5rem 2.5rem; text-align: center; max-width: 700px; margin: 0 auto; animation: fadeUp 0.6s ease both; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 0.28rem 0.75rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 600;
+      color: var(--green); background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); border-radius: 4px;
+      margin-bottom: 1.5rem; letter-spacing: 0.02em;
+    }
+    .hero-eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 1.8s ease infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    .hero h1 { font-size: clamp(1.9rem, 5vw, 3rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; color: var(--white); margin-bottom: 1.1rem; }
+    .hero h1 .brand { color: var(--green); }
+    .hero p { font-size: 1rem; color: var(--muted); line-height: 1.7; max-width: 520px; margin: 0 auto 2rem; }
+
+    .hero-ctas { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+
+    .btn-cta { padding: 0.65rem 1.4rem; font-size: 0.9rem; font-weight: 700; border-radius: 7px; cursor: pointer; text-decoration: none; transition: all 0.18s; font-family: inherit; border: none; }
+    .btn-cta-green { background: var(--green); color: #0a0a0a; box-shadow: 0 2px 16px rgba(74,222,128,0.25); }
+    .btn-cta-green:hover { background: #86efac; box-shadow: 0 2px 24px rgba(74,222,128,0.4); transform: translateY(-1px); }
+    .btn-cta-orange { background: rgba(249,115,22,0.12); color: var(--orange); border: 1px solid rgba(249,115,22,0.25); }
+    .btn-cta-orange:hover { background: rgba(249,115,22,0.2); transform: translateY(-1px); }
+    .btn-cta-ghost { background: transparent; color: var(--text); border: 1px solid var(--border-2); }
+    .btn-cta-ghost:hover { border-color: rgba(255,255,255,0.3); color: var(--white); transform: translateY(-1px); }
+
+    /* EDITOR MOCK */
+    .editor-strip { max-width: 1100px; margin: 1rem auto 3.5rem; padding: 0 1.5rem; animation: fadeUp 0.6s 0.15s ease both; }
+    .editor-mock { background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 10px; overflow: hidden; }
+
+    .editor-mock-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1rem; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r{background:#ef4444} .dot-y{background:#f59e0b} .dot-g{background:var(--green)}
+
+    .mock-tabs { display: flex; gap: 4px; margin-left: 0.5rem; }
+    .mock-tab { padding: 0.2rem 0.7rem; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 4px; }
+    .mock-tab.on { color: var(--white); background: var(--bg-2); border-color: var(--border-2); }
+
+    .mock-btns { margin-left: auto; display: flex; gap: 0.4rem; }
+    .mbtn { padding: 0.22rem 0.6rem; font-size: 0.7rem; font-weight: 700; border-radius: 4px; border: none; font-family: inherit; }
+    .mbtn-g{background:var(--green);color:#0a0a0a} .mbtn-o{background:var(--orange);color:#fff} .mbtn-p{background:var(--purple);color:#fff}
+
+    .mock-body { display: grid; grid-template-columns: 180px 1fr 1fr; min-height: 190px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
+
+    .mock-side { background: var(--bg-2); border-right: 1px solid var(--border); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .side-label { font-size: 0.62rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.15rem; }
+    .side-item { display: flex; align-items: center; gap: 0.4rem; padding: 0.28rem 0.45rem; border-radius: 4px; color: var(--text); }
+    .side-item.on { background: rgba(74,222,128,0.1); color: var(--green); }
+
+    .mock-code { background: var(--card); border-right: 1px solid var(--border); padding: 0.75rem 1rem; overflow: hidden; }
+    .cl { display: flex; gap: 0.5rem; padding: 1px 0; }
+    .ln{color:#3d3d3d;min-width:18px;text-align:right}
+    .kw{color:#c084fc} .tg{color:#60a5fa} .at{color:#fb923c} .st{color:#4ade80} .tx{color:#d4d4d4}
+
+    .mock-prev { background: #fff; padding: 1rem; color: #111; font-family: 'Space Grotesk', sans-serif; display: flex; flex-direction: column; gap: 0.5rem; }
+    .prev-h { font-size: 1rem; font-weight: 700; }
+    .prev-p { font-size: 0.68rem; color: #555; line-height: 1.4; }
+    .prev-img { width: 80px; height: 58px; background: #e5e7eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+
+    /* SECTIONS */
+    .section { padding: 0 1.5rem 3.5rem; max-width: 1260px; margin: 0 auto; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--border); }
+    .section-title { font-size: 0.82rem; font-weight: 700; color: var(--white); text-transform: uppercase; letter-spacing: 0.07em; }
+    .section-link { font-size: 0.8rem; font-weight: 600; color: var(--green); text-decoration: none; }
+    .section-link:hover { color: #86efac; }
+
+    /* GALLERY */
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 0.8rem; }
+
+    .pcard { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; text-decoration: none; display: flex; flex-direction: column; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; opacity: 0; transform: translateY(14px); }
+    .pcard.in { opacity: 1; transform: translateY(0); transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.2s, box-shadow 0.2s; }
+    .pcard:hover { border-color: rgba(74,222,128,0.28); box-shadow: 0 4px 20px rgba(74,222,128,0.07); transform: translateY(-2px); }
+
+    .pthumb { aspect-ratio: 16/9; background: var(--bg-2); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .pthumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.35s; }
+    .pcard:hover .pthumb img { transform: scale(1.04); }
+    .pthumb-ph { font-size: 2.2rem; opacity: 0.22; }
+    .ptype { position: absolute; top: 7px; left: 7px; padding: 0.17rem 0.48rem; font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; font-weight: 600; border-radius: 4px; background: rgba(14,14,14,0.85); backdrop-filter: blur(4px); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+
+    .pbody { padding: 0.8rem 0.85rem 0.7rem; flex: 1; display: flex; flex-direction: column; }
+    .ptitle { font-size: 0.86rem; font-weight: 700; color: var(--white); margin-bottom: 0.18rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pdesc { font-size: 0.75rem; color: var(--muted); line-height: 1.5; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .pmeta { display: flex; align-items: center; justify-content: space-between; margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
+    .pauthor { font-size: 0.72rem; color: var(--muted); }
+    .pauthor strong { color: rgba(255,255,255,0.48); font-weight: 600; }
+    .popen { padding: 0.27rem 0.62rem; font-size: 0.72rem; font-weight: 700; background: var(--green); color: #0a0a0a; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-family: inherit; transition: background 0.15s; }
+    .popen:hover { background: #86efac; }
+
+    /* TEMPLATES */
+    .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(275px, 1fr)); gap: 0.8rem; }
+    .tcard { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; text-decoration: none; display: flex; flex-direction: column; transition: border-color 0.2s, box-shadow 0.2s; opacity: 0; transform: translateY(14px); }
+    .tcard.in { opacity: 1; transform: translateY(0); transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.2s, box-shadow 0.2s; }
+    .tcard:hover { border-color: rgba(74,222,128,0.22); }
+    .tthumb { aspect-ratio: 16/9; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; opacity: 0.25; border-bottom: 1px solid var(--border); }
+    .tbody { padding: 0.85rem; }
+    .ttitle { font-size: 0.87rem; font-weight: 700; color: var(--white); margin-bottom: 0.15rem; }
+    .tid { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--muted); margin-bottom: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topen { display: inline-block; padding: 0.32rem 0.72rem; font-size: 0.76rem; font-weight: 700; background: var(--green); color: #0a0a0a; border-radius: 5px; text-decoration: none; font-family: inherit; transition: background 0.15s; }
+    .topen:hover { background: #86efac; }
+
+    /* MODAL */
+    .overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); align-items: center; justify-content: center; }
+    .overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border-2); border-radius: 10px; padding: 1.9rem 1.75rem; width: 100%; max-width: 355px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); animation: mIn 0.22s ease; }
+    @keyframes mIn { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; }
+    .modal-head h2 { font-size: 1rem; font-weight: 700; color: var(--white); }
+    .modal-x { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; transition: color 0.15s; }
+    .modal-x:hover { color: var(--white); }
+    .field { margin-bottom: 0.85rem; }
+    .field label { display: block; font-size: 0.73rem; font-weight: 700; color: var(--muted); margin-bottom: 0.32rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .field input { width: 100%; padding: 0.58rem 0.82rem; background: var(--bg); border: 1px solid var(--border-2); border-radius: 6px; color: var(--white); font-size: 0.87rem; font-family: inherit; outline: none; transition: border-color 0.15s; }
+    .field input:focus { border-color: var(--green); }
+    .field input::placeholder { color: #3d3d3d; }
+    .btn-login { width: 100%; padding: 0.68rem; background: var(--green); color: #0a0a0a; border: none; border-radius: 7px; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s; margin-top: 0.25rem; }
+    .btn-login:hover { background: #86efac; box-shadow: 0 0 16px rgba(74,222,128,0.3); }
+    .modal-foot { margin-top: 1rem; font-size: 0.75rem; color: var(--muted); line-height: 1.65; text-align: center; }
+    .modal-foot a { color: var(--green); text-decoration: none; font-weight: 600; }
+
+    /* FOOTER */
+    footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 1.1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+    .f-brand { font-size: 0.82rem; font-weight: 700; color: var(--green); }
+    .f-links { display: flex; gap: 1.25rem; list-style: none; }
+    .f-links a { font-size: 0.77rem; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+    .f-links a:hover { color: var(--white); }
+    .f-copy { font-size: 0.73rem; color: #3d3d3d; }
+  </style>
+</head>
+<body>
+
+<!-- NAV — green brand name + button colours matching editor exactly -->
+<nav>
+  <a href="#" class="nav-brand">
+    <div class="nav-logo">🚗</div>
+    <span class="nav-name">WebXRide</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#" class="active">Explore</a></li>
+    <li><a href="#">Templates</a></li>
+    <li><a href="#">Docs</a></li>
+    <li><a href="#">About</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="#" class="btn-ghost" onclick="openLogin(event)">Sign In</a>
+    <a href="#" class="btn-green" onclick="openLogin(event)">Open Editor →</a>
+  </div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">WebXR Development Platform</div>
+    <h1>Code, preview &amp; share<br/><span class="brand">WebXR experiences</span><br/>in your browser</h1>
+    <p>A full development environment for A-Frame, Three.js, and WebXR — with templates, asset management, and one-click sharing. No installs required.</p>
+    <div class="hero-ctas">
+      <a href="#" class="btn-cta btn-cta-green" onclick="openLogin(event)">Sign In to Your Workspace</a>
+      <a href="#templates" class="btn-cta btn-cta-orange">⚡ Try Starters</a>
+      <a href="#community" class="btn-cta btn-cta-ghost">Browse Projects</a>
+    </div>
+  </section>
+
+  <!-- EDITOR MOCK — visual bridge to the actual app -->
+  <div class="editor-strip">
+    <div class="editor-mock">
+      <div class="editor-mock-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <div class="mock-tabs">
+          <div class="mock-tab on">index.html</div>
+          <div class="mock-tab">style.css</div>
+        </div>
+        <div class="mock-btns">
+          <div class="mbtn mbtn-o">⚡ Starters</div>
+          <div class="mbtn mbtn-g">Save as Template</div>
+          <div class="mbtn mbtn-p">Manage Settings</div>
+        </div>
+      </div>
+      <div class="mock-body">
+        <div class="mock-side">
+          <div class="side-label">Latest Templates</div>
+          <div class="side-item on">📄 Profile Page</div>
+          <div class="side-item">📄 3D Model Scrollytelling</div>
+          <div class="side-item">📄 Basic HTML / CSS</div>
+          <div style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)">
+            <div class="side-label">Uploaded Files</div>
+            <div class="side-item">🖼 barry.jpg</div>
+            <div class="side-item">📦 little-free-library.glb</div>
+          </div>
+        </div>
+        <div class="mock-code">
+          <div class="cl"><span class="ln">1</span><span class="tg">&lt;!doctype</span> <span class="at">html</span><span class="tg">&gt;</span></div>
+          <div class="cl"><span class="ln">2</span><span class="tg">&lt;html</span> <span class="at">lang</span><span class="tx">=</span><span class="st">"en"</span><span class="tg">&gt;</span></div>
+          <div class="cl"><span class="ln">3</span>&nbsp;&nbsp;<span class="tg">&lt;head&gt;</span></div>
+          <div class="cl"><span class="ln">4</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="tg">&lt;script</span> <span class="at">src</span><span class="tx">=</span><span class="st">"aframe.min.js"</span><span class="tg">&gt;&lt;/script&gt;</span></div>
+          <div class="cl"><span class="ln">5</span>&nbsp;&nbsp;<span class="tg">&lt;/head&gt;</span></div>
+          <div class="cl"><span class="ln">6</span>&nbsp;&nbsp;<span class="tg">&lt;body&gt;</span></div>
+          <div class="cl"><span class="ln">7</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="tg">&lt;a-scene&gt;</span></div>
+          <div class="cl"><span class="ln">8</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tg">&lt;a-box</span> <span class="at">color</span><span class="tx">=</span><span class="st">"#4ade80"</span></div>
+          <div class="cl"><span class="ln">9</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">position</span><span class="tx">=</span><span class="st">"0 1 -3"</span><span class="tg">&gt;&lt;/a-box&gt;</span></div>
+          <div class="cl"><span class="ln">10</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="tg">&lt;/a-scene&gt;</span></div>
+          <div class="cl"><span class="ln">11</span>&nbsp;&nbsp;<span class="tg">&lt;/body&gt;</span></div>
+          <div class="cl"><span class="ln">12</span><span class="tg">&lt;/html&gt;</span></div>
+        </div>
+        <div class="mock-prev">
+          <div class="prev-h">Your Name</div>
+          <div class="prev-p">Your descriptive text goes here. Edit your profile page in the playground.</div>
+          <div class="prev-img">🐕</div>
+          <div style="font-size:0.62rem;color:#999;margin-top:auto">Preview — Medium</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMUNITY -->
+  <div class="section" id="community">
+    <div class="section-head">
+      <span class="section-title">Community Projects</span>
+      <a href="#" class="section-link">View all →</a>
+    </div>
+    <div class="gallery">
+
+      <a href="#" class="pcard">
+        <div class="pthumb"><div class="pthumb-ph">🌄</div><span class="ptype">VR Scene</span></div>
+        <div class="pbody">
+          <div class="ptitle">Harvest of Change</div>
+          <div class="pdesc">An immersive VR documentary exploring rural American farm life and the forces transforming it.</div>
+          <div class="pmeta"><span class="pauthor">by <strong>Dan Pacheco</strong></span><a href="#" class="popen">Open</a></div>
+        </div>
+      </a>
+
+      <a href="#" class="pcard">
+        <div class="pthumb"><div class="pthumb-ph">🏛️</div><span class="ptype">3D Tour</span></div>
+        <div class="pbody">
+          <div class="ptitle">Museum of Science &amp; Tech</div>
+          <div class="pdesc">A multi-scene walkthrough of the Milton J. Rubenstein Museum — from dinosaurs to the apothecary.</div>
+          <div class="pmeta"><span class="pauthor">by <strong>Ana B</strong></span><a href="#" class="popen">Open</a></div>
+        </div>
+      </a>
+
+      <a href="#" class="pcard">
+        <div class="pthumb"><div class="pthumb-ph">🦅</div><span class="ptype">Gaussian Splat</span></div>
+        <div class="pbody">
+          <div class="ptitle">Eagles and Prey</div>
+          <div class="pdesc">The oldest known sculpture in any New York City park — explored via 3D Gaussian splat capture.</div>
+          <div class="pmeta"><span class="pauthor">by <strong>Dan Pacheco</strong></span><a href="#" class="popen">Open</a></div>
+        </div>
+      </a>
+
+      <a href="#" class="pcard">
+        <div class="pthumb"><div class="pthumb-ph">🗽</div><span class="ptype">3D Story</span></div>
+        <div class="pbody">
+          <div class="ptitle">Washington Arch</div>
+          <div class="pdesc">Washington Square Park's marble memorial arch explored through interactive 3D storytelling.</div>
+          <div class="pmeta"><span class="pauthor">by <strong>Evaine Sun</strong></span><a href="#" class="popen">Open</a></div>
+        </div>
+      </a>
+
+      <a href="#" class="pcard">
+        <div class="pthumb"><div class="pthumb-ph">🚂</div><span class="ptype">3D Tour</span></div>
+        <div class="pbody">
+          <div class="ptitle">Train 9306</div>
+          <div class="pdesc">Based on the New York Transit Museum — a fully immersive tour of a historic subway car.</div>
+          <div class="pmeta"><span class="pauthor">by <strong>Minglu Zhong</strong></span><a href="#" class="popen">Open</a></div>
+        </div>
+      </a>
+
+      <a href="#" class="pcard">
+        <div class="pthumb"><div class="pthumb-ph">🌿</div><span class="ptype">Gaussian Splat</span></div>
+        <div class="pbody">
+          <div class="ptitle">Plant Splat</div>
+          <div class="pdesc">A detailed Gaussian splat of a plant in natural light — beautiful in its simplicity.</div>
+          <div class="pmeta"><span class="pauthor">by <strong>Dan Pacheco</strong></span><a href="#" class="popen">Open</a></div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- TEMPLATES -->
+  <div class="section" id="templates">
+    <div class="section-head">
+      <span class="section-title">Public Templates — No Sign-In Required</span>
+      <a href="#" class="section-link">View all →</a>
+    </div>
+    <div class="tgrid">
+
+      <a href="#" class="tcard">
+        <div class="tthumb">💻</div>
+        <div class="tbody">
+          <div class="ttitle">Basic HTML / CSS</div>
+          <div class="tid">basic-html---css-1773776641126</div>
+          <a href="#" class="topen">Open in Playground</a>
+        </div>
+      </a>
+
+      <a href="#" class="tcard">
+        <div class="tthumb">📦</div>
+        <div class="tbody">
+          <div class="ttitle">3D Model Scrollytelling</div>
+          <div class="tid">3d-model-scrollytelling-1773773822259</div>
+          <a href="#" class="topen">Open in Playground</a>
+        </div>
+      </a>
+
+      <a href="#" class="tcard">
+        <div class="tthumb">👤</div>
+        <div class="tbody">
+          <div class="ttitle">Profile Page</div>
+          <div class="tid">profile-page-1773773767032</div>
+          <a href="#" class="topen">Open in Playground</a>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span class="f-brand">WebXRide</span>
+  <ul class="f-links">
+    <li><a href="#">About</a></li>
+    <li><a href="#">Terms of Use</a></li>
+    <li><a href="#">Privacy Policy</a></li>
+    <li><a href="#">GitHub</a></li>
+  </ul>
+  <span class="f-copy">Built for the WebXR community</span>
+</footer>
+
+<!-- LOGIN MODAL -->
+<div class="overlay" id="loginModal" onclick="handleClick(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Sign In</h2>
+      <button class="modal-x" onclick="closeLogin()">✕</button>
+    </div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" placeholder="Enter your username" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" placeholder="Enter your password" />
+    </div>
+    <button class="btn-login">→ Log In</button>
+    <div class="modal-foot">
+      Don't have a password? Contact the administrator of this instance.<br/><br/>
+      Don't have an account?
+      <a href="#templates" onclick="closeLogin()">Try public templates in the Playground</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openLogin(e) { e && e.preventDefault(); document.getElementById('loginModal').classList.add('open'); }
+  function closeLogin() { document.getElementById('loginModal').classList.remove('open'); }
+  function handleClick(e) { if (e.target === document.getElementById('loginModal')) closeLogin(); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLogin(); });
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { threshold: 0.07 });
+
+  document.querySelectorAll('.pcard, .tcard').forEach((el, i) => {
+    el.style.transitionDelay = `${i * 0.055}s`;
+    io.observe(el);
+  });
+</script>
+</body>
+</html>

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getTermsPage, AboutPage as TermsPageType } from '../lib/supabase';
 import { ArrowLeft, Edit, Loader2 } from 'lucide-react';
+import { MarketingShell } from './marketing/MarketingShell';
+import { MarketingNav } from './marketing/MarketingNav';
+import { MarketingFooter } from './marketing/MarketingFooter';
 
 interface TermsPageProps {
   onEdit?: () => void;
@@ -61,79 +64,130 @@ export const TermsPageComponent: React.FC<TermsPageProps> = ({ onEdit, isAdmin =
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-gray-600">
-          <Loader2 className="animate-spin" size={20} />
-          <span>Loading terms of use...</span>
-        </div>
-      </div>
+      <MarketingShell>
+        <MarketingNav
+          active="about"
+          rightCtaLabel="Home →"
+          rightCtaHref="/"
+          onSignInClick={() => {
+            window.location.href = '/#signin';
+          }}
+        />
+        <main className="relative z-10">
+          <div className="marketing-container" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
+            <div className="marketing-form-card">
+              <div className="marketing-help" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <Loader2 className="animate-spin" size={18} />
+                <span>Loading terms of use…</span>
+              </div>
+            </div>
+          </div>
+        </main>
+        <MarketingFooter />
+      </MarketingShell>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">{error}</div>
-          <button
-            onClick={loadTermsPage}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
+      <MarketingShell>
+        <MarketingNav
+          active="about"
+          rightCtaLabel="Home →"
+          rightCtaHref="/"
+          onSignInClick={() => {
+            window.location.href = '/#signin';
+          }}
+        />
+        <main className="relative z-10">
+          <div className="marketing-container" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
+            <div className="marketing-form-card" role="alert">
+              <div className="marketing-help" style={{ textAlign: 'left', color: '#fecaca' }}>
+                {error}
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <button onClick={loadTermsPage} className="marketing-btn marketing-btn-green" type="button">
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+        <MarketingFooter />
+      </MarketingShell>
     );
   }
 
   if (!termsPage) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-600 mb-4">Terms of use content not found</div>
-          {isAdmin && onEdit && (
-            <button
-              onClick={onEdit}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Create Terms of Use Page
-            </button>
-          )}
-        </div>
-      </div>
+      <MarketingShell>
+        <MarketingNav
+          active="about"
+          rightCtaLabel="Home →"
+          rightCtaHref="/"
+          onSignInClick={() => {
+            window.location.href = '/#signin';
+          }}
+        />
+        <main className="relative z-10">
+          <div className="marketing-container" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
+            <div className="marketing-form-card">
+              <div className="marketing-help" style={{ textAlign: 'left' }}>
+                Terms of use content not found.
+              </div>
+              {isAdmin && onEdit ? (
+                <div style={{ marginTop: 12 }}>
+                  <button onClick={onEdit} className="marketing-btn marketing-btn-green" type="button">
+                    Create Terms of Use Page
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </main>
+        <MarketingFooter />
+      </MarketingShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ArrowLeft size={20} />
-              <span>Back</span>
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900">{termsPage.title}</h1>
-          </div>
-          {isAdmin && onEdit && (
-            <button
-              onClick={onEdit}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              <Edit size={16} />
-              <span>Edit</span>
-            </button>
-          )}
-        </div>
-      </div>
+    <MarketingShell>
+      <MarketingNav
+        active="about"
+        rightCtaLabel="Home →"
+        rightCtaHref="/"
+        onSignInClick={() => {
+          window.location.href = '/#signin';
+        }}
+      />
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <main className="relative z-10">
+        <div className="marketing-container" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleBack}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  type="button"
+                >
+                  <ArrowLeft size={20} />
+                  <span>Back</span>
+                </button>
+                <h1 className="text-2xl font-bold text-gray-900">{termsPage.title}</h1>
+              </div>
+              {isAdmin && onEdit ? (
+                <button
+                  onClick={onEdit}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  type="button"
+                >
+                  <Edit size={16} />
+                  <span>Edit</span>
+                </button>
+              ) : null}
+            </div>
+
           <iframe
             ref={iframeRef}
             srcDoc={`<!DOCTYPE html>
@@ -158,18 +212,20 @@ export const TermsPageComponent: React.FC<TermsPageProps> = ({ onEdit, isAdmin =
             onLoad={handleIframeLoad}
             title="Terms of Use"
           />
-        </div>
+          </div>
 
-        {/* Footer with last updated info */}
-        <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
-          <p>
-            Last updated: {new Date(termsPage.updated_at).toLocaleDateString()} at{' '}
-            {new Date(termsPage.updated_at).toLocaleTimeString()}
-            {termsPage.updated_by && ` by ${termsPage.updated_by}`}
-          </p>
+          <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
+            <p className="bg-white inline-block rounded px-3 py-2 border border-gray-200">
+              Last updated: {new Date(termsPage.updated_at).toLocaleDateString()} at{' '}
+              {new Date(termsPage.updated_at).toLocaleTimeString()}
+              {termsPage.updated_by && ` by ${termsPage.updated_by}`}
+            </p>
+          </div>
         </div>
-      </div>
-    </div>
+      </main>
+
+      <MarketingFooter />
+    </MarketingShell>
   );
 };
 

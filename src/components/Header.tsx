@@ -1,7 +1,6 @@
 import React from 'react';
 import { Settings, AlertTriangle, Sparkles, Download, LogOut, User, Send, Bell } from 'lucide-react';
 import { ClassUserSelector } from './ClassUserSelector';
-import webxrideLogo from '../assets/webxride-logo.png';
 // import { FileUpload } from './FileUpload';
 
 // Try to import auth, but handle if it's not available
@@ -134,7 +133,14 @@ export const Header: React.FC<HeaderProps> = ({
       
       <header className="flex items-center justify-between px-6 py-3 bg-gray-900 border-b border-gray-800">
         <div className="flex items-center gap-4">
-          <img src={webxrideLogo} alt="WebXRide Logo" className="h-10 w-10 mr-2 rounded-full bg-white p-1 shadow" />
+          <div
+            className="h-10 w-10 mr-2 rounded-full bg-white shadow flex items-center justify-center"
+            aria-label="WebXRide"
+          >
+            <span className="inline-block -scale-x-100 text-[18px]" aria-hidden>
+              🚗
+            </span>
+          </div>
           <span className="text-2xl font-extrabold tracking-tight text-green-400 mr-2">WebXRide</span>
           <a 
             href="/about" 
